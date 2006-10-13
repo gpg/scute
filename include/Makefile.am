@@ -21,7 +21,7 @@
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 # In addition, as a special exception, g10 Code GmbH gives permission
-# to link this library: with the Mozilla Fondations's code for
+# to link this library: with the Mozilla Foundation's code for
 # Mozilla (or with modified versions of it that use the same license
 # as the "Mozilla" code), and distribute the linked executables.  You
 # must obey the GNU General Public License in all respects for all of
