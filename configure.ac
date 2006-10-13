@@ -67,6 +67,14 @@ AC_PROG_CC
 # -std=gnu99 is required.
 CFLAGS="-std=gnu99 -Wall -Wno-pointer-sign -g -O3"
 
+AC_ARG_ENABLE(optimization,
+   AC_HELP_STRING([--disable-optimization],
+                  [disable compiler optimization]),
+                  [if test $enableval = no ; then
+                      CFLAGS=`echo $CFLAGS | sed 's/-O[[0-9]]//'`
+                   fi])
+
+
 AC_SUBST(LIBSCUTE_LT_CURRENT)
 AC_SUBST(LIBSCUTE_LT_AGE)
 AC_SUBST(LIBSCUTE_LT_REVISION)

@@ -48,8 +48,11 @@
 #include "support.h"
 
 
-/* The maximum length of a key listing line.  */
-#define MAX_LINE_LEN	256
+/* The maximum length of a key listing line.  We take the double of
+   the allowed Assuan line length to avoid a memmove after a part of a
+   line has been processed.  FIXME: There is actually no limit on the
+   length of the line. */
+#define MAX_LINE_LEN	(1024*2)
 
 struct search_ctx
 {

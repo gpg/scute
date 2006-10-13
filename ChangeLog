@@ -1,3 +1,11 @@
+2006-10-13  Werner Koch  <wk@g10code.com>
+
+	* src/cert-gpgsm.c (MAX_LINE_LEN): Increased.
+
+	* src/locking.c: Include string.h for memset declaration.
+
+	* configure.ac: New option --disable-optimization.
+
 2006-08-02  Marcus Brinkmann  <marcus@g10code.de>
 
 	* Initial version.
