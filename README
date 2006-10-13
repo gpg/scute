@@ -1,0 +1,410 @@
+Scute
+=====
+
+This is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
+Smart Card Daemon.  Currently, only the OpenPGP card is supported.
+
+TOC
+===
+
+* Purpose
+* Prerequisites
+* Installation
+* Client Authentication
+* Features and Limitations
+* Development
+* Mozilla Bugs
+* Copyright and License
+
+
+Purpose
+=======
+
+Scute enables you to use your OpenPGP smart card for client
+authentication with SSL in Mozilla.  See below for more details on how
+to get this working.
+
+In the future, Scute will enable you to use your OpenPGP smart card
+for email decryption and signing with Thunderbird, using the X.509
+protocol.
+
+
+Prerequisites
+=============
+
+For the compilation:
+* libgpg-error 0.7
+* libassuan 0.6.10
+
+At runtime:
+* Mozilla (or any other supported application using PKCS #11).
+* GnuPG 2.0, in particular: gpg-agent, scdaemon
+* Pinentry
+
+
+Installation
+============
+
+To install the PKCS #11 Module, follow the generic installation
+instructions in the file INSTALL that accompanies this software.  You
+also need to install the Mozilla Personal Security Manager (PSM),
+which may come with your GNU/Linux distribution in a package named
+mozilla-psm or similar.
+
+After installation, you can configure Mozilla to use Scute by
+visiting the preferences dialog in the "advanced" category, under
+"Security Devices".  There you can "load" the module from its
+installed path, e.g. "/usr/lib/libscute.so".
+
+Note that for the module load to complete successfully, the GPG Agent
+must be running and available.  This means that Mozilla needs to have
+the GPG_AGENT_INFO variable set correctly in its environment.
+
+
+Client Authentication
+=====================
+
+For client authentication to work, several steps need to be completed.
+Depending on your situation, some of these steps may be performed by
+third parties, like service providers.  However, they can also all be
+performed locally, if use of client authentication with a local
+service is desired.
+
+For this introduction, we assume an Apache web server with SSL at the
+server side, and a connecting client running Firefox.  As a
+certification authority (CA) we use OpenSSL.  Scute provides a PKCS #11
+compatible security device to Firefox for client authentication.  This
+security device gives Firefox access to the client's OpenPGP smart
+card.
+
+The Client Perspective
+----------------------
+
+To get things started, we have to prepare an initialised OpenPGP smart
+card by uploading an off-card key or generating a key on the card.
+The card you got may already have been initialised.  Otherwise, you
+can find more information on this step in the smartcard HowTo, which
+also documents other basic card operations:
+http://www.gnupg.org/(en)/howtos/card-howto/en/smartcard-howto.html
+
+Once the card is initialised, we have to generate a certificate
+signing request (CSR) to get the authentication key of the card
+(OPENPGP.3, the third key on the card) certified by the CA.  This can
+be done with the script "gpgsm-gencert.sh".  For the CSR, a
+distinguished name (DN) is required.  Your CA will have more
+information about what this DN should contain.  Below we use an
+example for a test-employee "Floppy Head" of the test-CA that ships
+with OpenSSL ("Snake Oil, Ltd.").
+
+Generating the CSR is then just a matter of answering a few questions:
+
+$ gpgsm-gencert.sh > /tmp/floppy.csr
+Key type
+ [1] RSA
+ [2] existing key
+ [3] OPENPGP.1
+ [4] OPENPGP.3
+Your selection: 4
+You selected: OPENPGP.3
+Key usage
+ [1] sign, encrypt
+ [2] sign
+ [3] encrypt
+Your selection: 2
+You selected: sign
+Name (DN)
+> CN=Floppy Head,OU=Webserver Team,O="Snake Oil, Ltd",L=Snake Town,ST=Snake Desert,C=XY
+E-Mail addresses (end with an empty line)
+> floppy@head.com
+E-Mail addresses (end with an empty line)
+>
+DNS Names (optional; end with an empty line)
+>
+URIs (optional; end with an empty line)
+>
+Parameters for certificate request to create:
+     1  Key-Type: card:OPENPGP.3
+     2  Key-Length: 
+     3  Key-Usage: sign
+     4  Name-DN: CN=Floppy Head,OU=Webserver Team,O="Snake Oil, Ltd",L=Snake Town,ST=Snake Desert,C=XY
+     5  Name-Email: floppy@head.com
+
+Really create such a CSR?
+ [1] yes
+ [2] no
+Your selection: 1
+You selected: yes
+gpgsm: certificate request created
+
+It is required to enter the signing PIN of the card to complete this
+step.  The certificate can then be found in the file "/tmp/floppy.csr".
+This file should then be sent to the CA for certification (see below).
+
+The CA will return to the client a certificate "/tmp/floppy.crt", who
+can then the issuer certificate of the CA (in this example, we access
+directly the local server certificate) and its own certificate with
+gpgsm:
+
+$ gpgsm --import /etc/apache/ssl.crt/snakeoil-ca-rsa.crt
+gpgsm: total number processed: 1
+gpgsm:               imported: 1
+marcus@ulysses:~/g10/projects/pkcs11-for-scdaemon/ca/usercert/card3$ gpgsm --import /tmp/floppy.crt
+gpgsm: total number processed: 1
+gpgsm:              unchanged: 1
+
+$ gpgsm --list-keys Floppy
+Serial number: 08
+       Issuer: /CN=Snake Oil CA/OU=Certificate Authority/O=Snake Oil, Ltd/L=Snake Town/ST=Snake Desert/C=XY/EMail=ca@snakeoil.dom
+      Subject: /CN=Floppy Head/OU=Webserver Team/O=Snake Oil, Ltd/ST=Snake Desert/C=XY
+     validity: 2006-10-11 13:17:08 through 2007-10-11 13:17:08
+     key type: 1024 bit RSA
+  fingerprint: C9:08:0E:86:92:6C:7B:4B:8C:23:1C:9D:D7:15:BF:D4:A4:00:54:11
+
+Now the client can configure his web browser.  If desired, the client
+can install the web servers certificate (alternatively, Firefox will
+ask when establishing the initial connection).
+
+To actually perform the client authentication, the client needs to set
+up the web browser for use with Scute.  The Scute PKCS #11 module,
+installed under /usr/lib/libscute.so by default, needs to be loaded as
+a security device in Firefox under
+Preferences->Advanced->Security->Certificates->Security Devices->Load
+When the security device is loaded, card insertion should cause the
+security device list be updated with the inserted token (the card), and the certificate that has been imported into gpgsm should be visible under 
+Preferences->Advanced->Security->Certificates->View Certificates
+automatically.
+
+Firefox will by default select the certificate to be used for client
+authentication automatically from the list of available certificates.
+This setting can be changed if desired in
+Preferences->Advanced->Security->Certificates ("Select one
+automatically" vs. "Ask me every time")
+
+When the client then attempts to open the URL "https://localhost/" in
+this example, the web server will require SSL authentication, which
+causes Firefox to look (or ask) for a client certificate.  If the
+certificate on the card is suitable (or selected), the user will have
+to enter the PIN number on the card to sign into the web site.
+
+
+The CA Perspective
+------------------
+
+The CA will have to process the CSR submitted by the client.  After
+verifying the identity of the submitter by some external means, the CA
+may use for example this OpenSSL command to create a certificate (we
+use the example CA shipping with the Apache SSL module on Ubuntu):
+
+# cd /etc/apache/ssl.crt/
+# openssl ca -in /tmp/floppy.csr -cert /etc/apache/ssl.crt/snakeoil-ca-rsa.crt -keyfile /etc/apache/ssl.key/snakeoil-ca-rsa.key -out /tmp/floppy.crt
+Using configuration from /usr/lib/ssl/openssl.cnf
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 8 (0x8)
+        Validity
+            Not Before: Oct 11 13:17:08 2006 GMT
+            Not After : Oct 11 13:17:08 2007 GMT
+        Subject:
+            countryName               = XY
+            stateOrProvinceName       = Snake Desert
+            organizationName          = Snake Oil, Ltd
+            organizationalUnitName    = Webserver Team
+            commonName                = Floppy Head
+        X509v3 extensions:
+            X509v3 Basic Constraints:
+                CA:FALSE
+            Netscape Comment:
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier:
+                72:AF:B8:13:3D:3D:9D:02:93:E4:D4:56:0C:06:90:4C:26:85:85:5D
+            X509v3 Authority Key Identifier:
+                DirName:/C=XY/ST=Snake Desert/L=Snake Town/O=Snake Oil, Ltd/OU=Certificate Authority/CN=Snake Oil CA/emailAddress=ca@snakeoil.dom
+                serial:00
+
+Certificate is to be certified until Oct 11 13:17:08 2007 GMT (365 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+
+The resulting file, "/tmp/floppy.crt" is sent back from the CA to the
+client along with the issuer certificate.
+
+For more information how to set up and work with a CA using OpenSSL,
+please see the OpenSSL documentation.
+
+The Server Perspective
+----------------------
+
+The service provider will set up an Apache web server with SSL
+support, and configure it to accept certificates from the CA.  This
+step is quite involved.  Garex has a concise HowTo online at
+http://www.garex.net/apache/ about how to do this.  Beside the
+creation of a certificate that has its own fully qualified domain name
+(FQDN) as common name (CN part of the DN), this involves installing
+the Apache SSL module and configuration for it, for example in
+httpd.conf:
+
+SSLEngine on
+SSLCertificateFile /etc/apache/ssl.crt/server.crt
+SSLCertificateKeyFile /etc/apache/ssl.key/server.key
+
+SSLVerifyClient require
+SSLVerifyDepth 1
+SSLCACertificateFile /etc/apache/ssl.crt/snakeoil-ca-rsa.crt
+
+The file server.key is not protected by a passphrase (if it is, this
+passphrase needs to be provided when starting up Apache), and
+server.crt has "CN=localhost" as part of its DN for this example.
+
+
+Features and Limitations
+========================
+
+Scute implements version 2.20 of the PKCS #11 specification.
+
+The OpenPGP smart card application is supported in read-only mode.
+
+The following functions are not supported:
+
+* C_Initialize: No support for native thread package.  Locking
+  callbacks must be provided if multi-threaded operation is desired.
+
+* C_WaitForSlotEvent: Not implemented.  The interface as specified by
+  PKCS #11 is broken anyway, as the function can not safely be
+  canceled.  Thus, we require polling.
+
+* C_GetOperationState, C_SetOperationState: Not supported.
+
+* C_InitToken, C_InitPIN, C_SetPIN: Not supported.  No write
+  operations are allowed.  To configure the token, please use the
+  tools accompanying the GnuPG software suite.
+
+* C_Login, C_Logout: Not supported.  No login into the token by the
+  software is required.  Passphrase queries are implemented by the use
+  of GPG Agent and Pinentry.
+
+* C_EncryptInit, C_Encrypt, C_EncryptUpdate, C_EncryptFinal,
+  C_DigestInit, C_Digest, C_DigestUpdate, C_DigestKey, C_DigestFinal,
+  C_VerifyInit, C_Verify, C_VerifyUpdate, C_VerifyFinal,
+  C_VerifyRecoverInit, C_VerifyRec: Not supported.  Only secret key
+  operations are supported.
+
+* C_SignInit, C_Sign: Currently, only signing 36 bytes
+  (MD5+SHA1) hashes is supported (used for client authentication).
+
+* C_DecryptInit, C_Decrypt: Not yet supported, but will be in the
+  future.
+
+* C_SignUpdate, C_SignFinal, C_DecryptUpdate, C_DecryptFinal: No
+  progressive crypto-operations are supported.
+
+* C_SignRecoverInit, C_SignRecover: Not supported.
+
+* C_DigestEncryptUpdate, C_DecryptDigestUpdate, C_SignEncryptUpdate,
+  C_DecryptVerifyUpdate: Dual-purpose cryptographic functions are not
+  supported.
+
+* C_GenerateKey, C_GenerateKeyPair, C_WrapKey, C_UnwrapKey,
+  C_DeriveKey: Key management functions are not supported.  Please use
+  the tools accompanying the GnuPG software suite to generate and
+  import keys for use with the token.
+
+* C_SeedRandom, C_GenerateRandom: Not supported at this point.
+  C_GenerateRandom may be supported in the future, though.
+
+* C_CreateObject, C_CopyObject, C_DestroyObject, C_SetAttributeValue:
+  Only read-only operations are supported on objects.
+
+* C_GetObjectSize: Not supported.
+
+* CKO_CERTIFICATE:
+  The label specifies the key on the card used (e.g. OPENPGP.3).  The
+  ID is the fingerprint.
+
+* CKO_PRIVATE_KEY:
+  The CKA_LOCAL attribute can not be supported by the OpenPGP card.
+  It is always set to false (as the key on the card may be copied to
+  the card from an external source).
+
+
+Development
+===========
+
+Scute is single-threaded.  There is a global lock that is taken in all
+entry points of Scute, except for C_Initialize, C_Finalize,
+C_GetFunctionList, and stubs.
+
+
+Here are a couple of hints on how to develop PKCS #11 modules for
+Mozilla:
+
+libopensc2 ships with a pkcs11-spy library that can be loaded as a
+wrapper around the PKCS #11 library you want to use to log all
+functions invoked by Mozilla.  Here is how to use it:
+
+ Set the PKCS11SPY_OUTPUT environment variable to a filename.
+ pkcs11-spy appends its log messages at the end of this file.  Set the
+ PKCS11SPY environment variable to the filename of the PKCS #11 module
+ you actually want to use.  Start Mozilla within this environment.
+
+There is a different, probably more powerful way to debug Mozilla PKCS
+#11 libraries.  However, to be able to use it, you need to configure
+and compile the Mozilla NSS sources with --enable-debug.  Instructions
+can be found at:
+http://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html
+
+Here are a couple of links to more information about implementing a
+PKCS #11 module for Mozilla:
+
+Implementing PKCS #11 for the Netscape Security Library
+(Caution: The content may be out of date)
+http://docs.sun.com/source/816-6150-10/index.htm
+http://docs.sun.com/source/816-6150-10/pkcs.htm
+
+Common PKCS #11 Implementation Problems
+http://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
+
+PKCS #11 Conformance Testing
+http://www.mozilla.org/projects/security/pki/pkcs11/
+
+And of course the Mozilla NSS web page:
+http://www.mozilla.org/projects/security/pki/nss/
+
+
+Mozilla Bugs
+============
+
+Mozilla has a bug that causes the security devices list to become
+corrupt when a security device is unloaded: The wrong entry is removed
+from the list.  This is corrected by waiting for a refresh or closing
+and reopening the security device manager.
+
+
+Copyright and License
+=====================
+
+The majority of files are copyrighted by g10 Code GmbH and licensed
+under the GPL with a special exception for Mozilla.
+
+Some files in the include/ directory are copyrighted by RSA Security
+Inc. and licensed under the conditions found in the file
+include/disclaimer.txt.
+
+
+g10 Code GmbH
+marcus@g10code.com
+
+
+ Copyright 2006 g10 Code GmbH
+
+ This file is free software; as a special exception the author gives
+ unlimited permission to copy and/or distribute it, with or without
+ modifications, as long as this notice is preserved.
+
+ This file is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

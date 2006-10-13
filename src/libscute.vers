@@ -1,0 +1,110 @@
+# libscute.vers - List of symbols to export.
+# Copyright (C) 2002, 2004, 2005, 2006 g10 Code GmbH
+#
+# This file is part of Scute[1].
+#
+# [1] Derived from the RSA Security Inc. PKCS #11 Cryptographic Token
+# Interface (Cryptoki).
+#
+# Scute is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Scute is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Scute; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
+# In addition, as a special exception, g10 Code GmbH gives permission
+# to link this library: with the Mozilla Fondations's code for
+# Mozilla (or with modified versions of it that use the same license
+# as the "Mozilla" code), and distribute the linked executables.  You
+# must obey the GNU General Public License in all respects for all of
+# the code used other than "Mozilla".  If you modify this file, you
+# may extend this exception to your version of the file, but you are
+# not obligated to do so.  If you do not wish to do so, delete this
+# exception statement from your version.
+
+#----------------------------------------------------------
+# Please remember to add new functions also to scute.def
+#----------------------------------------------------------
+
+SCUTE_1.0 {
+  global:
+    C_CancelFunction;
+    C_CloseAllSessions;
+    C_CloseSession;
+    C_CopyObject;
+    C_CreateObject;
+    C_Decrypt;
+    C_DecryptDigestUpdate;
+    C_DecryptFinal;
+    C_DecryptInit;
+    C_DecryptUpdate;
+    C_DecryptVerifyUpdate;
+    C_DeriveKey;
+    C_DestroyObject;
+    C_Digest;
+    C_DigestEncryptUpdate;
+    C_DigestFinal;
+    C_DigestInit;
+    C_DigestKey;
+    C_DigestUpdate;
+    C_Encrypt;
+    C_EncryptFinal;
+    C_EncryptInit;
+    C_EncryptUpdate;
+    C_Finalize;
+    C_FindObjects;
+    C_FindObjectsFinal;
+    C_FindObjectsInit;
+    C_GenerateKey;
+    C_GenerateKeyPair;
+    C_GenerateRandom;
+    C_GetAttributeValue;
+    C_GetFunctionList;
+    C_GetFunctionStatus;
+    C_GetInfo;
+    C_GetMechanismInfo;
+    C_GetMechanismList;
+    C_GetObjectSize;
+    C_GetOperationState;
+    C_GetSessionInfo;
+    C_GetSlotInfo;
+    C_GetSlotList;
+    C_GetTokenInfo;
+    C_InitPIN;
+    C_InitToken;
+    C_Initialize;
+    C_Login;
+    C_Logout;
+    C_OpenSession;
+    C_SeedRandom;
+    C_SetAttributeValue;
+    C_SetOperationState;
+    C_SetPIN;
+    C_Sign;
+    C_SignEncryptUpdate;
+    C_SignFinal;
+    C_SignInit;
+    C_SignRecover;
+    C_SignRecoverInit;
+    C_SignUpdate;
+    C_UnwrapKey;
+    C_Verify;
+    C_VerifyFinal;
+    C_VerifyInit;
+    C_VerifyRecover;
+    C_VerifyRecoverInit;
+    C_VerifyUpdate;
+    C_WaitForSlotEvent;
+    C_WrapKey;
+  local:
+    *;
+
+};

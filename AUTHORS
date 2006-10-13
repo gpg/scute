@@ -1,0 +1,24 @@
+Package: scute
+Maintainer: Marcus Brinkmann <marcus@g10code.com>
+Bug reports: marcus@g10code.com
+Security related bug reports: security@gnupg.org
+
+
+g10 Code GmbH <code@g10code.com>
+ - Design and implementation
+
+RSA Security Inc.
+ - "RSA Security Inc. PKCS #11 Cryptographic Token Interface (Cryptoki)"
+   e.g. include/cryptoki-generic.h, include/cryptoki-w32.h,
+   include/pkcs11.h, include/pkcs11f.h and include/pkcs11t.h
+
+
+ Copyright 2006 g10 Code GmbH
+
+ This file is free software; as a special exception the author gives
+ unlimited permission to copy and/or distribute it, with or without
+ modifications, as long as this notice is preserved.
+
+ This file is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
