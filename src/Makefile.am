@@ -51,7 +51,7 @@ libscute_la_SOURCES = cryptoki.h debug.h settings.h support.h		\
 	locking.h locking.c error-mapping.h error-mapping.c		\
 	agent.h agent.c							\
 	slots.h slots.c table.h table.c					\
-	cert.h cert-gpgsm.c cert-object.c gpgsm.c			\
+	cert.h cert-gpgsm.c cert-object.c gpgsm.h gpgsm.c		\
 	p11-cancelfunction.c p11-closeallsessions.c p11-closesession.c	\
 	p11-copyobject.c p11-createobject.c p11-decrypt.c		\
 	p11-decryptdigestupdate.c p11-decryptfinal.c p11-decryptinit.c	\

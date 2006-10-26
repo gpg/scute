@@ -225,11 +225,6 @@ void scute_slots_finalize (void)
 }
 
 
-/* FIXME */
-gpg_error_t
-gpgsm_get_cert (char *grip, CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp,
-		CK_ATTRIBUTE_PTR *prv_attrp, CK_ULONG *prv_attr_countp);
-
 static void
 object_free (struct object *objp)
 {
@@ -306,11 +301,11 @@ slots_update_slot (slot_iterator_t id)
       objects[1].dummy = DUMMY_PTR;
 
       /* FIXME: Should be grip3.  */
-      err = gpgsm_get_cert (slot->info.grip3,
-			    &objects[0].attributes,
-			    &objects[0].attributes_count,
-			    &objects[1].attributes,
-			    &objects[1].attributes_count);
+      err = scute_gpgsm_get_cert (slot->info.grip3,
+				  &objects[0].attributes,
+				  &objects[0].attributes_count,
+				  &objects[1].attributes,
+				  &objects[1].attributes_count);
       if (err)
 	return scute_gpg_err_to_ck (err);
 

@@ -1,4 +1,4 @@
-/* gpgsm.c - Talking to gpgsm.
+/* gpgsm.h - Interface for talking to gpgsm.
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute[1].
@@ -30,63 +30,14 @@
    not obligated to do so.  If you do not wish to do so, delete this
    exception statement from your version.  */
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef GPGSM_H
+#define GPGSM_H	1
 
-#include <assert.h>
-#include <locale.h>
-#include <errno.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
-
-#include <assuan.h>
 #include <gpg-error.h>
 
 #include "cryptoki.h"
-#include "support.h"
-#include "cert.h"
 
 
-struct search
-{
-  bool found;
-  CK_ATTRIBUTE_PTR *attrp;
-  CK_ULONG *attr_countp;
-  CK_ATTRIBUTE_PTR *prv_attrp;
-  CK_ULONG *prv_attr_countp;
-};
-
-
-static gpg_error_t
-search_cb (void *hook, struct cert *cert)
-{
-  struct search *ctx = hook;
-  gpg_error_t err;
-  
-  /* FIXME: Support more than one certificate.  */
-  if (ctx->found)
-    return 0;
-
-  /* Turn this into a certificate object.  */
-  err = scute_attr_cert (cert, ctx->attrp, ctx->attr_countp);
-  if (err)
-    return err;
-
-  err = scute_attr_prv (cert, ctx->prv_attrp, ctx->prv_attr_countp);
-  if (err)
-    {
-      scute_attr_free (*ctx->attrp, *ctx->attr_countp);
-      *ctx->attrp = NULL;
-      *ctx->attr_countp = 0;
-    }
-
-  ctx->found = true;
-  return err;
-}
-
-
 /* Create the attributes required for a new certificate object.
    Returns allocated attributes for the certificate object in ATTRP
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
@@ -95,22 +46,5 @@ gpg_error_t
 scute_gpgsm_get_cert (char *grip,
 		      CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp,
 		      CK_ATTRIBUTE_PTR *prv_attrp, CK_ULONG *prv_attr_countp)
-{
-  gpg_error_t err;
-  struct search search;
 
-  *attrp = NULL;
-  *attr_countp = 0;
-  *prv_attrp = NULL;
-  *prv_attr_countp = 0;
-
-  search.found = false;
-  search.attrp = attrp;
-  search.attr_countp = attr_countp;
-  search.prv_attrp = prv_attrp;
-  search.prv_attr_countp = prv_attr_countp;
-
-  err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
-  
-  return err;
-}
+#endif	/* GPGSM_H */

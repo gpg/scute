@@ -1,5 +1,12 @@
 2006-10-26  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/gpgsm.c (gpgsm_get_cert): Rename to ...
+	(scute_gpgsm_get_cert): ... this.
+	* src/gpgsm.h: New file.
+	* src/Makefile.am (libscute_la_SOURCES): Add gpgsm.h.
+	* src/slots.c (gpgsm_get_cert): Remove prototype.
+	(slots_update_slot): Call scute_gpgsm_get_cert, not gpgsm_get_cert.
+
 	* src/error-mapping.c (scute_gpg_err_to_ck): Map GPG_ERR_NO_AGENT
 	to CKR_GENERAL_ERROR.
 	* src/agent.h (struct agent_card_info_s): Remove member error.
