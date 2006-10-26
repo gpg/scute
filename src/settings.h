@@ -44,9 +44,7 @@
 
 /* The version number of this library.  Defined by config.h.  */
 #if (! defined VERSION_MAJOR) || (! defined VERSION_MINOR)
-// #error Define VERSION_MAJOR and VERSION_MINOR in config.h.
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 0
+#error Define VERSION_MAJOR and VERSION_MINOR in config.h.
 #endif
 
 /* FIXME: The following should be queried from SCD, really.  */

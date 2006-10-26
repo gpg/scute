@@ -1,5 +1,8 @@
 2006-10-26  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/settings.h: Require VERSION_MAJOR and VERSION_MINOR to be
+	defined.
+
 	* src/p11-getinfo.c (CRYPTOKI_VERSION_MAJOR,
 	CRYPTOKI_VERSION_MINOR): Move macros to ...
 	* src/cryptoki.h (CRYPTOKI_VERSION_MAJOR, CRYPTOKI_VERSION_MINOR):
