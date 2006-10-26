@@ -117,7 +117,7 @@ static CK_FUNCTION_LIST function_list =
 CK_DEFINE_FUNCTION(CK_RV, C_GetFunctionList)
      (CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
 {
-  /* This is one of the few functions which does not need to take the
+  /* This is one of the few functions which do not need to take the
      global lock.  */
 
   if (ppFunctionList == NULL_PTR)

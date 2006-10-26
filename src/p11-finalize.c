@@ -43,7 +43,7 @@
 
 CK_DEFINE_FUNCTION(CK_RV, C_Finalize)(CK_VOID_PTR pReserved)
 {
-  /* This is one of the few functions which does not need to take the
+  /* This is one of the few functions which do not need to take the
      global lock.  */
 
   if (pReserved != NULL_PTR)

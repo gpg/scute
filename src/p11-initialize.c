@@ -52,7 +52,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
 {
   CK_RV err;
 
-  /* This is one of the few functions which does not need to take the
+  /* This is one of the few functions which do not need to take the
      global lock.  */
 
   /* Set the assuan error source, so that gpg_error_t becomes a valid
