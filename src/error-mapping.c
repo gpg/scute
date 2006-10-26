@@ -72,6 +72,9 @@ scute_gpg_err_to_ck (gpg_error_t err)
     case GPG_ERR_NO_ERROR:
       return CKR_OK;
 
+    case GPG_ERR_NO_AGENT:
+      return CKR_GENERAL_ERROR;
+
     case GPG_ERR_ENOMEM:
       return CKR_HOST_MEMORY;
 

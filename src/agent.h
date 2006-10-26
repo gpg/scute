@@ -1,4 +1,4 @@
-/* agent.c - Talking to gpg-agent.
+/* agent.h - Interface for talking to gpg-agent.
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute[1].
@@ -39,7 +39,6 @@
 /* The information structure for a smart card.  */
 struct agent_card_info_s 
 {
-  int error;		/* Private.  */
   char *serialno;	/* Malloced hex string.  */
   char *disp_name;	/* Malloced.  */
   char *disp_lang;	/* Malloced.  */
@@ -77,22 +76,32 @@ struct agent_card_info_s
 };
 
 
-/* Try to connect to the agent via socket or fork it off and work by
-   pipes.  Handle the server's initial greeting.  */
+/* Try to connect to the agent via socket.  Handle the server's
+   initial greeting.  */
 gpg_error_t scute_agent_initialize (void);
 
+/* Tear down the agent connection and release all associated
+   resources.  */
 void scute_agent_finalize (void);
 
+
+/* Check the agent status.  This returns 0 if a token is present,
+   GPG_ERR_CARD_REMOVED if no token is present, and an error code
+   otherwise.  */
+gpg_error_t scute_agent_check_status (void);
+
+
+/* Call the agent to learn about a smartcard.  */
+gpg_error_t scute_agent_learn (struct agent_card_info_s *info);
+
 /* Release the card info structure INFO.  */
-void agent_release_card_info (struct agent_card_info_s *info);
+void scute_agent_release_card_info (struct agent_card_info_s *info);
 
-/* Call the agent to learn about a smartcard.  */
-gpg_error_t agent_learn (struct agent_card_info_s *info);
 
-/* Call the agent to learn about a smartcard.  */
-gpg_error_t agent_check_status (void);
-
-gpg_error_t agent_sign (char *grip, unsigned char *data, int len,
-			unsigned char *sig_result, unsigned int *sig_len);
+/* Sign the data DATA of length LEN with the key GRIP and return the
+   signature in SIG_RESULT and SIG_LEN.  */
+gpg_error_t scute_agent_sign (char *grip, unsigned char *data, int len,
+			      unsigned char *sig_result,
+			      unsigned int *sig_len);
 
 #endif	/* AGENT_H */

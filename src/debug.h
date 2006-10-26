@@ -37,6 +37,8 @@
 
 #define DEBUG_PREFIX "scute: "
 
+/* FIXME: Eventually, we should control output with an environment
+   variable.  */
 #define DEBUG(format, ...) \
   fprintf (stderr, DEBUG_PREFIX "%s: " format "\n", __func__, ##__VA_ARGS__)
 

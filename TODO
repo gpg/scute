@@ -17,6 +17,7 @@
 
 * Missing features:
 ** Implement random number generation function C_GenerateRandom.
+** Add canonical gnupg logging module.
 
 * Standard ambiguities, or non-conformance in the applications:
 ** If the token is removed, the current sessions are closed.  If then

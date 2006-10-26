@@ -251,7 +251,7 @@ slots_update_slot (slot_iterator_t id)
 
   if (slot->token_present)
     {
-      err = agent_check_status ();
+      err = scute_agent_check_status ();
       if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
 	{
 	  /* FIXME: Reset the whole thing.  */
@@ -268,7 +268,7 @@ slots_update_slot (slot_iterator_t id)
 	      hurd_table_remove (&slot->objects, oidx);
 	    }
 	  
-	  agent_release_card_info (&slot->info);
+	  scute_agent_release_card_info (&slot->info);
 	  slot->token_present = false;
 	}
       else if (err)
@@ -279,7 +279,7 @@ slots_update_slot (slot_iterator_t id)
 
   /* At this point, the card was or is removed, and we need to reopen
      the session, if possible.  */
-  err = agent_learn (&slot->info);
+  err = scute_agent_learn (&slot->info);
 
   /* First check if this is really an OpenPGP card.  FIXME: Should
      probably report the error in a better way.  */
@@ -1069,7 +1069,7 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   /* FIXME: Who cares if they called sign init correctly.  */
   if (pSignature == NULL_PTR)
     {
-      err = agent_sign (NULL, NULL, 0, NULL, &sig_len);
+      err = scute_agent_sign (NULL, NULL, 0, NULL, &sig_len);
       if (err)
 	return scute_gpg_err_to_ck (err);
       *pulSignatureLen = sig_len;
@@ -1077,7 +1077,8 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     }
 
   sig_len = *pulSignatureLen;
-  err = agent_sign (slot->info.grip3, pData, ulDataLen, pSignature, &sig_len);
+  err = scute_agent_sign (slot->info.grip3, pData, ulDataLen,
+			  pSignature, &sig_len);
   /* FIXME: Oh well.  */
   if (gpg_err_code (err) == GPG_ERR_INV_ARG)
     return CKR_BUFFER_TOO_SMALL;

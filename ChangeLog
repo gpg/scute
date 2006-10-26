@@ -1,3 +1,18 @@
+2006-10-26  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/error-mapping.c (scute_gpg_err_to_ck): Map GPG_ERR_NO_AGENT
+	to CKR_GENERAL_ERROR.
+	* src/agent.h (struct agent_card_info_s): Remove member error.
+	Prefix external functions with scute_ if not already done so, also
+	for callers.
+	* src/agent.c: Include <stdarg.h>.  Replace one-letter variable
+	names by proper ones.  Replace assuan_error_t with gpg_error_t
+	everywhere.
+	(agent_connect, agent_simple_cmd, agent_configure): New functions.
+	(scute_agent_initialize): Use these new functions.
+	ing of common code.  Lots of cleanups.
+	(scute_agent_finalize): Clear agent_ctx.  Add debug message.
+
 2006-10-13  Werner Koch  <wk@g10code.com>
 
 	* src/cert-gpgsm.c (MAX_LINE_LEN): Increased.

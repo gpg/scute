@@ -39,43 +39,34 @@
 #include <locale.h>
 #include <errno.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <assuan.h>
 #include <gpg-error.h>
 
 #include "debug.h"
-#include "agent.h"
 #include "support.h"
+#include "agent.h"
 
 
 /* The global agent context.  */
 static assuan_context_t agent_ctx = NULL;
 
 
-/* Try to connect to the agent via socket or fork it off and work by
-   pipes.  Handle the server's initial greeting.  */
-gpg_error_t
-scute_agent_initialize (void)
+/* Establish a connection to a running GPG agent.  */
+static gpg_error_t
+agent_connect (assuan_context_t *ctx_r)
 {
-  assuan_error_t err = 0;
+  gpg_error_t err = 0;
   char *infostr;
-  char *p;
-  assuan_context_t ctx;
-  char *dft_display = NULL;
-  char *dft_ttyname = NULL;
-  char *dft_ttytype = NULL;
-  char *old_lc = NULL;
-  char *dft_lc = NULL;
+  char *ptr;
   int pid;
-  int prot;
-
-  if (agent_ctx)
-    return 0;
+  int protocol_version;
 
   infostr = getenv ("GPG_AGENT_INFO");
   if (!infostr)
     {
-      DEBUG ("no GPG agent detected");
+      DEBUG ("missing GPG_AGENT_INFO environment variable");
       return gpg_error (GPG_ERR_NO_AGENT);
     }
 
@@ -83,145 +74,164 @@ scute_agent_initialize (void)
   if (!infostr)
     return gpg_error_from_errno (errno);
 
-  if (!(p = strchr (infostr, ':')) || p == infostr)
+  if (!(ptr = strchr (infostr, ':')) || ptr == infostr)
     {
       DEBUG ("malformed GPG_AGENT_INFO environment variable");
       free (infostr);
       return gpg_error (GPG_ERR_NO_AGENT);
     }
-  *p++ = 0;
-  pid = atoi (p);
-  while (*p && *p != ':')
-    p++;
-  prot = *p ? atoi (p + 1) : 0;
-  if (prot != 1)
+  *(ptr++) = 0;
+  pid = atoi (ptr);
+  while (*ptr && *ptr != ':')
+    ptr++;
+  protocol_version = *ptr ? atoi (ptr + 1) : 0;
+  if (protocol_version != 1)
     {
-      DEBUG ("gpg-agent protocol version %d is not supported", prot);
+      DEBUG ("GPG agent protocol version '%d' not supported",
+	     protocol_version);
       free (infostr);
       return gpg_error (GPG_ERR_NO_AGENT);
     }
 
-  err = assuan_socket_connect (&ctx, infostr, pid);
+  err = assuan_socket_connect (ctx_r, infostr, pid);
   free (infostr);
   if (err)
     {
-      DEBUG ("can't connect to GPG agent: %s", assuan_strerror (err));
+      DEBUG ("cannot connect to GPG agent: %s", gpg_strerror (err));
       return gpg_error (GPG_ERR_NO_AGENT);
     }
-  agent_ctx = ctx;
 
-  err = assuan_transact (agent_ctx, "RESET",
-			 NULL, NULL, NULL, NULL, NULL, NULL);
+  return 0;
+}
+
+
+/* Send a simple command to the agent.  */
+static gpg_error_t 
+agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
+{
+  gpg_error_t err;
+  char *optstr;
+  va_list arg;
+  int res;
+
+  va_start (arg, fmt);
+  res = vasprintf (&optstr, fmt, arg);
+  va_end (arg);
+
+  if (res < 0)
+    return gpg_error_from_errno (errno);
+
+  err = assuan_transact (ctx, optstr, NULL, NULL, NULL, NULL, NULL, NULL);
+  if (err)
+    DEBUG ("gpg-agent command '%s' failed: %s", optstr, gpg_strerror (err));
+  free (optstr);
+      
+  return err;
+}
+  
+
+/* Configure the GPG agent at connection CTX.  */
+static gpg_error_t
+agent_configure (assuan_context_t ctx)
+{
+  gpg_error_t err = 0;
+  char *dft_display = NULL;
+  char *dft_ttyname = NULL;
+  char *dft_ttytype = NULL;
+#if defined(HAVE_SETLOCALE) && (defined(LC_CTYPE) || defined(LC_MESSAGES))
+  char *old_lc = NULL;
+  char *dft_lc = NULL;
+#endif
+
+  err = agent_simple_cmd (ctx, "RESET");
   if (err)
     return err;
 
   /* Set up display, terminal and locale options.  */
   dft_display = getenv ("DISPLAY");
   if (dft_display)
-    {
-      char *optstr;
-      if (asprintf (&optstr, "OPTION display=%s", dft_display) < 0)
-	err = gpg_error_from_errno (errno);
-      else
-	{
-	  err = assuan_transact (agent_ctx, optstr,
-				 NULL, NULL, NULL, NULL, NULL, NULL);
-	  free (optstr);
-	}
-    }
+    err = agent_simple_cmd (ctx, "OPTION display=%s", dft_display);
+  if (err)
+    return err;
+
   dft_ttyname = getenv ("GPG_TTY");
   if ((!dft_ttyname || !*dft_ttyname) && ttyname (0))
     dft_ttyname = ttyname (0);
-  if (!err)
-    {
-      if (dft_ttyname)
-	{
-	  char *optstr;
-	  if (asprintf (&optstr, "OPTION ttyname=%s", dft_ttyname) < 0)
-	    err = gpg_error_from_errno (errno);
-	  else
-	    {
-	      err = assuan_transact (agent_ctx, optstr,
-				     NULL, NULL, NULL, NULL, NULL, NULL);
-	      free (optstr);
-	    }
-	}
-    }
+  if (!dft_ttyname)
+    return 0;
+
+  err = agent_simple_cmd (ctx, "OPTION ttyname=%s", dft_ttyname);
+  if (err)
+    return err;
+
   dft_ttytype = getenv ("TERM");
-  if (!err && dft_ttyname && dft_ttytype)
-    {
-      char *optstr;
-      if (asprintf (&optstr, "OPTION ttytype=%s", dft_ttytype) < 0)
-	err = gpg_error_from_errno (errno);
-      else
-	{
-	  err = assuan_transact (agent_ctx, optstr,
-				 NULL, NULL, NULL, NULL, NULL, NULL);
-	  free (optstr);
-	}
-    }
+  if (dft_ttytype)
+    err = agent_simple_cmd (ctx, "OPTION ttytype=%s", dft_ttytype);
+  if (err)
+    return err;
+
+#if defined(HAVE_SETLOCALE) && defined(LC_CTYPE)
   old_lc = setlocale (LC_CTYPE, NULL);
-  if (!err && old_lc)
+  if (old_lc)
     {
       old_lc = strdup (old_lc);
       if (!old_lc)
-        err = gpg_error_from_errno (errno);
+	return gpg_error_from_errno (errno);
     }
   dft_lc = setlocale (LC_CTYPE, "");
-  if (!err && dft_ttyname && dft_lc)
-    {
-      char *optstr;
-      if (asprintf (&optstr, "OPTION lc-ctype=%s", dft_lc) < 0)
-	err = gpg_error_from_errno (errno);
-      else
-	{
-	  err = assuan_transact (agent_ctx, optstr,
-				 NULL, NULL, NULL, NULL, NULL, NULL);
-	  free (optstr);
-	}
-    }
-#if defined(HAVE_SETLOCALE) && defined(LC_CTYPE)
-  if (!err && old_lc)
+  if (dft_lc)
+    err = agent_simple_cmd ("OPTION lc-ctype=%s", dft_lc);
+  if (old_lc)
     {
       setlocale (LC_CTYPE, old_lc);
       free (old_lc);
     }
 #endif
+  if (err)
+    return err;
 
+#if defined(HAVE_SETLOCALE) && defined(LC_MESSAGES)
   old_lc = setlocale (LC_MESSAGES, NULL);
-  if (!err && old_lc)
+  if (old_lc)
     {
       old_lc = strdup (old_lc);
       if (!old_lc)
-        err = gpg_error_from_errno (errno);
+	err = gpg_error_from_errno (errno);
     }
   dft_lc = setlocale (LC_MESSAGES, "");
-  if (!err && dft_ttyname && dft_lc)
-    {
-      char *optstr;
-      if (asprintf (&optstr, "OPTION lc-messages=%s", dft_lc) < 0)
-	err = gpg_error_from_errno (errno);
-      else
-	{
-	  err = assuan_transact (agent_ctx, optstr,
-				 NULL, NULL, NULL, NULL, NULL, NULL);
-	  free (optstr);
-	}
-    }
-#if defined(HAVE_SETLOCALE) && defined(LC_MESSAGES)
-  if (!err && old_lc)
+  if (dft_lc)
+    err = agent_simple_cmd ("OPTION lc-messages=%s", dft_lc);
+  if (old_lc)
     {
       setlocale (LC_MESSAGES, old_lc);
       free (old_lc);
     }
 #endif
 
-  if (err)
+  return err;
+}
+
+
+/* Try to connect to the agent via socket.  Handle the server's
+   initial greeting.  */
+gpg_error_t
+scute_agent_initialize (void)
+{
+  gpg_error_t err = 0;
+
+  if (agent_ctx)
     {
-      /* Setting some options failed.  Tear down the agent
-	 connection.  */
-      assuan_disconnect (agent_ctx);
+      DEBUG ("GPG Agent connection already established");
+      return 0;
     }
+
+  err = agent_connect (&agent_ctx);
+  if (err)
+    return err;
+
+  err = agent_configure (agent_ctx);
+  if (err)
+    scute_agent_finalize ();
 
   return err;
 }
@@ -232,53 +242,61 @@ scute_agent_initialize (void)
    silently be replaced by a 0xFF.  Function returns NULL to indicate
    an out of memory status.  */
 static char *
-unescape_status_string (const unsigned char *s)
+unescape_status_string (const unsigned char *src)
 {
-  char *buffer, *d;
+  char *buffer;
+  char *dst;
 
-  buffer = d = malloc (strlen (s) + 1);
+  buffer = malloc (strlen (src) + 1);
   if (!buffer)
     return NULL;
-  while (*s)
+
+  dst = buffer;
+  while (*src)
     {
-      if (*s == '%' && s[1] && s[2])
+      if (*src == '%' && src[1] && src[2])
         { 
-          s++;
-          *d = xtoi_2 (s);
-          if (!*d)
-            *d = '\xff';
-          d++;
-          s += 2;
+          src++;
+          *dst = xtoi_2 (src);
+          if (*dst == '\0')
+            *dst = '\xff';
+          dst++;
+          src += 2;
         }
-      else if (*s == '+')
+      else if (*src == '+')
         {
-          *d++ = ' ';
-          s++;
+          *(dst++) = ' ';
+          src++;
         }
       else
-        *d++ = *s++;
+        *(dst++) = *(src++);
     }
-  *d = 0; 
+  *dst = 0; 
+
   return buffer;
 }
 
 
 /* Take a 20 byte hexencoded string and put it into the the provided
-   20 byte buffer FPR in binary format.  */
+   20 byte buffer FPR in binary format.  Returns true if successful,
+   and false otherwise.  */
 static int
 unhexify_fpr (const char *hexstr, unsigned char *fpr)
 {
-  const char *s;
-  int n;
+  const char *src;
+  int cnt;
 
-  for (s = hexstr, n = 0; hexdigitp (s); s++, n++)
+  /* Check for invalid or wrong length.  */
+  for (src = hexstr, cnt = 0; hexdigitp (src); src++, cnt++)
     ;
-  if ((*s && !spacep (s)) || (n != 40))
-    return 0;	/* No fingerprint (invalid or wrong length).  */
-  n /= 2;
-  for (s = hexstr, n = 0; *s && !spacep (s); s += 2, n++)
-    fpr[n] = xtoi_2 (s);
-  return 1; /* Okay.  */
+  if ((*src && !spacep (src)) || (cnt != 40))
+    return 0;
+
+  cnt /= 2;
+  for (src = hexstr, cnt = 0; *src && !spacep (src); src += 2, cnt++)
+    fpr[cnt] = xtoi_2 (src);
+
+  return 1;
 }
 
 
@@ -288,24 +306,26 @@ unhexify_fpr (const char *hexstr, unsigned char *fpr)
 static char *
 store_serialno (const char *line)
 {
-  const char *s;
-  char *p;
+  const char *src;
+  char *ptr;
 
-  for (s = line; hexdigitp (s); s++)
+  for (src = line; hexdigitp (src); src++)
     ;
-  p = malloc (s + 1 - line);
-  if (p)
+  ptr = malloc (src + 1 - line);
+
+  if (ptr)
     {
-      memcpy (p, line, s-line);
-      p[s-line] = 0;
+      memcpy (ptr, line, src - line);
+      ptr[src - line] = 0;
     }
-  return p;
+
+  return ptr;
 }
 
 
 /* Release the card info structure INFO.  */
 void
-agent_release_card_info (struct agent_card_info_s *info)
+scute_agent_release_card_info (struct agent_card_info_s *info)
 {
   if (!info)
     return;
@@ -321,7 +341,7 @@ agent_release_card_info (struct agent_card_info_s *info)
 
 
 /* FIXME: We are not returning out of memory errors.  */
-static assuan_error_t
+static gpg_error_t
 learn_status_cb (void *opaque, const char *line)
 {
   struct agent_card_info_s *parm = opaque;
@@ -474,9 +494,9 @@ learn_status_cb (void *opaque, const char *line)
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
-agent_learn (struct agent_card_info_s *info)
+scute_agent_learn (struct agent_card_info_s *info)
 {
-  assuan_error_t err;
+  gpg_error_t err;
 
   memset (info, 0, sizeof (*info));
   err = assuan_transact (agent_ctx, "LEARN --send",
@@ -486,7 +506,7 @@ agent_learn (struct agent_card_info_s *info)
 }
 
 
-static assuan_error_t
+static gpg_error_t
 read_status_cb (void *opaque, const void *buffer, size_t length)
 {
   char *flag = opaque;
@@ -500,11 +520,13 @@ read_status_cb (void *opaque, const void *buffer, size_t length)
 }
 
 
-/* Call the agent to learn about a smartcard.  */
+/* Check the agent status.  This returns 0 if a token is present,
+   GPG_ERR_CARD_REMOVED if no token is present, and an error code
+   otherwise.  */
 gpg_error_t
-agent_check_status (void)
+scute_agent_check_status (void)
 {
-  assuan_error_t err;
+  gpg_error_t err;
   char flag = '-';
 
   err = assuan_transact (agent_ctx, "SCD GETINFO status",
@@ -528,11 +550,10 @@ struct signature
   int len;
 };
 
-static assuan_error_t
+static gpg_error_t
 pksign_cb (void *opaque, const void *buffer, size_t length)
 {
   struct signature *sig = opaque;
-  int i;
 
   if (sig->len + length > MAX_SIGNATURE_LEN)
     return gpg_error (GPG_ERR_BAD_DATA);
@@ -552,11 +573,11 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
-agent_sign (char *grip, unsigned char *data, int len,
-	    unsigned char *sig_result, unsigned int *sig_len)
+scute_agent_sign (char *grip, unsigned char *data, int len,
+		  unsigned char *sig_result, unsigned int *sig_len)
 {
   char cmd[150];
-  assuan_error_t err;
+  gpg_error_t err;
 #define MAX_DATA_LEN 36
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
@@ -617,6 +638,12 @@ agent_sign (char *grip, unsigned char *data, int len,
 void
 scute_agent_finalize (void)
 {
-  if (agent_ctx)
-    assuan_disconnect (agent_ctx);
+  if (!agent_ctx)
+    {
+      DEBUG ("no GPG Agent connection established");
+      return;
+    }
+
+  assuan_disconnect (agent_ctx);
+  agent_ctx = NULL;
 }
