@@ -33,6 +33,11 @@
 #ifndef _CRYPTOKI_H_
 #define _CRYPTOKI_H_	1
 
+/* The version of cryptoki we implement.  */
+#define CRYPTOKI_VERSION_MAJOR	2
+#define CRYPTOKI_VERSION_MINOR	20
+
+
 #define CK_DISABLE_TRUE_FALSE	1
 
 #ifdef HAVE_W32_SYSTEM

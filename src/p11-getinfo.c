@@ -40,11 +40,6 @@
 #include "settings.h"
 
 
-/* The version of cryptoki we implement.  */
-#define CRYPTOKI_VERSION_MAJOR	2
-#define CRYPTOKI_VERSION_MINOR	20
-
-
 CK_DEFINE_FUNCTION(CK_RV, C_GetInfo)(CK_INFO_PTR pInfo)
 {
   if (pInfo == NULL_PTR)

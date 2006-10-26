@@ -1,5 +1,10 @@
 2006-10-26  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/p11-getinfo.c (CRYPTOKI_VERSION_MAJOR,
+	CRYPTOKI_VERSION_MINOR): Move macros to ...
+	* src/cryptoki.h (CRYPTOKI_VERSION_MAJOR, CRYPTOKI_VERSION_MINOR):
+	... here
+
 	* src/gpgsm.c (gpgsm_get_cert): Rename to ...
 	(scute_gpgsm_get_cert): ... this.
 	* src/gpgsm.h: New file.
