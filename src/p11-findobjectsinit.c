@@ -50,6 +50,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsInit)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
   object_iterator_t object;
   object_iterator_t *search_result;
   int search_result_len = 0;
@@ -61,7 +62,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsInit)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
@@ -77,7 +78,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsInit)
     }
   search_result_len = 0;
 
-  err = objects_iterate_begin (slot, &object);
+  err = objects_iterate_first (slot, &object);
   if (err)
     {
       free (search_result);
@@ -124,16 +125,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsInit)
 	}
     }
 
-  /* Always call this after an iteration.  */
-  objects_iterate_end (slot, &object);
-
   if (err)
     {
       free (search_result);
       goto out;
     }
 
-  err = session_set_search_result (slot, hSession, search_result,
+  err = session_set_search_result (slot, session, search_result,
 				   search_result_len);
 
  out:

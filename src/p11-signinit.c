@@ -46,6 +46,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_SignInit)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
 
   if (pMechanism == NULL_PTR || pMechanism->mechanism != CKM_RSA_PKCS)
     return CKR_ARGUMENTS_BAD;
@@ -57,11 +58,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_SignInit)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
-  err = session_set_signing_key (slot, hSession, hKey);
+  err = session_set_signing_key (slot, session, hKey);
 
  out:
   scute_global_unlock ();

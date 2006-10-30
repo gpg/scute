@@ -1,5 +1,5 @@
-/* table.h - Table abstraction interface.
-   Copyright (C) 2004, 2006 Marcus Brinkmann
+/* table.h - Iterative table interface.
+   Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute[1].
 
@@ -30,200 +30,64 @@
    not obligated to do so.  If you do not wish to do so, delete this
    exception statement from your version.  */
 
-#ifndef _HURD_TABLE_H
-#define _HURD_TABLE_H	1
+#ifndef TABLE_H
+#define TABLE_H	1
 
-#include <errno.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <stdbool.h>
 
-
-/* The hurd_table data type is a fancy array.  At initialization time,
-   you have to provide the size ENTRY_SIZE of each table entry.  When
-   you enter an element, you get an index number in return.  This
-   index can be used for fast lookup of table elements.  You access
-   the table elements through pointers to the beginning of the each
-   block of ENTRY_SIZE bytes.
-
-   Embedded at the beginning of the ENTRY_SIZE bytes in each slot is a
-   void pointer.  You can use this void pointer freely for your own
-   purpose with the following restriction: In a used table entry, it
-   must never be NULL.  NULL at the beginning of a table entry
-   indicates an unused (free) table entry.
-
-   The table will grow (and eventually shrink, not yet implemented)
-   automatically.  New elements are always allocated from the
-   beginning of the table.  This means that when a new element is
-   added, the free slot with the lowest index is always used.  This
-   makes slot usage predictable and attempts to prevent fragmentation
-   and sparse usage.
-
-   Note that tables, unlike hashes, can not be reorganized, because
-   the index is not stable under reorganization.
-
-   Of all operations supported, only lookup is immediate.  Entering
-   new elements is usually fast, too, unless the first free slot is
-   unknown and has to be searched for, or there are no more free slots
-   and the table has to be enlarged.
-
-   Iterating over the used elements of the table is always
-   of the order of the table size.
-
-   In the future, removing an element can also shrink the table.  In
-   order to be able to do this, the implementation keeps track of the
-   last used slot.  For this reason, the remove operation is sometimes
-   not immediate.  */
+#include <gpg-error.h>
 
 
-/* Because the first element in each table entry is a pointer, the
-   table entry should be naturally aligned.  */
-#define _HURD_TABLE_ALIGN(x) \
-  (((x) + sizeof (void *) - 1) & ~(sizeof (void *) - 1))
+/* The indexed list type.  */
+struct scute_table;
+typedef struct scute_table *scute_table_t;
 
 
-/* The value used for empty table entries.  */
-#define HURD_TABLE_EMPTY	(NULL)
+/* TABLE interface.  */
 
-struct hurd_table
-{
-  /* The size of one entry.  Must at least be sizeof (void *).  At the
-     beginning of each entry, a void * should be present that is
-     HURD_TABLE_EMPTY for unused elements and something else for used
-     table elements.  */
-  unsigned int entry_size;
+/* A table entry allocator function callback.  Should return the new
+   table entry in DATA_R.  */
+typedef gpg_error_t (*scute_table_alloc_cb_t) (void **data_r, void *hook);
 
-  /* The number of allocated table entries.  */
-  unsigned int size;
+/* A table entry deallocator function callback.  */
+typedef void (*scute_table_dealloc_cb_t) (void *data);
 
-  /* The number of table entries that are initialized.  */
-  unsigned int init_size;
+/* Allocate a new table and return it in TABLE_R.  */
+gpg_error_t scute_table_create (scute_table_t *table_r,
+				scute_table_alloc_cb_t alloc,
+				scute_table_dealloc_cb_t dealloc);
 
-  /* The number of used table entries.  */
-  unsigned int used;
+/* Destroy the indexed list TABLE.  This also calls the deallocator on
+   all entries.  */
+void scute_table_destroy (scute_table_t table);
 
-  /* The index of the lowest entry that is unused.  */
-  unsigned int first_free;
+/* Allocate a new table entry with a free index.  Returns the index
+   pointing to the new list entry in INDEX_R.  This calls the
+   allocator on the new entry before returning.  Also returns the
+   table entry in *DATA_R if this is not NULL.  */
+gpg_error_t scute_table_alloc (scute_table_t table, int *index_r,
+			       void **data_r, void *hook);
 
-  /* The index after the highest entry that is used.  */
-  unsigned int last_used;
+/* Deallocate the list entry index.  Afterwards, INDEX points to the
+   following entry.  This calls the deallocator on the entry before
+   returning.  */
+void scute_table_dealloc (scute_table_t table, int *index);
 
-  /* The table data.  */
-  char *data;
-};
-typedef struct hurd_table *hurd_table_t;
+/* Return the index for the beginning of the list TABLE.  */
+int scute_table_first (scute_table_t table);
 
+/* Return the index following INDEX.  If INDEX is the last element in
+   the list, return 0.  */
+int scute_table_next (scute_table_t table, int index);
 
-#define HURD_TABLE_INITIALIZER(size_of_one)				\
-  { .entry_size = _HURD_TABLE_ALIGN (size_of_one), .size = 0,		\
-    .init_size = 0, .used = 0, .first_free = 0, .last_used = 0,		\
-    .data = NULL }
+/* Return true iff INDEX is the end-of-list marker.  */
+bool scute_table_last (scute_table_t table, int index);
 
-/* Fast accessor without range check.  */
-#define HURD_TABLE_LOOKUP(table, idx)					\
-  ((void *) (&(table)->data[(idx) * (table)->entry_size]))
+/* Return the user data associated with INDEX.  Return NULL if INDEX is
+   the end-of-list marker.  */
+void *scute_table_data (scute_table_t table, int index);
 
-/* For bound checks.  */
-#define HURD_TABLE_EXTENT(table)					\
-  ((table)->last_used)
+/* Return the number of entries in the table TABLE.  */
+int scute_table_used (scute_table_t table);
 
-/* For bound checks.  */
-#define HURD_TABLE_USED(table)						\
-  ((table)->used)
-
-/* This is an lvalue for the pointer embedded in the table entry.  */
-#define _HURD_TABLE_ENTRY(entry)	(*(void **) (entry))
-
-#define _HURD_TABLE_ENTRY_LOOKUP(table, idx)				\
-  _HURD_TABLE_ENTRY (HURD_TABLE_LOOKUP (table, idx))
-
-
-/* Initialize the table TABLE.  */
-error_t hurd_table_init (hurd_table_t table, unsigned int entry_size);
-
-
-/* Destroy the table TABLE.  */
-void hurd_table_destroy (hurd_table_t table);
-
-
-/* Add the table element DATA to the table TABLE.  The index for this
-   element is returned in R_IDX.  Note that the data is added by
-   copying ENTRY_SIZE bytes into the table (the ENTRY_SIZE parameter
-   was provided at table initialization time).  */
-error_t hurd_table_enter (hurd_table_t table, void *data, unsigned int *r_idx);
-
-
-/* Lookup the table element with the index IDX in the table TABLE.  If
-   there is no element with this index, return NULL.  Otherwise a
-   pointer to the table entry is returned.  */
-static inline void *
-hurd_table_lookup (hurd_table_t table, unsigned int idx)
-{
-  void *result;
-
-  if (idx >= table->init_size)
-    return NULL;
-
-  result = HURD_TABLE_LOOKUP (table, idx);
-  if (_HURD_TABLE_ENTRY (result) == HURD_TABLE_EMPTY)
-    return NULL;
-
-  return result;
-}
-
-
-/* Remove the table element with the index IDX from the table
-   TABLE.  */
-static inline void
-hurd_table_remove (hurd_table_t table, unsigned int idx)
-{
-  void *entry;
-
-  assert (idx < table->init_size);
-
-  entry = HURD_TABLE_LOOKUP (table, idx);
-  assert (_HURD_TABLE_ENTRY (entry) != HURD_TABLE_EMPTY);
-
-  _HURD_TABLE_ENTRY (entry) = HURD_TABLE_EMPTY;
-
-  if (idx < table->first_free)
-    table->first_free = idx;
-
-  if (idx + 1 == table->last_used)
-    while (table->last_used > 0)
-      {
-	if (_HURD_TABLE_ENTRY_LOOKUP (table, table->last_used - 1)
-	    != HURD_TABLE_EMPTY)
-	  break;
-	table->last_used--;
-      }
-
-  table->used--;
-}
-
-
-/* Iterate over all elements in the table.  You use this macro
-   with a block, for example like this:
-
-     error_t err;
-     HURD_TABLE_ITERATE (table, idx)
-       {
-         err = foo (idx);
-         if (err)
-           break;
-       }
-     if (err)
-       cleanup_and_return ();
-
-   Or even like this:
-
-     HURD_TABLE_ITERATE (ht, idx)
-       foo (idx);
-
-   The block will be run for every used element in the table.  Because
-   IDX is already a verified valid table index, you can lookup the
-   table entry with the fast macro HURD_TABLE_LOOKUP.  */
-#define HURD_TABLE_ITERATE(table, idx)					\
-  for (unsigned int idx = 0; idx < (table)->last_used; idx++)		\
-    if (_HURD_TABLE_ENTRY_LOOKUP ((table), (idx)) != HURD_TABLE_EMPTY)
-
-#endif	/* _HURD_TABLE_H */
+#endif	/* !TABLE_H */

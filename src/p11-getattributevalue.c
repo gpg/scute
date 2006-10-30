@@ -48,6 +48,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
   CK_ATTRIBUTE_PTR attr;
   CK_ULONG attr_count;
 
@@ -58,7 +59,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 

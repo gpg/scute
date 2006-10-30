@@ -52,6 +52,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)
   CK_RV err = CKR_OK;
   CK_ULONG count;
   slot_iterator_t slot;
+  session_iterator_t session;
   object_iterator_t *oids;
   int oids_len;
 
@@ -62,11 +63,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
-  err = session_get_search_result (slot, hSession, &oids, &oids_len);
+  err = session_get_search_result (slot, session, &oids, &oids_len);
   assert (!err);
 
   count = MIN (ulMaxObjectCount, oids_len);
@@ -74,7 +75,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)
 
   oids_len = oids_len - count;
   memmove (oids, oids + count, sizeof (CK_OBJECT_HANDLE) * oids_len);
-  err = session_set_search_result (slot, hSession, oids, oids_len);
+  err = session_set_search_result (slot, session, oids, oids_len);
   assert (!err);
 
   *pulObjectCount = count;

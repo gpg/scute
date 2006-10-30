@@ -1,3 +1,17 @@
+2006-10-30  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac (VERSION_MAJOR, VERSION_MINOR): New variable
+	definitions.
+	* src/gpgsm.h: Fix syntax error.
+	* src/table.c, src/table.h: Rewritten.
+	* src/slots.c: Reorganized and rewritten to use the new table
+	interface.  Include gpgsm.h.
+	* src/p11-signinit.c, src/p11-sign.c, src/p11-getslotlist.c,
+	src/p11-getsessioninfo.c, src/p11-getmechanismlist.c,
+	src/p11-getattributevalue.c, src/p11-findobjectsinit.c,
+	src/p11-findobjectsfinal.c, src/p11-findobjects.c,
+	src/p11-closesession.c: Adjust callers.
+
 2006-10-26  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/settings.h: Require VERSION_MAJOR and VERSION_MINOR to be

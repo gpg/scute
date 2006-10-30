@@ -46,6 +46,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
 
   if (pData == NULL_PTR || pulSignatureLen == NULL_PTR)
     return CKR_ARGUMENTS_BAD;
@@ -54,12 +55,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
   /* FIXME: Who cares if they called sign init correctly.  */
-  err = session_sign (slot, hSession, pData, ulDataLen,
+  err = session_sign (slot, session, pData, ulDataLen,
 		      pSignature, pulSignatureLen);
 
  out:

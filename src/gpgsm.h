@@ -42,9 +42,10 @@
    Returns allocated attributes for the certificate object in ATTRP
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
-gpg_error_t
-scute_gpgsm_get_cert (char *grip,
-		      CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp,
-		      CK_ATTRIBUTE_PTR *prv_attrp, CK_ULONG *prv_attr_countp)
+gpg_error_t scute_gpgsm_get_cert (char *grip,
+				  CK_ATTRIBUTE_PTR *attrp,
+				  CK_ULONG *attr_countp,
+				  CK_ATTRIBUTE_PTR *prv_attrp,
+				  CK_ULONG *prv_attr_countp);
 
 #endif	/* GPGSM_H */

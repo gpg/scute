@@ -47,16 +47,17 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsFinal)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
 
   err = scute_global_lock ();
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
-  err = session_set_search_result (slot, hSession, NULL, 0);
+  err = session_set_search_result (slot, session, NULL, 0);
 
  out:
   scute_global_unlock ();

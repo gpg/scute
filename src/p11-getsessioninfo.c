@@ -47,6 +47,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSessionInfo)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  session_iterator_t session;
   bool rw;
 
   if (pInfo == NULL_PTR)
@@ -56,7 +57,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSessionInfo)
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
@@ -66,11 +67,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSessionInfo)
 
   /* We have to re-lookup the session handle, as it might just have
      become invalid.  */
-  err = slots_lookup_session (hSession, &slot);
+  err = slots_lookup_session (hSession, &slot, &session);
   if (err)
     goto out;
 
-  rw = session_get_rw (slot, hSession);
+  rw = session_get_rw (slot, session);
   switch (slot_get_status (slot))
     {
     case SLOT_LOGIN_PUBLIC:

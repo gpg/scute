@@ -64,7 +64,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSlotList)
   /* Leave LEFT positive for the whole search when only counting.  */
   left = pSlotList ? *pulCount : 1;
   *pulCount = 0;
-  err = slots_iterate_begin (&slot);
+  err = slots_iterate_first (&slot);
   if (err)
     goto out;
 
@@ -82,9 +82,6 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSlotList)
 	}
       err = slots_iterate_next (&slot);
     }
-
-  /* Always call this after an iteration.  */
-  slots_iterate_end (&slot);
 
   if (err)
     goto out;

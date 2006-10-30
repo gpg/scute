@@ -63,7 +63,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetMechanismList)
   /* Leave LEFT positive for the whole search when only counting.  */
   left = pMechanismList ? *pulCount : 1;
   *pulCount = 0;
-  err = mechanisms_iterate_begin (slot, &mechanism);
+  err = mechanisms_iterate_first (slot, &mechanism);
   if (err)
     goto out;
 
@@ -78,9 +78,6 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetMechanismList)
 	}
       err = mechanisms_iterate_next (slot, &mechanism);
     }
-
-  /* Always call this after an iteration.  */
-  mechanisms_iterate_end (slot, &mechanism);
 
   if (err)
     goto out;

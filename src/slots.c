@@ -37,6 +37,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "cryptoki.h"
 #include "table.h"
@@ -44,6 +45,7 @@
 #include "slots.h"
 #include "agent.h"
 #include "support.h"
+#include "gpgsm.h"
 
 #include "debug.h"
 
@@ -78,25 +80,14 @@
 
 struct object
 {
-  /* Every table entry must start with a void pointer, but we don't
-     use it here.  */
-  void *dummy;
-
   CK_ATTRIBUTE_PTR attributes;
   CK_ULONG attributes_count;
 };
 
 
-/* The dummy pointer we use for table entries.  */
-#define DUMMY_PTR ((void *) 0xdeadbeef)
-
 /* A mechanism.  */
 struct mechanism
 {
-  /* Every table entry must start with a void pointer, but we don't
-     use it here.  */
-  void *dummy;
-
   CK_MECHANISM_TYPE type;
   CK_MECHANISM_INFO info;
 };
@@ -109,10 +100,6 @@ struct mechanism
 /* The session state.  */
 struct session
 {
-  /* Every table entry must start with a void pointer, but we don't
-     use it here.  */
-  void *dummy;
-
   /* True iff read-write session.  */
   bool rw;
 
@@ -135,10 +122,6 @@ typedef enum
 
 struct slot
 {
-  /* Every table entry must start with a void pointer, but we don't
-     use it here.  */
-  void *dummy;
-
   /* The slot status.  Starts out as 0 (pristine).  */
   slot_status_t status;
 
@@ -149,13 +132,13 @@ struct slot
   bool token_present;
 
   /* The supported mechanisms.  */
-  struct hurd_table mechanisms;
+  scute_table_t mechanisms;
 
   /* The sessions.  */
-  struct hurd_table sessions;
+  scute_table_t sessions;
 
   /* The objects on the token.  */
-  struct hurd_table objects;
+  scute_table_t objects;
 
   /* The info about the current token.  */
   struct agent_card_info_s info;
@@ -163,74 +146,257 @@ struct slot
 
 
 /* The slot table.  */
-static struct hurd_table slots = HURD_TABLE_INITIALIZER (sizeof (struct slot));
+static scute_table_t slots;
 
-/* We use one-based IDs.  */
-#define SLOT_ID_TO_IDX(id) (id - 1)
-#define SLOT_IDX_TO_ID(idx) (idx + 1)
+
+/* Deallocator for mechanisms.  */
+static void
+mechanism_dealloc (void *data)
+{
+  free (data);
+}
+
+
+/* Allocator for mechanisms.  The hook must be a pointer to a CK_FLAGS
+   that should be a combination of CKF_SIGN and/or CKF_DECRYPT.  */
+static gpg_error_t
+mechanism_alloc (void **data_r, void *hook)
+{
+  struct mechanism *mechanism;
+  CK_FLAGS *flags = hook;
+
+  mechanism = calloc (1, sizeof (*mechanism));
+  if (mechanism == NULL)
+    return gpg_error_from_syserror ();
+
+  /* Set some default values.  */
+  mechanism->type = CKM_RSA_PKCS;
+  mechanism->info.ulMinKeySize = 1024;
+  mechanism->info.ulMaxKeySize = 1024;
+  mechanism->info.flags = CKF_HW | (*flags);
+
+  *data_r = mechanism;
+
+  return 0;
+}
+
+
+static void
+object_dealloc (void *data)
+{
+  struct object *obj = data;
+
+  while (0 < obj->attributes_count--)
+    free (obj->attributes[obj->attributes_count].pValue);
+  free (obj->attributes);
+  free (obj);
+}
+
+
+/* Allocator for objects.  The hook is currently unused.  */
+static gpg_error_t
+object_alloc (void **data_r, void *hook)
+{
+  struct object *object;
+
+  object = calloc (1, sizeof (*object));
+  if (object == NULL)
+    return gpg_error_from_syserror ();
+
+  *data_r = object;
+
+  return 0;
+}
+
+
+static void
+session_dealloc (void *data)
+{
+  struct session *session = data;
+
+  if (session->search_result)
+    free (session->search_result);
+  free (session);
+}
+
+
+/* Allocator for sessions.  The hook is currently unused.  */
+static gpg_error_t
+session_alloc (void **data_r, void *hook)
+{
+  struct session *session;
+
+  session = calloc (1, sizeof (*session));
+  if (session == NULL)
+    return gpg_error_from_syserror ();
+
+  *data_r = session;
+
+  return 0;
+}
+
+
+/* Deallocator for slots.  */
+static void
+slot_dealloc (void *data)
+{
+  struct slot *slot = data;
+
+  scute_table_destroy (slot->sessions);
+  scute_table_destroy (slot->mechanisms);
+  scute_table_destroy (slot->objects);
+
+  free (slot);
+}
+
+
+/* Allocator for slots.  The hook does not indicate anything at this
+   point.  */
+static gpg_error_t
+slot_alloc (void **data_r, void *hook)
+{
+  gpg_error_t err;
+  struct slot *slot;
+  int idx;
+  CK_FLAGS flags;
+
+  slot = calloc (1, sizeof (*slot));
+  if (slot == NULL)
+    return gpg_error_from_syserror ();
+
+  err = scute_table_create (&slot->mechanisms, mechanism_alloc,
+			    mechanism_dealloc);
+  if (err)
+    goto slot_alloc_out;
+
+  /* Register the signing mechanism.  */
+  flags = CKF_SIGN;
+  err = scute_table_alloc (slot->mechanisms, &idx, NULL, &flags);
+  if (err)
+    goto slot_alloc_out;
+
+  err = scute_table_create (&slot->sessions, session_alloc, session_dealloc);
+  if (err)
+    goto slot_alloc_out;
+
+  err = scute_table_create (&slot->objects, object_alloc, object_dealloc);
+  if (err)
+    goto slot_alloc_out;
+
+  slot->status = SLOT_STATUS_USED;
+  slot->token_present = false;
+  slot->login = SLOT_LOGIN_PUBLIC;
+
+  *data_r = slot;
+
+ slot_alloc_out:
+  if (err)
+    slot_dealloc (slot);
+
+  return err;
+}
 
 
 /* Initialize the slot list.  */
 CK_RV
 scute_slots_initialize (void)
 {
-  /* FIXME: Implement this properly.  Ensure that we stay within SLOT_MAX.
-     Use a second slot for email?  */
-  error_t err;
-  unsigned int idx;
-  struct mechanism mechanism;
-  struct slot slot;
+  gpg_error_t err;
+  int slot_idx;
 
-  slot.dummy = DUMMY_PTR;
-  slot.status = SLOT_STATUS_USED;
-
-  slot.token_present = false;
-  slot.login = SLOT_LOGIN_PUBLIC;
-
-  hurd_table_init (&slot.sessions, sizeof (struct session));
-  hurd_table_init (&slot.mechanisms, sizeof (struct mechanism));
-
-  mechanism.dummy = DUMMY_PTR;
-  mechanism.type = CKM_RSA_PKCS;
-  mechanism.info.ulMinKeySize = 1024;
-  mechanism.info.ulMaxKeySize = 1024;
-  mechanism.info.flags = CKF_HW | CKF_SIGN;
-
-  err = hurd_table_enter (&slot.mechanisms, &mechanism, &idx);
+  err = scute_table_create (&slots, slot_alloc, slot_dealloc);
   if (err)
-    {
-      hurd_table_destroy (&slot.mechanisms);
-      hurd_table_destroy (&slot.sessions);
-      return scute_sys_to_ck (err);
-    }
+    return err;
 
-  hurd_table_init (&slot.objects, sizeof (struct object));
-
-  err = hurd_table_enter (&slots, &slot, &idx);
+  /* Allocate a new slot for authentication.  */
+  err = scute_table_alloc (slots, &slot_idx, NULL, NULL);
   if (err)
-    {
-      hurd_table_destroy (&slot.objects);
-      hurd_table_destroy (&slot.mechanisms);
-      hurd_table_destroy (&slot.sessions);
-      return scute_sys_to_ck (err);
-    }
+    scute_slots_finalize ();
 
-  return CKR_OK;
+  /* FIXME: Allocate a new slot for signing and decryption of
+     email.  */
+
+  return scute_gpg_err_to_ck (err);
 }
 
 
-void scute_slots_finalize (void)
+void
+scute_slots_finalize (void)
 {
-  /* FIXME FIXME FIXME: Implement this.  */
+  if (slots == NULL)
+    return;
+
+  /* This recursively releases all slots and any objects associated
+     with them.  */
+  scute_table_destroy (slots);
+
+  slots = NULL;
 }
 
-
+
+/* Reset the slot SLOT after the token has been removed.  */
 static void
-object_free (struct object *objp)
+slot_reset (slot_iterator_t id)
 {
-  while (0 < objp->attributes_count--)
-    free (objp->attributes[objp->attributes_count].pValue);
-  free (objp->attributes);
+  struct slot *slot = scute_table_data (slots, id);
+  int oid;
+
+  /* This also resets the login state.  */
+  slot_close_all_sessions (id);
+
+  oid = scute_table_first (slot->objects);
+  while (!scute_table_last (slot->objects, oid))
+    scute_table_dealloc (slot->objects, &oid);
+  assert (scute_table_used (slot->objects) == 0);
+
+  scute_agent_release_card_info (&slot->info);
+  slot->token_present = false;
+}
+
+
+/* Initialize the slot after a token has been inserted.  SLOT->info
+   must already be valid.  */
+static gpg_error_t
+slot_init (slot_iterator_t id)
+{
+  gpg_error_t err;
+  struct slot *slot = scute_table_data (slots, id);
+  struct object objects[2];
+  unsigned int oidxs[2];
+  void *objp;
+
+
+  err = scute_gpgsm_get_cert (slot->info.grip3,
+			      &objects[0].attributes,
+			      &objects[0].attributes_count,
+			      &objects[1].attributes,
+			      &objects[1].attributes_count);
+  if (err)
+    return scute_gpg_err_to_ck (err);
+  
+  err = scute_table_alloc (slot->objects, &oidxs[0], &objp, NULL);
+  if (err)
+    {
+      object_dealloc (&objects[0]);
+      object_dealloc (&objects[1]);
+      return err;
+    }
+  memcpy (objp, &objects[0], sizeof (objects[0]));
+  
+  err = scute_table_alloc (slot->objects, &oidxs[1], &objp, NULL);
+  if (err)
+    {
+      scute_table_dealloc (slot->objects, &oidxs[0]);
+      object_dealloc (&objects[1]);
+      return err;
+    }
+  memcpy (objp, &objects[1], sizeof (objects[1]));
+  
+  /* FIXME: Perform the rest of the initialization of the
+     token.  */
+  slot->token_present = true;
+
+  return 0;
 }
 
 
@@ -238,34 +404,14 @@ object_free (struct object *objp)
 CK_RV
 slots_update_slot (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
   gpg_error_t err;
-
-  assert (slot);
 
   if (slot->token_present)
     {
       err = scute_agent_check_status ();
       if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
-	{
-	  /* FIXME: Reset the whole thing.  */
-      
-	  /* FIXME: Code duplication with close_all_sessions.  */
-	  HURD_TABLE_ITERATE (&slot->sessions, sid)
-	    {
-	      slot_close_session (id, sid);
-	    }
-
-	  HURD_TABLE_ITERATE (&slot->objects, oidx)
-	    {
-	      object_free (HURD_TABLE_LOOKUP (&slot->objects, oidx));
-	      hurd_table_remove (&slot->objects, oidx);
-	    }
-	  
-	  scute_agent_release_card_info (&slot->info);
-	  slot->token_present = false;
-	}
+	slot_reset (id);
       else if (err)
 	return scute_gpg_err_to_ck (err);
       else
@@ -282,8 +428,9 @@ slots_update_slot (slot_iterator_t id)
 	       || strncmp (slot->info.serialno, "D27600012401", 12)
 	       || strlen (slot->info.serialno) != 32))
     {
-      DEBUG ("Not an OpenPGP card");
+      DEBUG ("token not an OpenPGP card: %s", slot->info.serialno);
       err = gpg_error (GPG_ERR_CARD_NOT_PRESENT);
+      scute_agent_release_card_info (&slot->info);
     }
 
   if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED
@@ -293,42 +440,7 @@ slots_update_slot (slot_iterator_t id)
   else if (err)
     return scute_gpg_err_to_ck (err);
   else
-    {
-      struct object objects[2];
-      unsigned int oidxs[2];
-
-      objects[0].dummy = DUMMY_PTR;
-      objects[1].dummy = DUMMY_PTR;
-
-      /* FIXME: Should be grip3.  */
-      err = scute_gpgsm_get_cert (slot->info.grip3,
-				  &objects[0].attributes,
-				  &objects[0].attributes_count,
-				  &objects[1].attributes,
-				  &objects[1].attributes_count);
-      if (err)
-	return scute_gpg_err_to_ck (err);
-
-      err = hurd_table_enter (&slot->objects, &objects[0], &oidxs[0]);
-      if (err)
-	{
-	  object_free (&objects[0]);
-	  object_free (&objects[1]);
-	  return err;
-	}
-
-      err = hurd_table_enter (&slot->objects, &objects[1], &oidxs[1]);
-      if (err)
-	{
-	  hurd_table_remove (&slot->objects, oidxs[0]);
-	  object_free (&objects[0]);
-	  object_free (&objects[1]);
-	  return err;
-	}
-
-      /* FIXME: Perform the initialization of the token.  */
-      slot->token_present = true;
-    }
+    err = slot_init (id);
 
   return CKR_OK;
 }
@@ -341,32 +453,28 @@ slots_update_slot (slot_iterator_t id)
 CK_RV
 slots_update (void)
 {
-  HURD_TABLE_ITERATE (&slots, idx)
+  slot_iterator_t id = scute_table_first (slots);
+
+  while (!scute_table_last (slots, id))
     {
       CK_RV err;
 
-      err = slots_update_slot (SLOT_IDX_TO_ID (idx));
+      err = slots_update_slot (id);
       if (err)
-	return err;
+	return err;    
+
+      id = scute_table_next (slots, id);
     }
 
   return CKR_OK;
 }
 
-
-/* Begin iterating over the list of slots.  If succeeds, will be
-   followed up by a slot_iterate_end.  */
+
+/* Begin iterating over the list of slots.  */
 CK_RV
-slots_iterate_begin (slot_iterator_t *slot)
+slots_iterate_first (slot_iterator_t *slot)
 {
-  unsigned int idx = 0;
-
-  /* FIXME: Protect against modification of slot status from here
-     until slots_iterate_end.  */
-  while (idx < HURD_TABLE_EXTENT (&slots) && !hurd_table_lookup (&slots, idx))
-    idx++;
-
-  *slot = SLOT_IDX_TO_ID (idx);
+  *slot = scute_table_first (slots);
 
   return CKR_OK;
 }
@@ -376,25 +484,9 @@ slots_iterate_begin (slot_iterator_t *slot)
 CK_RV
 slots_iterate_next (slot_iterator_t *slot)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (*slot);
-
-  do
-    idx++;
-  while (idx < HURD_TABLE_EXTENT (&slots) && !hurd_table_lookup (&slots, idx));
-
-  *slot = SLOT_IDX_TO_ID (idx);
+  *slot = scute_table_next (slots, *slot);
 
   return CKR_OK;
-}
-
-
-/* Stop iterating over the list of slots.  */
-CK_RV
-slots_iterate_end (slot_iterator_t *slot)
-{
-  /* FIXME: Nothing to do at this point.  Release lock held by
-     slots_iterate_begin.  */
-  return 0;
 }
 
 
@@ -402,24 +494,20 @@ slots_iterate_end (slot_iterator_t *slot)
 bool
 slots_iterate_last (slot_iterator_t *slot)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (*slot);
-
-  return idx >= HURD_TABLE_EXTENT (&slots);
+  return scute_table_last (slots, *slot);
 }
 
 
 /* Acquire the slot for the slot ID ID.  */
 CK_RV
-slots_lookup (CK_SLOT_ID id, slot_iterator_t *slot)
+slots_lookup (CK_SLOT_ID id, slot_iterator_t *id_r)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
+  struct slot *slot = scute_table_data (slots, id);
 
-  if (idx >= HURD_TABLE_EXTENT (&slots))
+  if (slot == NULL)
     return CKR_SLOT_ID_INVALID;
-  if (!hurd_table_lookup (&slots, idx))
-    return CKR_DEVICE_ERROR;
 
-  *slot = SLOT_IDX_TO_ID (idx);
+  *id_r = id;
 
   return CKR_OK;
 }
@@ -430,10 +518,7 @@ slots_lookup (CK_SLOT_ID id, slot_iterator_t *slot)
 bool
 slot_token_present (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   return slot->token_present;
 }
@@ -443,10 +528,7 @@ slot_token_present (slot_iterator_t id)
 char *
 slot_token_label (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   /* slots_update() makes sure this is valid.  */
   return slot->info.serialno;
@@ -457,11 +539,8 @@ slot_token_label (slot_iterator_t id)
 char *
 slot_token_manufacturer (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
   unsigned int uval;
-
-  assert (slot);
 
   /* slots_update() makes sure this is valid.  */
   uval = xtoi_2 (slot->info.serialno + 16) * 256
@@ -471,12 +550,24 @@ slot_token_manufacturer (slot_iterator_t id)
   switch (uval)
     {
     case 0:
-    case 0xffff: return "test card";
-    case 0x0001: return "PPC Card Systems";
-    case 0x0002: return "Prism";
-    case 0x0003: return "OpenFortress";
-    default: return "unknown";
+      /* Fall-through.  */
+    case 0xffff:
+      return "test card";
+
+    case 0x0001:
+      return "PPC Card Systems";
+
+    case 0x0002:
+      return "Prism";
+
+    case 0x0003:
+      return "OpenFortress";
+
+    default:
+      return "unknown";
     }
+
+  /* Not reached.  */
 }
 
 
@@ -484,11 +575,6 @@ slot_token_manufacturer (slot_iterator_t id)
 char *
 slot_token_application (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
-
   /* slots_update() makes sure this is correct.  */
   return "OpenPGP";
 }
@@ -499,11 +585,8 @@ slot_token_application (slot_iterator_t id)
 int
 slot_token_serial (slot_iterator_t id, char *dst)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
   int i;
-
-  assert (slot);
 
   /* slots_update() makes sure serialno is valid.  */
   for (i = 0; i < 8; i++)
@@ -518,10 +601,7 @@ void
 slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 		    CK_BYTE *fw_major, CK_BYTE *fw_minor)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   /* slots_update() makes sure serialno is valid.  */
   *hw_major = xtoi_2 (slot->info.serialno + 12);
@@ -535,10 +615,7 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 void
 slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   *max = MIN (slot->info.chvmaxlen[0], slot->info.chvmaxlen[1]);
 
@@ -551,10 +628,7 @@ slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 void
 slot_token_pincount (slot_iterator_t id, int *max, int *len)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   *max = 3;
   *len = MIN (slot->info.chvretry[0], slot->info.chvretry[1]);
@@ -563,36 +637,22 @@ slot_token_pincount (slot_iterator_t id, int *max, int *len)
 
 /* Return the ID of slot SLOT.  */
 CK_SLOT_ID
-slot_get_id (slot_iterator_t id)
+slot_get_id (slot_iterator_t slot)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
-
-  return id;
+  return slot;
 }
 
 
 /* Mechanism management.  */
 
-/* Begin iterating over the list of mechanisms.  If succeeds, will be
-   followed up by a slot_iterate_end.  */
+/* Begin iterating over the list of mechanisms.  */
 CK_RV
-mechanisms_iterate_begin (slot_iterator_t id,
+mechanisms_iterate_first (slot_iterator_t id,
 			  mechanism_iterator_t *mechanism)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int midx = 0;
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  while (midx < HURD_TABLE_EXTENT (&slot->mechanisms)
-	 && !hurd_table_lookup (&slot->mechanisms, midx))
-    midx++;
-
-  *mechanism = MECHANISM_IDX_TO_ID (midx);
+  *mechanism = scute_table_first (slot->mechanisms);
 
   return CKR_OK;
 }
@@ -602,30 +662,11 @@ mechanisms_iterate_begin (slot_iterator_t id,
 CK_RV
 mechanisms_iterate_next (slot_iterator_t id, mechanism_iterator_t *mechanism)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int midx = MECHANISM_ID_TO_IDX (*mechanism);
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  do
-    midx++;
-  while (midx < HURD_TABLE_EXTENT (&slot->mechanisms)
-	 && !hurd_table_lookup (&slot->mechanisms, midx));
-  
-  *mechanism = MECHANISM_IDX_TO_ID (midx);
+  *mechanism = scute_table_next (slot->mechanisms, *mechanism);
 
   return CKR_OK;
-}
-
-
-/* Stop iterating over the list of mechanisms.  */
-CK_RV
-mechanisms_iterate_end (slot_iterator_t id, mechanism_iterator_t *mechanism)
-{
-  /* Nothing to do.  */
-
-  return 0;
 }
 
 
@@ -633,37 +674,31 @@ mechanisms_iterate_end (slot_iterator_t id, mechanism_iterator_t *mechanism)
 bool
 mechanisms_iterate_last (slot_iterator_t id, mechanism_iterator_t *mechanism)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int midx = MECHANISM_ID_TO_IDX (*mechanism);
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  return midx >= HURD_TABLE_EXTENT (&slot->mechanisms);
+  return scute_table_last (slot->mechanisms, *mechanism);
 }
 
 
 /* Acquire the mechanism TYPE for the slot id ID.  */
 CK_RV
-mechanisms_lookup (slot_iterator_t id,  mechanism_iterator_t *mid,
+mechanisms_lookup (slot_iterator_t id,  mechanism_iterator_t *mid_r,
 		   CK_MECHANISM_TYPE type)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
+  int mid = scute_table_first (slot->mechanisms);
 
-  assert (slot);
-
-  HURD_TABLE_ITERATE (&slot->mechanisms, midx)
+  while (!scute_table_last (slot->mechanisms, mid))
     {
-      struct mechanism *mechanism;
+      struct mechanism *mechanism = scute_table_data (slot->mechanisms, mid);
 
-      mechanism = (struct mechanism *)
-	HURD_TABLE_LOOKUP (&slot->mechanisms, midx);
       if (mechanism->type == type)
 	{
-	  *mid = MECHANISM_IDX_TO_ID (midx);
+	  *mid_r = mid;
 	  return CKR_OK;
 	}
+
+      mid = scute_table_next (slot->mechanisms, mid);
     }
 
   return CKR_MECHANISM_INVALID;
@@ -674,14 +709,8 @@ mechanisms_lookup (slot_iterator_t id,  mechanism_iterator_t *mid,
 CK_MECHANISM_TYPE
 mechanism_get_type (slot_iterator_t id, mechanism_iterator_t mid)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int midx = MECHANISM_ID_TO_IDX (mid);
-  struct mechanism *mechanism;
-
-  assert (slot);
-  mechanism = hurd_table_lookup (&slot->mechanisms, midx);
-  assert (mechanism);
+  struct slot *slot = scute_table_data (slots, id);
+  struct mechanism *mechanism = scute_table_data (slot->mechanisms, mid);
 
   return mechanism->type;
 }
@@ -691,14 +720,8 @@ mechanism_get_type (slot_iterator_t id, mechanism_iterator_t mid)
 CK_MECHANISM_INFO_PTR
 mechanism_get_info (slot_iterator_t id, mechanism_iterator_t mid)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int midx = MECHANISM_ID_TO_IDX (mid);
-  struct mechanism *mechanism;
-
-  assert (slot);
-  mechanism = hurd_table_lookup (&slot->mechanisms, midx);
-  assert (mechanism);
+  struct slot *slot = scute_table_data (slots, id);
+  struct mechanism *mechanism = scute_table_data (slot->mechanisms, mid);
 
   return &mechanism->info;
 }
@@ -712,27 +735,28 @@ slot_create_session (slot_iterator_t id, session_iterator_t *session,
 		     bool rw)
 {
   error_t err;
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
   unsigned int tsid;
-  struct session session_obj;
+  void *rawp;
+  struct session *session_p;
 
   assert (slot);
 
-  if (HURD_TABLE_USED (&slot->sessions) == SESSION_MAX)
+  if (scute_table_used (slot->sessions) == SESSION_MAX)
     return CKR_SESSION_COUNT;
 
   if (slot->login == SLOT_LOGIN_SO && !rw)
     return CKR_SESSION_READ_WRITE_SO_EXISTS;
 
-  session_obj.dummy = DUMMY_PTR;
-  session_obj.rw = rw;
-  session_obj.search_result = NULL;
-  session_obj.search_result_len = 0;
-
-  err = hurd_table_enter (&slot->sessions, &session_obj, &tsid);
+  err = scute_table_alloc (slot->sessions, &tsid, &rawp, NULL);
   if (err)
     return scute_sys_to_ck (err);
+
+  session_p = rawp;
+  session_p->rw = rw;
+  session_p->search_result = NULL;
+  session_p->search_result_len = 0;
+  session_p->signing_key = CK_INVALID_HANDLE;
 
   *session = SESSION_BUILD_ID (id, tsid);
 
@@ -741,10 +765,11 @@ slot_create_session (slot_iterator_t id, session_iterator_t *session,
 
 /* Look up session.  */
 CK_RV
-slots_lookup_session (session_iterator_t sid, slot_iterator_t *id)
+slots_lookup_session (CK_SESSION_HANDLE sid, slot_iterator_t *id,
+		      session_iterator_t *session_id)
 {
   CK_RV err;
-  unsigned int idx = SLOT_ID_TO_IDX (SESSION_SLOT (sid));
+  unsigned int idx = SESSION_SLOT (sid);
   unsigned session_idx = SESSION_ID (sid);
   struct slot *slot;
 
@@ -753,10 +778,11 @@ slots_lookup_session (session_iterator_t sid, slot_iterator_t *id)
   if (err)
     return err;
 
+  *session_id = session_idx;
+
   /* Verify the session.  */
-  slot = hurd_table_lookup (&slots, idx);
-  if (session_idx >= HURD_TABLE_EXTENT (&slot->sessions)
-      || !hurd_table_lookup (&slot->sessions, session_idx))
+  slot = scute_table_data (slots, idx);
+  if (!scute_table_data (slot->sessions, session_idx))
     return CKR_SESSION_HANDLE_INVALID;
 
   return 0;
@@ -766,23 +792,12 @@ slots_lookup_session (session_iterator_t sid, slot_iterator_t *id)
 CK_RV
 slot_close_session (slot_iterator_t id, session_iterator_t sid)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
-
-  if (session->search_result)
-    free (session->search_result);
-
-  hurd_table_remove (&slot->sessions, session_idx);
+  scute_table_dealloc (slot->sessions, &sid);
 
   /* At last session closed, return to public sessions.  */
-  if (! HURD_TABLE_USED (&slot->sessions))
+  if (!scute_table_used (slot->sessions))
     slot->login = SLOT_LOGIN_PUBLIC;
 
   return CKR_OK;
@@ -793,15 +808,16 @@ slot_close_session (slot_iterator_t id, session_iterator_t sid)
 CK_RV
 slot_close_all_sessions (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
+  int sid = scute_table_first (slot->sessions);
 
-  assert (slot);
+  while (!scute_table_last (slot->sessions, sid))
+    {
+      slot_close_session (id, sid);
 
-  HURD_TABLE_ITERATE (&slot->sessions, sid)
-    slot_close_session (id, sid);
-
-  assert (HURD_TABLE_USED (&slot->sessions) == 0);
+      sid = scute_table_next (slot->sessions, sid);
+    }
+  assert (scute_table_used (slot->sessions) == 0);
 
   return CKR_OK;
 }
@@ -812,15 +828,8 @@ slot_close_all_sessions (slot_iterator_t id)
 bool
 session_get_rw (slot_iterator_t id, session_iterator_t sid)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
-
-  assert (slot);
-
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
+  struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
 
   return session->rw;
 }
@@ -830,10 +839,7 @@ session_get_rw (slot_iterator_t id, session_iterator_t sid)
 slot_login_t
 slot_get_status (slot_iterator_t id)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-
-  assert (slot);
+  struct slot *slot = scute_table_data (slots, id);
 
   return slot->status;
 }
@@ -841,23 +847,13 @@ slot_get_status (slot_iterator_t id)
 
 /* Object management.  */
 
-/* Begin iterating over the list of objects.  If succeeds, will be
-   followed up by a slot_iterate_end.  */
+/* Begin iterating over the list of objects.  */
 CK_RV
-objects_iterate_begin (slot_iterator_t id,
-			  object_iterator_t *object)
+objects_iterate_first (slot_iterator_t id, object_iterator_t *object)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int oidx = 0;
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  while (oidx < HURD_TABLE_EXTENT (&slot->objects)
-	 && !hurd_table_lookup (&slot->objects, oidx))
-    oidx++;
-
-  *object = OBJECT_IDX_TO_ID (oidx);
+  *object = scute_table_first (slot->objects);
 
   return CKR_OK;
 }
@@ -867,30 +863,11 @@ objects_iterate_begin (slot_iterator_t id,
 CK_RV
 objects_iterate_next (slot_iterator_t id, object_iterator_t *object)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int oidx = OBJECT_ID_TO_IDX (*object);
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  do
-    oidx++;
-  while (oidx < HURD_TABLE_EXTENT (&slot->objects)
-	 && !hurd_table_lookup (&slot->objects, oidx));
-  
-  *object = OBJECT_IDX_TO_ID (oidx);
+  *object = scute_table_next (slot->objects, *object);
 
   return CKR_OK;
-}
-
-
-/* Stop iterating over the list of objects.  */
-CK_RV
-objects_iterate_end (slot_iterator_t id, object_iterator_t *object)
-{
-  /* Nothing to do.  */
-
-  return 0;
 }
 
 
@@ -898,13 +875,9 @@ objects_iterate_end (slot_iterator_t id, object_iterator_t *object)
 bool
 objects_iterate_last (slot_iterator_t id, object_iterator_t *object)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int oidx = OBJECT_ID_TO_IDX (*object);
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  return oidx >= HURD_TABLE_EXTENT (&slot->objects);
+  return scute_table_last (slot->objects, *object);
 }
 
 
@@ -913,12 +886,9 @@ objects_iterate_last (slot_iterator_t id, object_iterator_t *object)
 CK_RV
 slot_get_object_count (slot_iterator_t id, int *nr)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
+  struct slot *slot = scute_table_data (slots, id);
 
-  assert (slot);
-
-  *nr = HURD_TABLE_EXTENT (&slot->objects);
+  *nr = scute_table_used (slot->objects);
 
   return CKR_OK;
 }
@@ -928,19 +898,11 @@ CK_RV
 slot_get_object (slot_iterator_t id, object_iterator_t oid,
 		 CK_ATTRIBUTE_PTR *obj, CK_ULONG *obj_count)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned int object_idx = OBJECT_ID_TO_IDX (oid);
-  struct object *object;
+  struct slot *slot = scute_table_data (slots, id);
+  struct object *object = scute_table_data (slot->objects, oid);
 
-  assert (slot);
-
-  object = hurd_table_lookup (&slot->objects, object_idx);
   if (!object)
     return CKR_OBJECT_HANDLE_INVALID;
-
-  assert (obj);
-  assert (obj_count);
 
   *obj = object->attributes;
   *obj_count = object->attributes_count;
@@ -956,15 +918,8 @@ session_set_search_result (slot_iterator_t id, session_iterator_t sid,
 			   object_iterator_t *search_result,
 			   int search_result_len)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
-
-  assert (slot);
-
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
+  struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
 
   if (session->search_result && session->search_result != search_result)
     free (session->search_result);
@@ -982,15 +937,8 @@ session_get_search_result (slot_iterator_t id, session_iterator_t sid,
 			   object_iterator_t **search_result,
 			   int *search_result_len)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
-
-  assert (slot);
-
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
+  struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
 
   assert (search_result);
   assert (search_result_len);
@@ -1007,19 +955,12 @@ CK_RV
 session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 			 object_iterator_t key)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
+  struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
   CK_RV err;
   CK_ATTRIBUTE_PTR attr;
   CK_ULONG attr_count;
   CK_OBJECT_CLASS key_class = CKO_PRIVATE_KEY;
-
-  assert (slot);
-
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
 
   err = slot_get_object (id, key, &attr, &attr_count);
   if (err)
@@ -1049,19 +990,14 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pData, CK_ULONG ulDataLen,
 	      CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
-  unsigned int idx = SLOT_ID_TO_IDX (id);
-  struct slot *slot = hurd_table_lookup (&slots, idx);
-  unsigned session_idx = SESSION_ID (sid);
-  struct session *session;
+  struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
   gpg_error_t err;
   unsigned int sig_len;
 
-  assert (slot);
+   /* FIXME: Who cares if they called sign init correctly.  Should
+      check the signing_key object.  */
 
-  session = hurd_table_lookup (&slot->sessions, session_idx);
-  assert (session);
-
-  /* FIXME: Who cares if they called sign init correctly.  */
   if (pSignature == NULL_PTR)
     {
       err = scute_agent_sign (NULL, NULL, 0, NULL, &sig_len);

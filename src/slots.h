@@ -56,7 +56,7 @@ typedef int mechanism_iterator_t;
 typedef CK_OBJECT_HANDLE object_iterator_t;
 
 /* A session pointer.  */
-typedef CK_SESSION_HANDLE session_iterator_t;
+typedef int session_iterator_t;
 
 
 /* Initialize the slot list.  */
@@ -76,13 +76,10 @@ CK_RV slots_update_slot (slot_iterator_t id);
 
 /* Begin iterating over the list of slots.  If succeeds, will be
    followed up by a slot_iterate_end.  */
-CK_RV slots_iterate_begin (slot_iterator_t *slot);
+CK_RV slots_iterate_first (slot_iterator_t *slot);
 
 /* Continue iterating over the list of slots.  */
 CK_RV slots_iterate_next (slot_iterator_t *slot);
-
-/* Continue iterating over the list of slots.  */
-CK_RV slots_iterate_end (slot_iterator_t *slot);
 
 /* Return true iff the previous slot was the last one.  */
 bool slots_iterate_last (slot_iterator_t *slot);
@@ -125,16 +122,12 @@ CK_SLOT_ID slot_get_id (slot_iterator_t slot);
 
 /* Begin iterating over the list of mechanisms.  If succeeds, will be
    followed up by a slot_iterate_end.  */
-CK_RV mechanisms_iterate_begin (slot_iterator_t id,
+CK_RV mechanisms_iterate_first (slot_iterator_t id,
 				mechanism_iterator_t *mechanism);
 
 /* Continue iterating over the list of mechanisms.  */
 CK_RV mechanisms_iterate_next (slot_iterator_t id,
 			       mechanism_iterator_t *mechanism);
-
-/* Stop iterating over the list of mechanisms.  */
-CK_RV mechanisms_iterate_end (slot_iterator_t id,
-			      mechanism_iterator_t *mechanism);
 
 /* Return true iff the previous slot was the last one.  */
 bool mechanisms_iterate_last (slot_iterator_t id,
@@ -160,7 +153,8 @@ CK_RV slot_create_session (slot_iterator_t id, session_iterator_t *session,
 			   bool rw);
 
 /* Look up session.  */
-CK_RV slots_lookup_session (session_iterator_t sid, slot_iterator_t *id);
+CK_RV slots_lookup_session (CK_SESSION_HANDLE sid, slot_iterator_t *id,
+			    session_iterator_t *session_id);
 
 /* Close the session.  */
 CK_RV slot_close_session (slot_iterator_t id, session_iterator_t sid);
@@ -179,13 +173,10 @@ slot_login_t slot_get_status (slot_iterator_t id);
 
 /* Begin iterating over the list of objects.  If succeeds, will be
    followed up by a slot_iterate_end.  */
-CK_RV objects_iterate_begin (slot_iterator_t id, object_iterator_t *object);
+CK_RV objects_iterate_first (slot_iterator_t id, object_iterator_t *object);
 
 /* Continue iterating over the list of objects.  */
 CK_RV objects_iterate_next (slot_iterator_t id, object_iterator_t *object);
-
-/* Stop iterating over the list of objects.  */
-CK_RV objects_iterate_end (slot_iterator_t id, object_iterator_t *object);
 
 /* Return true iff the previous slot was the last one.  */
 bool objects_iterate_last (slot_iterator_t id, object_iterator_t *object);
