@@ -45,6 +45,9 @@ NEED_GPGSM_VERSION=1.9.6
 have_gpg_error=no
 have_libassuan=no
 
+PACKAGE=$PACKAGE_NAME
+VERSION=$PACKAGE_VERSION
+
 AC_CONFIG_SRCDIR([src/cryptoki.h])
 AC_CONFIG_HEADER([config.h])
 

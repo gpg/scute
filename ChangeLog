@@ -1,5 +1,9 @@
 2006-10-30  Marcus Brinkmann  <marcus@g10code.de>
 
+	* configure.ac (PACKAGE, VERSION): Define these variables.
+	* src/Makefile.am (libscute_la_CPPFLAGS): Fix include path for
+	VPATH builds.
+
 	* configure.ac (VERSION_MAJOR, VERSION_MINOR): New variable
 	definitions.
 	* src/gpgsm.h: Fix syntax error.
