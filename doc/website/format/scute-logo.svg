@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- scute-logo.svg
+   Copyright (C) 2006 g10 Code GmbH
+
+   This file is part of Scute[1].
+
+   [1] Derived from the RSA Security Inc. PKCS #11 Cryptographic Token
+   Interface (Cryptoki).
+ 
+   Scute is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   Scute is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Scute; if not, write to the Free Software Foundation,
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+   In addition, as a special exception, g10 Code GmbH gives permission
+   to link this library: with the Mozilla Foundation's code for
+   Mozilla (or with modified versions of it that use the same license
+   as the "Mozilla" code), and distribute the linked executables.  You
+   must obey the GNU General Public License in all respects for all of
+   the code used other than "Mozilla".  If you modify this file, you
+   may extend this exception to your version of the file, but you are
+   not obligated to do so.  If you do not wish to do so, delete this
+   exception statement from your version.  -->
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="310"
+   height="110"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.43"
+   version="1.0"
+   sodipodi:docbase="/home/marcus/g10/projects/pkcs11-for-scdaemon"
+   sodipodi:docname="scute-logo.svg">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient12777">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop12779" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop12781" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient10996">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop10998" />
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="1"
+         id="stop11000" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient10996"
+       id="linearGradient11002"
+       x1="200"
+       y1="202.36137"
+       x2="450"
+       y2="202.36137"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient12777"
+       id="linearGradient12783"
+       x1="200"
+       y1="202.36137"
+       x2="450"
+       y2="202.36137"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient10996"
+       id="linearGradient12803"
+       x1="207.22214"
+       y1="203.29942"
+       x2="444.12137"
+       y2="203.29942"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient12777"
+       id="linearGradient12825"
+       gradientUnits="userSpaceOnUse"
+       x1="200"
+       y1="202.36137"
+       x2="450"
+       y2="202.36137" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient10996"
+       id="linearGradient12827"
+       gradientUnits="userSpaceOnUse"
+       x1="207.22214"
+       y1="203.29942"
+       x2="444.12137"
+       y2="203.29942" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.0685606"
+     inkscape:cx="428.26482"
+     inkscape:cy="828.53554"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer3"
+     showgrid="false"
+     showguides="true"
+     inkscape:grid-points="false"
+     gridspacingx="5px"
+     gridspacingy="5px"
+     inkscape:window-width="1024"
+     inkscape:window-height="693"
+     inkscape:window-x="0"
+     inkscape:window-y="25" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Text"
+     style="display:inline">
+    <g
+       id="g12917"
+       transform="translate(-241.4463,-216.1787)">
+      <text
+         sodipodi:linespacing="125%"
+         id="text12806"
+         y="276.24683"
+         x="281.24933"
+         style="font-size:76.38896942px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Samanata"
+         xml:space="preserve"><tspan
+           y="276.24683"
+           x="281.24933"
+           id="tspan12808"
+           sodipodi:role="line">scute</tspan></text>
+      <path
+         d="M 269.6635,276.94814 C 288.26834,291.07077 307.67035,290.82785 330.0525,289.35806 C 346.13962,290.64178 426.34454,274.27423 428.3581,300.76476 C 427.29277,321.8312 390.20562,329.2378 417.07519,303.74165 C 451.40238,282.41631 494.62403,296.30413 532.25233,285.01661 C 541.51649,280.43275 528.90174,287.28298 527.05849,288.08789 C 525.57395,288.73615 529.20952,285.24585 529.01194,283.63803 C 528.76078,281.59431 526.46111,280.4979 524.90963,279.64819 C 518.56658,276.17427 511.64009,274.23104 504.65725,272.56635 C 503.99863,272.4557 503.34001,272.34504 502.6814,272.23439 L 513.18418,264.91224 C 513.82363,265.05795 514.46308,265.20366 515.10253,265.34938 C 532.96401,270.54179 556.96236,281.16038 522.6126,292.42538 C 504.15372,297.07217 484.56708,296.65026 465.67556,297.55145 C 456.22211,298.00242 446.75317,298.61151 437.36452,299.84385 C 432.98365,300.41888 422.72525,306.35559 424.32714,302.23774 C 424.62896,301.46187 436.27206,294.49758 428.79028,299.01228 C 420.3408,306.36751 404.45346,336.9632 417.23892,306.48836 C 417.22159,282.10944 334.81672,296.54737 320.95663,296.06611 C 297.78589,297.84896 278.13222,297.26868 258.37322,283.86683 L 269.6635,276.94814 z "
+         id="path12839"
+         style="fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+  </g>
+</svg>

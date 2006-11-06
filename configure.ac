@@ -271,5 +271,6 @@ fi
 AC_CONFIG_FILES([Makefile
                  include/Makefile
                  src/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+		 doc/Makefile])
 AC_OUTPUT

@@ -1,4 +1,4 @@
-# Makefile.am - Top level Makefile for scute.
+# Makefile.am
 # Copyright (C) 2006 g10 Code GmbH
 # 
 # This file is part of scute[1].
@@ -32,15 +32,7 @@
 
 ## Process this file with automake to produce Makefile.in
 
-ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = dist-bzip2
+website = index.xhtml documentation.xhtml download.xhtml contact.xhtml \
+	format/web.css format/scute-logo.svg format/scute-border.jpg
 
-EXTRA_DIST = 
-
-if RUN_TESTS
-tests = tests
-else
-tests = 
-endif
-
-SUBDIRS = include src ${tests} doc
+EXTRA_DIST = $(addprefix website/, $(website))
