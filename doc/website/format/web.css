@@ -36,6 +36,7 @@ image size, which is specified in the SVG file itself.  */
 body { font-family: "sans-serif";
        background-image: url("scute-border.jpg");
        background-repeat: repeat-y;
+       margin: 0em;
      }
 
 /* Same constant also below for div#main.  FIXME: Can be fixed by
