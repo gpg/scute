@@ -70,7 +70,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetTokenInfo)
   scute_copy_string (pInfo->model, slot_token_application (slot), 16);
   len = slot_token_serial (slot, pInfo->serialNumber);
   while (len < 16)
-    pInfo->serialNumber[len++] == ' ';
+    pInfo->serialNumber[len++] = ' ';
 
   pInfo->flags = CKF_TOKEN_INITIALIZED
     | CKF_PROTECTED_AUTHENTICATION_PATH | CKF_WRITE_PROTECTED

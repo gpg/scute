@@ -1,3 +1,7 @@
+2006-11-07  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/p11-gettokeninfo.c (C_GetTokenInfo): Fix assignment.
+
 2006-11-06  Marcus Brinkmann  <marcus@g10code.de>
 
 	* doc/website/format/web.css: Set margin to 0.
