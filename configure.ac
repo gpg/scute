@@ -18,7 +18,7 @@ min_automake_version="1.9.3"
 # for snapshot releases please do an "svn up" right before recreating
 # the configure script, so that a proper revision number for all files
 # is available when running a "make distcheck".
-m4_define(my_version, [0.0.0])
+m4_define(my_version, [1.0.0])
 m4_define(my_iscvs, yes)
 AC_INIT([scute], my_version[]m4_ifdef([my_iscvs], [-cvs[]m4_translit(
                [$Revision: 1179 $],[Ra-z $:])]),
@@ -35,7 +35,7 @@ LIBSCUTE_LT_AGE=0
 LIBSCUTE_LT_REVISION=0
 
 # Version numbers reported by the PKCS #11 module to its users.
-VERSION_MAJOR=0
+VERSION_MAJOR=1
 VERSION_MINOR=0
 
 NEED_GPG_ERROR_VERSION=0.7
