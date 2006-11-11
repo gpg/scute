@@ -40,6 +40,7 @@
 #include <gpg-error.h>
 
 #include "cryptoki.h"
+#include "debug.h"
 
 #include "error-mapping.h"
 
@@ -67,6 +68,10 @@ scute_sys_to_ck (error_t err)
 CK_RV
 scute_gpg_err_to_ck (gpg_error_t err)
 {
+  if (err)
+    DEBUG ("Error occured: %s (%s)\n", gpg_strerror (err),
+	   gpg_strsource (err));
+
   switch (gpg_err_code (err))
     {
     case GPG_ERR_NO_ERROR:

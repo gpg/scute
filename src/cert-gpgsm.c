@@ -393,15 +393,10 @@ search_certs_line (struct search_ctx *ctx)
 	  if (fields >= 10 && strlen (field[9]) <= sizeof (cert->fpr) - 1)
 	    strcpy (cert->fpr, field[9]);
 
-#if 0
 	  /* Field 13 has the gpgsm chain ID (take only the first one).  */
-	  if (fields >= 13 && !key->chain_id && *field[12])
-	    {
-	      key->chain_id = strdup (field[12]);
-	      if (!key->chain_id)
-		return gpg_error_from_errno (errno);
-	    }
-#endif
+	  if (fields >= 13 && strlen (field[12])
+	      <= sizeof (cert->chain_id) - 1)
+	    strcpy (cert->chain_id, field[12]);
 	}
       break;
 
@@ -511,10 +506,13 @@ scute_gpgsm_search_certs (assuan_context_t ctx, cert_search_cb_t search_cb,
 }
 
 
-struct search_ctx_by_grip
+struct search_ctx_by_field
 {
-  /* The grip we are looking for.  */
-  const char *grip;
+  /* What we are searching for.  */
+  enum { SEARCH_BY_GRIP, SEARCH_BY_FPR } field;
+
+  /* The pattern we are looking for.  */
+  const char *pattern;
 
   cert_search_cb_t search_cb;
   void *search_cb_hook;
@@ -579,12 +577,13 @@ export_cert (char *fpr, struct cert *cert)
 
 
 static gpg_error_t
-search_certs_by_grip (void *hook, struct cert *cert)
+search_certs_by_field (void *hook, struct cert *cert)
 {
-  struct search_ctx_by_grip *ctx = hook;
+  struct search_ctx_by_field *ctx = hook;
   gpg_error_t err = 0;
 
-  if (!strcmp (ctx->grip, cert->grip))
+  if ((ctx->field == SEARCH_BY_GRIP && !strcmp (ctx->pattern, cert->grip))
+      || (ctx->field == SEARCH_BY_FPR && !strcmp (ctx->pattern, cert->fpr)))
     {
       if (strlen (cert->fpr) != 40)
 	return gpg_error (GPG_ERR_GENERAL);
@@ -612,17 +611,45 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
   gpg_error_t err;
   assuan_context_t ctx;
   const char *argv[] = { "gpgsm", "--server", NULL };
-  struct search_ctx_by_grip search;
+  struct search_ctx_by_field search;
 
   err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
   if (err)
     return err;
 
-  search.grip = grip;
+  search.field = SEARCH_BY_GRIP;
+  search.pattern = grip;
   search.search_cb = search_cb;
   search.search_cb_hook = search_cb_hook;
 
-  err = scute_gpgsm_search_certs (ctx, &search_certs_by_grip, &search);
+  err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
+  assuan_disconnect (ctx);
+  return err;
+}
+
+
+/* Invoke SEARCH_CB for each certificate found using assuan connection
+   CTX to GPGSM.  */
+gpg_error_t
+scute_gpgsm_search_certs_by_fpr (const char *fpr,
+				 cert_search_cb_t search_cb,
+				 void *search_cb_hook)
+{
+  gpg_error_t err;
+  assuan_context_t ctx;
+  const char *argv[] = { "gpgsm", "--server", NULL };
+  struct search_ctx_by_field search;
+
+  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
+  if (err)
+    return err;
+
+  search.field = SEARCH_BY_FPR;
+  search.pattern = fpr;
+  search.search_cb = search_cb;
+  search.search_cb_hook = search_cb_hook;
+
+  err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
   assuan_disconnect (ctx);
   return err;
 }

@@ -1,8 +1,4 @@
 * Undergoing clean-up:
-** table.{h,c}: Simplify, remove hurdism.
-** agent.{h,c}: Clean namespace.
-** gpgsm.c: Support more than one keygrip.
-** slots.{h,c}: Cleanup lookup function and the rest.
 ** p11-closeallsessions.c, p11-closesession.c, p11-findobjects.c,
    p11-findobjectsfinal.c, p11-findobjectsinit.c, p11-getattributevalue.c,
    p11-getmechanisminfo.c, p11-getmechanismlist.c, p11-getsessioninfo.c,
@@ -10,20 +6,24 @@
    p11-opensession.c, p11-sign.c, p11-signinit.c
 
 * Bugs or misfeatures:
-** If more than one certificate with the same keygrip is installed in
-   gpgsm, only the first one is found.  We probably should return them
-   all and let Mozilla choose among them (if Mozilla supports that,
-   otherwise we need to make it configurable).
+** Mozilla presents the other certificates in "Websites".  Only the
+   first one is presented in the certicate manager under "Personal".
+** Mozilla does not unload the right security token!!!
+** Duplicate certificates should be removed from the object list (this
+   can occur when including all certificate chains).
 
 * Missing features:
 ** Implement random number generation function C_GenerateRandom.
 ** Add canonical gnupg logging module.
+** Mozilla ignores the CKA_TRUSTED attribute to certificates, so
+   exporting the information from GPGSM (ISTRUSTED) will not be
+   useful.  It's unclear if this can be improved in a meaningful way.
 
 * Standard ambiguities, or non-conformance in the applications:
 ** If the token is removed, the current sessions are closed.  If then
    a new token is inserted, and the application calls C_OpenSession, a
-   previously used session handle may be reused.  It is not clear to
-   me what behaviour the standard specifies in this case.
+   previously used session handle may be reused.  It is not clear what
+   behaviour the standard specifies in this case.
 
 ** Mozilla NSS has this comment (and relies on the assumption):
   "check to see if the module has added new slots. PKCS 11 v2.20

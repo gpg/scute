@@ -47,15 +47,15 @@
 #include "cryptoki.h"
 #include "support.h"
 #include "cert.h"
+#include "gpgsm.h"
 
 
 struct search
 {
   bool found;
-  CK_ATTRIBUTE_PTR *attrp;
-  CK_ULONG *attr_countp;
-  CK_ATTRIBUTE_PTR *prv_attrp;
-  CK_ULONG *prv_attr_countp;
+  cert_get_cb_t cert_get_cb;
+  void *hook;
+
 };
 
 
@@ -63,26 +63,45 @@ static gpg_error_t
 search_cb (void *hook, struct cert *cert)
 {
   struct search *ctx = hook;
-  gpg_error_t err;
-  
-  /* FIXME: Support more than one certificate.  */
-  if (ctx->found)
-    return 0;
+  gpg_error_t err = 0;
 
-  /* Turn this into a certificate object.  */
-  err = scute_attr_cert (cert, ctx->attrp, ctx->attr_countp);
-  if (err)
-    return err;
+  CK_ATTRIBUTE_PTR attrp;
+  CK_ULONG attr_countp;
 
-  err = scute_attr_prv (cert, ctx->prv_attrp, ctx->prv_attr_countp);
-  if (err)
+  /* Add the private key object only once.  */
+  if (!ctx->found)
     {
-      scute_attr_free (*ctx->attrp, *ctx->attr_countp);
-      *ctx->attrp = NULL;
-      *ctx->attr_countp = 0;
+      err = scute_attr_prv (cert, &attrp, &attr_countp);
+      if (err)
+	return err;
+
+      err = (*ctx->cert_get_cb) (ctx->hook, attrp, attr_countp);
+      if (err)
+	{
+	  scute_attr_free (attrp, attr_countp);
+	  return err;
+	}
+
+      ctx->found = true;
     }
 
-  ctx->found = true;
+  /* Add the certificate chain recursively before adding the
+     certificate.  */
+  if (strcmp (cert->chain_id, cert->fpr))
+    err = scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
+
+  /* Turn this certificate into a certificate object.  */
+  err = scute_attr_cert (cert, &attrp, &attr_countp);
+  if (err)
+    return err;
+  
+  err = (*ctx->cert_get_cb) (ctx->hook, attrp, attr_countp);
+  if (err)
+    {
+      scute_attr_free (attrp, attr_countp);
+      return err;
+    }
+
   return err;
 }
 
@@ -92,23 +111,14 @@ search_cb (void *hook, struct cert *cert)
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
 gpg_error_t
-scute_gpgsm_get_cert (char *grip,
-		      CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp,
-		      CK_ATTRIBUTE_PTR *prv_attrp, CK_ULONG *prv_attr_countp)
+scute_gpgsm_get_cert (char *grip, cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search search;
 
-  *attrp = NULL;
-  *attr_countp = 0;
-  *prv_attrp = NULL;
-  *prv_attr_countp = 0;
-
   search.found = false;
-  search.attrp = attrp;
-  search.attr_countp = attr_countp;
-  search.prv_attrp = prv_attrp;
-  search.prv_attr_countp = prv_attr_countp;
+  search.cert_get_cb = cert_get_cb;
+  search.hook = hook;
 
   err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
   

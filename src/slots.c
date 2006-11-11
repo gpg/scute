@@ -354,49 +354,49 @@ slot_reset (slot_iterator_t id)
 }
 
 
+static gpg_error_t
+add_object (void *hook, CK_ATTRIBUTE_PTR attrp,
+	    CK_ULONG attr_countp)
+{
+  gpg_error_t err;
+  struct slot *slot = hook;
+  struct object *object;
+  unsigned int oidx;
+  void *objp;
+
+  err = scute_table_alloc (slot->objects, &oidx, &objp, NULL);
+  if (err)
+    return err;
+
+  object = objp;
+  object->attributes = attrp;
+  object->attributes_count = attr_countp;
+
+  return 0;
+}
+
+
 /* Initialize the slot after a token has been inserted.  SLOT->info
    must already be valid.  */
 static gpg_error_t
 slot_init (slot_iterator_t id)
 {
-  gpg_error_t err;
+  gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slots, id);
-  struct object objects[2];
-  unsigned int oidxs[2];
-  void *objp;
 
+  err = scute_gpgsm_get_cert (slot->info.grip3, add_object, slot);
+  if (err)
+    goto init_out;
 
-  err = scute_gpgsm_get_cert (slot->info.grip3,
-			      &objects[0].attributes,
-			      &objects[0].attributes_count,
-			      &objects[1].attributes,
-			      &objects[1].attributes_count);
-  if (err)
-    return scute_gpg_err_to_ck (err);
-  
-  err = scute_table_alloc (slot->objects, &oidxs[0], &objp, NULL);
-  if (err)
-    {
-      object_dealloc (&objects[0]);
-      object_dealloc (&objects[1]);
-      return err;
-    }
-  memcpy (objp, &objects[0], sizeof (objects[0]));
-  
-  err = scute_table_alloc (slot->objects, &oidxs[1], &objp, NULL);
-  if (err)
-    {
-      scute_table_dealloc (slot->objects, &oidxs[0]);
-      object_dealloc (&objects[1]);
-      return err;
-    }
-  memcpy (objp, &objects[1], sizeof (objects[1]));
-  
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
 
-  return 0;
+ init_out:
+  if (err)
+    slot_reset (id);
+
+  return err;
 }
 
 
@@ -436,13 +436,11 @@ slots_update_slot (slot_iterator_t id)
   if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED
       || gpg_err_code (err) == GPG_ERR_CARD_NOT_PRESENT)
     /* Nothing to do.  */
-    ;
-  else if (err)
-    return scute_gpg_err_to_ck (err);
-  else
+    err = 0;
+  else if (err == 0)
     err = slot_init (id);
 
-  return CKR_OK;
+  return scute_sys_to_ck (err);
 }
 
 

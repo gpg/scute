@@ -1,3 +1,28 @@
+2006-11-11  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/error-mapping.c (scute_gpg_err_to_ck): Report error on debug
+	stream.
+	* src/slots.c (add_object): New function.
+	(slot_init): Rewritten using add_object.
+	* src/gpgsm.c: Include "gpgsm.h".
+	(struct search): Replace members ATTRP, ATTR_COUNTP, PRV_ATTRP,
+	PRV_ATTR_COUNTP by CERT_GET_CB, HOOK.
+	(search_cb): Rewritten to add all certificates for a certain key
+	(scute_gpgsm_get_cert): Take a callback function instead of
+	attribute pointers.
+	* gpgsm.h (scute_gpgsm_get_cert): Adjust prototype.	
+	and also the certificate chain.
+	* src/cert.h (scute_gpgsm_search_certs_by_fpr): New prototype.
+	(struct cert): New member chain_id.
+	* src/cert-gpgsm.c (struct search_ctx_by_grip): Rename to ...
+	(struct search_ctx): ... this.  Rename field GRIP to PATTERN, and
+	add new field FIELD.
+	(search_certs_by_grip): Rename function to ...
+	(search_certs): ... this.
+	(scute_gpgsm_search_certs_by_fpr): Change user of the above.
+	(scute_gpgsm_search_certs_by_fpr): New function.
+	(search_certs_line): Store chain ID.
+
 2006-11-07  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/p11-gettokeninfo.c (C_GetTokenInfo): Fix assignment.

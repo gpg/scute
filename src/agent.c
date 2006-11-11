@@ -616,7 +616,6 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
 
   err = assuan_transact (agent_ctx, "PKSIGN",
 			 pksign_cb, &sig, NULL, NULL, NULL, NULL);
-  printf ("Returning ERR = %u\n", err);
   if (err)
     return err;
 

@@ -11,6 +11,7 @@ TOC
 * Prerequisites
 * Installation
 * Client Authentication
+* Troubleshooting
 * Features and Limitations
 * Development
 * Mozilla Bugs
@@ -259,6 +260,35 @@ SSLCACertificateFile /etc/apache/ssl.crt/snakeoil-ca-rsa.crt
 The file server.key is not protected by a passphrase (if it is, this
 passphrase needs to be provided when starting up Apache), and
 server.crt has "CN=localhost" as part of its DN for this example.
+
+
+Troubleshooting
+===============
+
+Symptom: Loading the Scute security device in the security device
+manager of Firefox fails with "Unable to load module".
+
+Solution: Make sure that Scute is correctly installed, and that all
+libraries and executables are available.  Make sure that gpg-agent is
+running and can be found via the environment variable GPG_AGENT_INFO.
+
+
+Symptom: Client authentication fails with "<example.com> has received
+an incorrect or unexpected message.  Error code: -12227".
+
+Solution: Make sure that the correct OpenPGP card is inserted and the
+certificate available in GPGSM.  Check that the OpenPGP card is
+detected correctly in the security device manager and the
+corresponding certificate is displayed in the certificate manager of
+Firefox.
+
+
+Symptom: The OpenPGP card is detected and displayed in the security
+device manager in Firefox, but no corresponding certificate is
+displayed in the certificate manager of Firefox.
+
+Solution: Make sure that the corresponding certificate is imported in
+GPGSM.
 
 
 Features and Limitations

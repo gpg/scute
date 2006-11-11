@@ -37,15 +37,20 @@
 
 #include "cryptoki.h"
 
+#include "table.h"
+
 
+/* The callback type invoked for each certificate found in the
+   search.  */
+typedef gpg_error_t (*cert_get_cb_t) (void *hook, 
+				      CK_ATTRIBUTE_PTR attrp,
+				      CK_ULONG attr_countp);
+
 /* Create the attributes required for a new certificate object.
    Returns allocated attributes for the certificate object in ATTRP
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
-gpg_error_t scute_gpgsm_get_cert (char *grip,
-				  CK_ATTRIBUTE_PTR *attrp,
-				  CK_ULONG *attr_countp,
-				  CK_ATTRIBUTE_PTR *prv_attrp,
-				  CK_ULONG *prv_attr_countp);
+gpg_error_t scute_gpgsm_get_cert (char *grip, cert_get_cb_t cert_get_cb,
+				  void *hook);
 
 #endif	/* GPGSM_H */

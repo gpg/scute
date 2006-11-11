@@ -79,6 +79,9 @@ struct cert
   /* The key grip.  */
   unsigned char grip[41];
 
+  /* The chain ID.  */
+  unsigned char chain_id[41];
+
   /* The certificate in DER format.  This is not entered by the search
      function, but afterwards by the filter before converting it into
      a PKCS #11 object.  */
@@ -100,6 +103,12 @@ gpg_error_t scute_gpgsm_search_certs_by_grip (const char *grip,
 					      cert_search_cb_t search_cb,
 					      void *search_cb_hook);
 
+/* Invoke SEARCH_CB for each certificate found using assuan connection
+   CTX to GPGSM.  */
+gpg_error_t scute_gpgsm_search_certs_by_fpr (const char *fpr,
+					     cert_search_cb_t search_cb,
+					     void *search_cb_hook);
+     
 
 /* From cert-object.c.  */
 
