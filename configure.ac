@@ -19,7 +19,7 @@ min_automake_version="1.9.3"
 # the configure script, so that a proper revision number for all files
 # is available when running a "make distcheck".
 m4_define(my_version, [1.0.0])
-m4_define(my_iscvs, no)
+#m4_define(my_iscvs, yes)
 AC_INIT([scute], my_version[]m4_ifdef([my_iscvs], [-cvs[]m4_translit(
                [$Revision: 1179 $],[Ra-z $:])]),
                [marcus@g10code.com])
