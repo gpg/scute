@@ -1,3 +1,18 @@
+2006-11-21  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac (AC_CONFIG_FILES): Add doc/manual/Makefile.
+	* doc/Makefile.am (SUBDIRS): New variable.
+	* doc/manual/Makefile, doc/manual/scute.texi, doc/manual/gpl.texi,
+	doc/manual/mdate-sh, doc/manual/texinfo.tex,
+	doc/manual/firefox-cm.png, doc/manual/firefox-cm-view-detail.png,
+	doc/manual/firefox-cm-view.png,
+	doc/manual/firefox-dm-load-after.png,
+	doc/manual/firefox-dm-load-before.png,
+	doc/manual/firefox-dm-load.png,
+	doc/manual/firefox-dm-token-present.png,
+	doc/manual/firefox-pref.png, doc/manual/firefox-pref-view.png: New
+	files.
+
 2006-11-11  Marcus Brinkmann  <marcus@g10code.de>
 
 	* Released version 1.0.0.

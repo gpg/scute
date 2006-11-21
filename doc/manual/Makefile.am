@@ -1,4 +1,4 @@
-# Makefile.am
+# Makefile.am - Doc directory Makefile for scute.
 # Copyright (C) 2006 g10 Code GmbH
 # 
 # This file is part of scute[1].
@@ -32,9 +32,7 @@
 
 ## Process this file with automake to produce Makefile.in
 
-website = index.xhtml documentation.xhtml download.xhtml contact.xhtml \
-	format/web.css format/scute-logo.svg format/scute-border.jpg
+DISTCLEANFILES = scute.tmp
 
-EXTRA_DIST = $(addprefix website/, $(website))
-
-SUBDIRS = manual
+info_TEXINFOS = scute.texi
+scute_TEXINFOS = gpl.texi

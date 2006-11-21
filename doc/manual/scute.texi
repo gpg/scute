@@ -1,0 +1,782 @@
+\input texinfo                  @c -*- Texinfo -*-
+@setfilename scute.info
+@settitle The Scute Manual
+
+@dircategory GNU Utilities
+@direntry
+* Scute: (scute).          PKCS #11 module for the OpenPGP Card
+@end direntry
+
+@include version.texi
+
+@c Unify some of the indices.
+@syncodeindex tp fn
+@syncodeindex pg fn
+
+@ifinfo
+This file documents the Scute module.
+
+This is Edition @value{EDITION}, last updated @value{UPDATED}, of
+@cite{The Scute Manual}, for Version @value{VERSION}.
+
+@c NOTE: Don't forget to update the year for the TeX version, too.
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006 g10 Code GmbH.
+
+The Scute Manual is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+The Scute Manual is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+
+@end ifinfo
+
+@iftex
+@shorttitlepage The Scute Manual
+@end iftex
+@titlepage
+@center @titlefont{The Scute Manual}
+@sp 6
+@center Edition @value{EDITION}
+@sp 1
+@center last updated @value{UPDATED}
+@sp 1
+@center for version @value{VERSION}
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006 g10 Code GmbH.
+
+
+The Scute Manual is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+The Scute Manual is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+@end titlepage
+@page
+
+@ifnottex
+@node Top
+@top Main Menu
+This is Edition @value{EDITION}, last updated @value{UPDATED}, of
+@cite{The Scute Manual}, for Version @value{VERSION} of the Scute
+module.
+@end ifnottex
+
+@menu
+* Introduction::                  How to use this manual.
+* Preparation::                   What you should do before using Scute.
+* Client Authentication::         How to use Scute for client authentication.
+* Troubleshooting::               What to do when things go wrong.
+* Internals::                     Technical details about Scute.
+
+Appendices
+
+* Copying::                       The GNU General Public License says
+                                  how you can copy and share Scute.
+
+Indices
+
+* Concept Index::                 Index of concepts and programs.
+
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Introduction
+
+* Getting Started::               Purpose of the manual, and how to use it.
+* Features::                      Reasons to install and use Scute.
+* Overview::                      Basic architecture of the Scute module.
+
+Preparation
+
+* Prerequisites::                 Dependencies of Scute.
+* Building the Source::           How to build Scute.
+* Certificate Preparation::       Preparing certificates for use with Scute.
+
+Client Authentication
+
+* Application Configuration::     Preparing the application for use with Scute.
+* Authentication With Service::   Using Scute for client authentication.
+
+Troubleshooting
+
+Internals
+
+* Features and Limitations::      Details about the interfaces implemented.
+* Developing Scute::              How to understand or improve Scute.
+* Mozilla Compatibility::         Interoperability notes for Mozilla NSS.
+
+
+@end detailmenu
+@end menu
+
+@node Introduction
+@chapter Introduction
+
+This is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
+Smart Card Daemon.  Currently, only the OpenPGP card is supported.
+
+Scute enables use of the OpenPGP smart card in applications supporting
+PKCS #11 compliant security tokens.  The main application at this time
+is client authentication in Mozilla-based web browsers.  In the future,
+other applications will be supported.
+
+
+@menu
+* Getting Started::               Purpose of the manual, and how to use it.
+* Features::                      Reasons to install and use Scute.
+* Overview::                      Basic architecture of the Scute module.
+@end menu
+
+
+@node Getting Started
+@section Getting Started
+
+This manual documents the Scute module, how it can be used for common
+applications supported by it, and how it can be extended and improved by
+programmers.  It is thus a user manual as well as a developer manual.
+
+The reader is assumed to possess basic knowledge about cryptography in
+general, and public key cryptography in particular.  The underlying
+cryptographic engines that are used by the library are not explained,
+but where necessary, special features or requirements are provided.
+
+This manual can be used in several ways.  If read from the beginning to
+the end, it gives a good introduction into the module and how it can be
+used in an application.  Forward references are included where
+necessary.  Later on, the manual can be used as a reference manual to
+get just the information needed about any particular application of the
+module.
+
+
+@node Features
+@section Features
+
+Scute is currently the only implementation of PKCS #11 for the OpenPGP
+smart card.  Apart from that, it offers a couple of other benefits:
+
+@table @asis
+@item it's free software
+Anybody can use, modify, and redistribute it under the terms of the GNU
+General Public License (@pxref{Copying}).
+
+@item it's built to grow
+Although Scute currently only provides a single function, client
+authentication using OpenPGP smart cards in Mozilla-based web browsers,
+it was built with the intention of supporting other applications as well
+in the future.
+
+@item it's easy
+Building and installing Scute is easy, and preparing smart cards for use
+with Scute is a snatch using the GnuPG 2.0 framework.  The integration
+of Scute into the application is seamless.
+@end table
+
+
+@node Overview
+@section Overview
+
+Scute is a security device that implements the PKCS #11 interface for
+security tokens.  Applications which know how to use the PKCS #11
+interface to access security tokens for crytpographic operations can use
+Scute to access the OpenPGP smart card.  An important example of such an
+application is the Firefox web browser by the Mozilla project, which
+uses the Mozilla Network Security Services library (NSS).
+
+Scute itself does not include a driver for the smart card itself.
+Instead, it uses the GnuPG 2.0 framework to access the smart cards and
+associated data like certificates.  Scute acts as the glue between the
+application and GnuPG 2.0.
+
+Currently, only client authentication over HTTPS with Firefox using the
+OpenPGP card is supported.  In this configuration, Scute allows users to
+authenticate themselves to a remote web service without entering their
+log-in information.
+
+
+@node Preparation
+@chapter Preparation
+
+To use Scute, you first have to install the software.  You also have to
+prepare each card you want to use with Scute before it can be used.
+Furthermore, you need to configure the application to make use of Scute
+for cryptographic operations.  This chapter explains each of these steps
+in detail.
+
+@menu
+* Prerequisites::                 Dependencies of Scute.
+* Building the Source::           How to build Scute.
+* Certificate Preparation::       Preparing certificates for use with Scute.
+@end menu
+
+
+@node Prerequisites
+@section Prerequisites
+
+There are two types of dependencies for Scute: compile-time dependencies
+and run-time dependencies.  The compile-time dependencies only need to
+be fulfilled when Scute is compiled and installed.  The run-time
+dependencies need to be fulfilled when Scute is used in an application.
+
+Scute depends, in addition to the essential build utilities, on the
+following packages at build time:
+
+@table @code
+@item libgpg-error
+Scute uses the GnuPG 2.0 framework for error handling, so it depends on
+the GPG error library.  The minimum version required is 0.7.
+
+@item libassuan
+Scute uses the GnuPG 2.0 framework for communication with the GPG Agent,
+so it depends on the Assuan library.  The minimum version required is
+0.6.10.
+@end table
+
+At run-time, in addition to the run-time versions of the above
+libraries, you also need the following packages installed and
+configured:
+
+@table @asis
+@item GnuPG
+Scute uses the GnuPG 2.0 framework to access the OpenPGP card and for
+certificate management.  The minimum version required is 2.0.0.
+
+@strong{Caution:} A functional installation of GnuPG 2.0 requires a
+running GPG Agent process, which must be advertised to the applications
+via the @code{GPG_AGENT_INFO} environment variable.  Please make sure
+that you fulfill this requirement before using Scute in an application,
+running the Scute test suite, or preparing certificates as described in
+@ref{Certificate Preparation}.  @xref{Invoking GPG-AGENT, , , gnupg,
+Using the GNU Privacy Guard}, for details on how to run the GPG Agent.
+
+@item Pinentry
+Pinentry is a dependency of GnuPG 2.0, so it also needs to be installed
+with it.
+
+@item Firefox et al.
+Firefox is the first application supported by Scute.  In the future,
+other applications may be supported.  The applications are not
+dependencies of Scute, but Scute can not be used stand-alone, so you can
+not experience it without an application.
+@end table
+
+
+@node Building the Source
+@section Building the Source
+
+Scute does comply to the GNU coding standards and thus can be compiled
+and installed according to the generic installation instructions found
+in the source package in the file @code{INSTALL}.  There are no Scute
+specific options to the configure script.
+
+After installation, the @code{libscute.so} module file can be found in
+the library directory of the installation path.
+
+
+@node Certificate Preparation
+@section Certificate Preparation
+
+To use an OpenPGP card with Scute, it first has to be initialized by
+generating or loading a key on the card, see
+@uref{http://www.gnupg.org/(en)/howtos/card-howto/en/smartcard-howto.html,
+the OpenPGP Card How-To}.  Then a certificate has to be created and
+imported into GPGSM.  This task involves three steps: First, a
+certificate signing request (@acronym{CSR}) has to be created that
+matches the key on the card.  This certificate signing request then has
+to be submitted to a certificate authority (@acronym{CA}), which will
+create the certificate and send it back to you.  At last, the
+certificate has to be imported into GPGSM.  This section will explain
+all of these steps in detail.
+
+Before you start, make sure that the GPG Agent is running, see
+@ref{Prerequisites}.  There is no need to configure GPGSM, so you can
+create a CSR with the command:
+
+@example
+$ gpgsm-gencert.sh > floppy-head.p10
+Key type
+ [1] RSA
+ [2] Existing key
+ [3] Direct from card
+Your selection: 3
+You selected: Direct from card
+@end example
+
+As we create a certificate for the OpenPGP Card, the option ``@code{[3]
+Direct from card}'' should be selected.
+
+@example
+Card with S/N D27600012401010100010000051B0000 found
+gpg-agent uses OPENPGP.3 as ssh key
+Select key 
+ [1] OPENPGP.1
+ [2] OPENPGP.2
+ [3] OPENPGP.3
+ [4] back
+Your selection: 3
+You selected: OPENPGP.3
+Key usage
+ [1] sign, encrypt
+ [2] sign
+ [3] encrypt
+Your selection: 2
+You selected: sign
+@end example
+
+The only operation currently supported is client authentication.  For
+this, the authentication key has to be selected.  This is the third key
+on the card, so the options ``@code{[3] OPENPGP.3}'' and ``@code{[2]
+sign}'' should be chosen.  Note that the key usage is only advisory, and
+the CA may assign different capabilities.
+
+@example
+Name (DN)
+> CN=Floppy Head,OU="Webserver Team",O="Snake Oil, Ltd",L="Snake Town",ST="Snake Desert",C=XY
+E-Mail addresses (end with an empty line)
+> floppy.head@@example.com
+E-Mail addresses (end with an empty line)
+> 
+DNS Names (optional; end with an empty line)
+> 
+URIs (optional; end with an empty line)
+> 
+@end example
+
+As a last step, the common name and e-mail address of the key owner need
+to be specified by you.  The above are only an example for a fictious
+person working at a fictious company.  DNS names are only meaningful for
+server certificates and thus should be left empty.
+
+We have now entered all required information and gpgsm will display what
+it has gathered and ask whether to create the certificate request:
+
+@example
+Parameters for certificate request to create:
+     1	Key-Type: card:OPENPGP.3
+     2	Key-Length: 
+     3	Key-Usage: sign
+     4	Name-DN: CN=Floppy Head,OU="Webserver Team",O="Snake Oil, Ltd",L="Snake Town",ST="Snake Desert",C=XY
+     5	Name-Email: floppy.head@@example.com
+
+Really create such a CSR?
+ [1] yes
+ [2] no
+Your selection: 1
+You selected: yes
+@end example
+
+GPGSM will now start working on creating the request.  During this time
+you will be asked once for a passphrase to unprotect the authentication
+key on the card.  A pop up window will appear to ask for it.
+
+When it is ready, you should see the final notice:
+
+@example
+  gpgsm: certificate request created
+@end example
+
+Now, you may look at the created request:
+
+@example
+$ cat floppy-head.p10
+-----BEGIN CERTIFICATE REQUEST-----
+MIICCDCCAXECAQAwgYExCzAJBgNVBAYTAlhZMRUwEwYDVQQIEwxTbmFrZSBEZXNl
+cnQxEzARBgNVBAcTClNuYWtlIFRvd24xFzAVBgNVBAoTDlNuYWtlIE9pbCwgTHRk
+MRcwFQYDVQQLEw5XZWJzZXJ2ZXIgVGVhbTEUMBIGA1UEAxMLRmxvcHB5IEhlYWQw
+gaAwDQYJKoZIhvcNAQEBBQADgY4AMIGKAoGBANWaM9YS89AOx3GX1Rua+4DUHwbL
+wt0rBYdBddlabMMteVjUcOOhbFMirLpLAi1S8fUXNiy84ysOmFStmvSIXDsAgXq5
+1ESOU4SNg2zEkPDF1WYJ5BFIXdYq9i2k5W7+ctV8PkKv3e5IeYXTa5qppIPD31de
+gM8Qj7tK0hL/eNCfAgQAAQABoEUwQwYJKoZIhvcNAQkOMTYwNDAiBgNVHREEGzAZ
+gRdmbG9wcHkuaGVhZEBleGFtcGxlLmNvbTAOBgNVHQ8BAf8EBAMCBsAwDQYJKoZI
+hvcNAQEFBQADgYEAFC9q6+ib9YGCLB/2AlZR+/dvb+pEeXR1EbpV/dw/gjP1yPY6
+29n8ZIDLUvQvNCtfCcXFxFimVSSB/KmFXXsJbM+NXQyT6Ocn34iHmkf9IVRMWQWg
+ZBYfQVeXAd7XlxI6d1wXDLwD/26lTU/rH2JU6H1+zSfZxqwVC4Iu+kiN4Y8=
+-----END CERTIFICATE REQUEST-----
+$
+@end example
+
+The next step is to submit this certificate request to the CA, which can
+then create a certificate and send it back to you.
+
+If, for example, you use the CA @uref{http://www.cacert.org, CAcert},
+then you can log into your account at the CAcert website, choose
+``FIXME'', check ``FIXME'', paste the above request block into the text
+field and click on ``Submit''.  If everything works correctly, a
+certificate will be shown, which you can cut and paste into a new file
+@file{floppy-head.crt}.
+
+Alternatively if, for example, you set up your own CA with OpenSSL, then
+you can create your own certificate by issueing a command similar
+@code{openssl ca -in floppy-head.p10 -cert snakeoil-ca-rsa.crt -keyfile
+snakeoil-ca-rsa.key -out floppy-head.crt}.  Please see the OpenSSL
+documentation for more details on how to set up and administrate a
+certificate authority infrastructure.
+
+In any way you should end up with a certificate file
+@file{floppy-head.crt}, which you then have to import into GPGSM.  It is
+also recommended that you import the root certificate of the CA first in
+the same fashion.
+
+@example
+$ gpgsm --import floppy-head.crt
+gpgsm: certificate imported
+  
+gpgsm: total number processed: 1
+gpgsm:               imported: 1
+@end example
+
+gpgsm tells you that it has imported the certificate.  It is now
+associated with the key you used when creating the request.  To see the
+content of your certificate, you may now enter:
+
+@example
+$ gpgsm -K Floppy
+/home/foo/.gnupg/pubring.kbx
+---------------------------
+Serial number: 10
+       Issuer: /CN=Snake Oil CA/OU=Certificate Authority/O=Snake Oil, Ltd/L=Snake Town/ST=Snake Desert/C=XY/EMail=ca@@snakeoil.dom
+      Subject: /CN=Floppy Head/OU=Webserver Team/O=Snake Oil, Ltd/ST=Snake Desert/C=XY
+     validity: 2006-11-11 14:09:12 through 2007-11-11 14:09:12
+     key type: 1024 bit RSA
+  fingerprint: EC:93:A2:55:C6:58:7F:C9:9E:96:DB:12:6E:64:99:54:BB:E1:94:68
+@end example
+
+The option ``@code{-K}'' is used above because this will only list
+certificates for which a private key is available.  To see more details,
+you may use ``@code{--dump-secret-keys}'' instead of ``@code{-K}''.
+
+
+@node Client Authentication
+@chapter Client Authentication
+
+@menu
+* Application Configuration::     Preparing the application for use with Scute.
+* Authentication With Service::   Using Scute for client authentication.
+@end menu
+
+Scute allows you to authenticate yourself to a website securely without
+entering a username or password by simply using your OpenPGP card.
+Currently, only Mozilla-based browsers like Firefox are supported,
+although other applications using Mozilla NSS or supporting PKCS #11
+modules may work.
+
+
+@node Application Configuration
+@section Application Configuration
+
+To prepare your application for use with Scute, you have to load the
+Scute module as a PKCS #11 module into the application.  With Firefox,
+this can be done by choosing @code{Edit->Preferences} in the menu.  In
+the preferences configuration dialog, you should select the
+@code{Advanced} configuration section, then the @code{Security} tab, and
+then select @code{Security Devices} in the category @code{Certificates}.
+
+@image{firefox-pref}
+
+In the devices manager dialog, you can select @code{Load} to load a new
+PKCS #11 device.
+
+@image{firefox-dm-load-before}
+
+In the pop-up dialog that follows, you can give a module name
+(e.g. ``@code{Scute}'') and a module filename.  The latter should
+correspond to the full file name of the installed Scute module file
+@file{libscute.so}.  The default installation path is
+@file{/usr/local/lib}, which would mean that you have to provide the
+file name @file{/usr/local/lib/libscute.so}.  If you or your system
+administrator installed Scute in a different location, you have to
+adjust the file name correspondingly.
+
+@image{firefox-dm-load}
+
+After confirming installation of the security device, a pop-up window
+should confirm that the module was successfully loaded, and an entry for
+the security device should appear in the device manager list of
+@code{Security Modules and Devices}.
+
+@image{firefox-dm-load-after}
+
+When you insert the OpenPGP card for which you generated and imported a
+certificate earlier (see @ref{Certificate Preparation}), the device
+manager should detect this security token and display some information
+about it in the @code{Details} list when you select it from the module
+list.
+
+@image{firefox-dm-token-present}
+
+FIXME: Add some documentation and screenshots for the certificate
+manager.
+
+@node Authentication With Service
+@section Authentication With Service
+
+Before you access a web service which requires client authentication,
+for instance a fictious web service @indicateurl{https://example.com},
+the OpenPGP card should be present.  In this case, a pop-up window will
+appear that requests you to enter the PIN number protecting the
+authentication key on the OpenPGP card.  After entering the PIN number,
+your browser will be authenticated to the server.  If the server accepts
+your request and certificate, this is all which is required.  You should
+leave the card in the reader as long as the connection persists.
+Depending on how aggressively GPG Agent caches your PIN number, you may
+have to enter the PIN number again later to keep up the connection to
+the server.
+
+If the card is not present, or you enter the wrong PIN, or the server
+does not admit your certificate, you will get an error message.  This
+error message is generated by the application and Scute can not
+influence it.  Unfortunately, in Firefox 1, this error message is not
+very user friendly: ``@code{example.com has received an incorrect or
+unexpected message.  Error code: -12227}''.
+
+FIXME: Screenshot.
+
+FIXME: Document possible error codes.
+
+
+@node Troubleshooting
+@chapter Troubleshooting
+
+@strong{Symptom:} Loading the Scute security device in the security
+device manager of Firefox fails with "Unable to load module".
+
+@strong{Solution:} Make sure that Scute is correctly installed, and that
+all libraries and executables are available.  Make sure that the GPG
+Agent is running and can be found via the environment variable
+@code{GPG_AGENT_INFO}.  @xref{Invoking GPG-AGENT, , , gnupg, Using the
+GNU Privacy Guard}, for details on how to run the GPG Agent.
+
+
+@strong{Symptom:} Client authentication fails with "<example.com> has
+received an incorrect or unexpected message.  Error code: -12227".
+
+@strong{Solution:} Make sure that the correct OpenPGP card is inserted
+and the certificate available in GPGSM.  Check that the OpenPGP card is
+detected correctly in the security device manager and the corresponding
+certificate is displayed in the certificate manager of Firefox.
+@xref{Authentication With Service}.
+
+
+@strong{Symptom:} The OpenPGP card is detected and displayed in the
+security device manager in Firefox, but no corresponding certificate is
+displayed in the certificate manager of Firefox.
+
+@strong{Solution:} Make sure that the corresponding certificate is
+imported in GPGSM.
+
+FIXME: Can this really happen???
+
+
+@node Internals
+@chapter Internals
+
+The following notes are intended for people interested in more technical
+details about Scute and its implementation.  They give an overview about
+its scope and potential compatibility issues with applications.
+
+@menu
+* Features and Limitations::      Details about the interfaces implemented.
+* Developing Scute::              How to understand or improve Scute.
+* Mozilla Compatibility::         Interoperability notes for Mozilla NSS.
+@end menu
+
+
+@node Features and Limitations
+@section Features and Limitations
+
+Scute implements version 2.20 of the
+@uref{http://www.rsasecurity.com/rsalabs/node.asp?id=2133, PKCS #11}
+specification.
+
+The @uref{http://www.g10code.com/p-card.html,OpenPGP smart card}
+application is supported in read-only mode.
+
+The following functions are not supported:
+
+@table @code
+@item C_Initialize
+No support for native thread package.  Locking callbacks must be
+provided if multi-threaded operation is desired.
+
+@item C_WaitForSlotEvent
+Not implemented.  The interface as specified by PKCS #11 is broken
+anyway, as the function can not safely be canceled.  Thus, we require
+polling.
+
+@item C_GetOperationState
+@itemx C_SetOperationState
+Not supported.
+
+@item C_InitToken
+@itemx
+
+@itemx C_InitPIN
+@itemx C_SetPIN
+Not supported.  No write operations are allowed.  To configure the
+token, please use the tools accompanying the GnuPG software suite.
+
+@item C_Login
+@itemx C_Logout
+Not supported.  No login into the token by the software is required.
+Passphrase queries are implemented by the use of GPG Agent and Pinentry.
+
+@item C_EncryptInit
+@itemx C_Encrypt
+@itemx C_EncryptUpdate
+@itemx C_EncryptFinal
+@itemx C_DigestInit
+@itemx C_Digest
+@itemx C_DigestUpdate
+@itemx C_DigestKey
+@itemx C_DigestFinal
+@itemx C_VerifyInit
+@itemx C_Verify
+@itemx C_VerifyUpdate
+@itemx C_VerifyFinal
+@itemx C_VerifyRecoverInit
+@itemx C_VerifyRec
+Not supported.  Only secret key operations are supported.
+
+@item C_SignInit
+@itemx C_Sign
+Currently, only signing 36 bytes (MD5+SHA1) hashes is supported (used
+for client authentication).
+
+@item C_DecryptInit
+@itemx C_Decrypt
+Not yet supported, but will be in the future.
+
+@item C_SignUpdate
+@itemx C_SignFinal
+@itemx C_DecryptUpdate
+@itemx C_DecryptFinal
+No progressive crypto-operations are supported.
+
+@item C_SignRecoverInit
+@itemx C_SignRecover
+Not supported.
+
+@item C_DigestEncryptUpdate
+@itemx C_DecryptDigestUpdate
+@itemx C_SignEncryptUpdate
+@itemx C_DecryptVerifyUpdate
+Dual-purpose cryptographic functions are not supported.
+
+@item C_GenerateKey
+@itemx C_GenerateKeyPair
+@itemx C_WrapKey
+@itemx C_UnwrapKey
+@itemx C_DeriveKey
+Key management functions are not supported.  Please use the tools
+accompanying the GnuPG software suite to generate and import keys for
+use with the token.
+
+@item C_SeedRandom
+@itemx C_GenerateRandom
+Not supported at this point.  @code{C_GenerateRandom} may be supported
+in the future, though.
+
+@item C_CreateObject
+@itemx C_CopyObject
+@itemx C_DestroyObject
+@itemx C_SetAttributeValue:
+Only read-only operations are supported on objects.
+
+@item C_GetObjectSize
+Not supported.
+
+@item CKO_CERTIFICATE
+The label specifies the key on the card used (e.g. @code{OPENPGP.3}).
+The ID is the fingerprint.
+
+@item CKO_PRIVATE_KEY:
+The @code{CKA_LOCAL} attribute can not be supported by the OpenPGP card.
+It is always set to false (as the key on the card may be copied to the
+card from an external source).
+@end table
+
+@node Developing Scute
+@section Developing Scute
+
+Scute is single-threaded.  There is a global lock that is taken in all
+entry points of Scute, except for @code{C_Initialize},
+@code{C_Finalize}, @code{C_GetFunctionList}, and stubs.
+
+Here are a couple of hints on how to develop PKCS #11 modules for
+Mozilla:
+
+@code{libopensc2} ships with a @code{pkcs11-spy} library that can be
+loaded as a wrapper around the PKCS #11 library you want to use to log
+all functions invoked by Mozilla.  Here is how to use it:
+
+Set the @code{PKCS11SPY_OUTPUT} environment variable to a filename.
+@code{pkcs11-spy} appends its log messages at the end of this file.  Set
+the @code{PKCS11SPY} environment variable to the filename of the PKCS
+#11 module you actually want to use.  Start Mozilla within this
+environment.
+
+There is a different, probably more powerful way to debug Mozilla PKCS
+#11 libraries.  However, to be able to use it, you need to configure and
+compile the Mozilla NSS sources with @code{--enable-debug}.
+Instructions can be found at:
+@uref{http://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html}
+
+Here are a couple of links to more information about implementing a
+PKCS #11 module for Mozilla:
+
+@table @uref
+@item http://docs.sun.com/source/816-6150-10/index.htm
+@itemx http://docs.sun.com/source/816-6150-10/pkcs.htm
+Implementing PKCS #11 for the Netscape Security Library (Caution: The
+content may be out of date)
+
+@item http://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
+Common PKCS #11 Implementation Problems
+
+@item http://www.mozilla.org/projects/security/pki/pkcs11/
+PKCS #11 Conformance Testing
+
+@item http://www.mozilla.org/projects/security/pki/nss/
+The Mozilla NSS web page
+@end table
+
+
+@node Mozilla Compatibility
+@section Mozilla Compatibility
+
+Mozilla has a bug that causes the wrong security device to be unloaded
+when unloading a security device.  Also, the displayed list becomes
+corrupt. When closing and reopening the security device manager, the
+list displayed is correct, but in anyway the wrong security module is
+unloaded.
+
+
+@include gpl.texi
+
+
+@node Concept Index
+@unnumbered Concept Index
+
+@printindex cp
+
+
+@summarycontents
+@contents
+@bye
