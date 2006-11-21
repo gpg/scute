@@ -85,8 +85,7 @@ struct cert
   /* The certificate in DER format.  This is not entered by the search
      function, but afterwards by the filter before converting it into
      a PKCS #11 object.  */
-#define MAX_CERT_SIZE 4096
-  unsigned char cert_der[MAX_CERT_SIZE];
+  unsigned char *cert_der;
   int cert_der_len;
 };
 

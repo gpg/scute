@@ -1,5 +1,12 @@
 2006-11-21  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/cert-gpgsm.c (cert_reset): Free CERT->cert_der if set.
+	(export_cert): Reimplement using data channel.
+	(export_cert_compat): This contains the old version for
+	compatibility.
+	* src/cert.h (MAX_CERT_SIZE): Macro removed.
+	(struct cert): Changed member CERT_DER into a pointer.
+
 	* configure.ac (AC_CONFIG_FILES): Add doc/manual/Makefile.
 	* doc/Makefile.am (SUBDIRS): New variable.
 	* doc/manual/Makefile, doc/manual/scute.texi, doc/manual/gpl.texi,

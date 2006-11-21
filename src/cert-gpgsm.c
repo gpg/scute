@@ -34,7 +34,6 @@
 #include <config.h>
 #endif
 
-#include <errno.h>
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
@@ -80,6 +79,8 @@ cert_reset (struct cert *cert)
     free (cert->issuer_name);
   if (cert->uid)
     free (cert->uid);
+  if (cert->cert_der)
+    free (cert->cert_der);
 
   memset (cert, '\0', sizeof (struct cert));
 }
@@ -162,7 +163,7 @@ decode_c_string (const char *src, char **destp, size_t len)
 	 string.  */
       dest = malloc (strlen (src) + 1);
       if (!dest)
-	return gpg_error_from_errno (errno);
+	return gpg_error_from_syserror ();
 
       *destp = dest;
     }
@@ -351,7 +352,7 @@ search_certs_line (struct search_ctx *ctx)
 	{
 	  cert->issuer_serial = strdup (field[7]);
 	  if (!cert->issuer_serial)
-	    return gpg_error_from_errno (errno);
+	    return gpg_error_from_syserror ();
 	}
 
 #if 0
@@ -519,8 +520,10 @@ struct search_ctx_by_field
 };
   
 
+/* This is a compatibility function for GPGSM 2.0.0, which does not
+   support the --data option with the EXPORT command.  */
 static gpg_error_t
-export_cert (char *fpr, struct cert *cert)
+export_cert_compat (char *fpr, struct cert *cert)
 {
   gpg_error_t err;
   assuan_context_t ctx;
@@ -531,8 +534,13 @@ export_cert (char *fpr, struct cert *cert)
   int output_fds[2];
   int child_fds[2];
 
+#define MAX_CERT_SIZE 4096
+  cert->cert_der = malloc (MAX_CERT_SIZE);
+  if (!cert->cert_der)
+    return gpg_error_from_syserror ();
+
   if(pipe (output_fds) < 0)
-    return gpg_error_from_errno (errno);
+    return gpg_error_from_syserror ();
 
   child_fds[0] = output_fds[1];
   child_fds[1] = -1;
@@ -576,6 +584,95 @@ export_cert (char *fpr, struct cert *cert)
 }
 
 
+struct export_hook
+{
+  /* The exported data.  */
+  char *buffer;
+
+  /* The length of the exported data buffer.  */
+  unsigned int buffer_len;
+
+  /* The size of the allocated exported data buffer.  */
+  unsigned int buffer_size;
+};
+
+#define EXP_DATA_START 4096
+
+static gpg_error_t
+export_cert_cb (void *hook, char *line, size_t line_len)
+{
+  struct export_hook *exp = hook;
+
+  if (exp->buffer_size - exp->buffer_len < line_len)
+    {
+      unsigned int new_buffer_size = exp->buffer_size * 2;
+      char *new_buffer = realloc (exp->buffer, new_buffer_size);
+
+      if (!new_buffer)
+	return gpg_error_from_syserror ();
+
+      exp->buffer = new_buffer;
+      exp->buffer_size = new_buffer_size;
+    }
+
+  memcpy (exp->buffer + exp->buffer_len, line, line_len);
+
+  return 0;
+}
+
+
+static gpg_error_t
+export_cert (char *fpr, struct cert *cert)
+{
+  gpg_error_t err;
+  assuan_context_t ctx;
+  const char *argv[] = { "gpgsm", "--server", NULL };
+#define COMMANDLINELEN 80
+  char cmd[COMMANDLINELEN];
+  int output_fds[2];
+  int child_fds[2];
+  struct export_hook exp;
+
+  if(pipe (output_fds) < 0)
+    return gpg_error_from_syserror ();
+
+  child_fds[0] = output_fds[1];
+  child_fds[1] = -1;
+
+  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, child_fds);
+  close (output_fds[1]);
+  if (err)
+    {
+      close (output_fds[0]);
+      return err;
+    }
+
+  exp.buffer = NULL;
+  exp.buffer_len = 0;
+  exp.buffer_size = 0;
+
+  snprintf (cmd, sizeof (cmd), "EXPORT --data -- %s\n", cert->fpr);
+  err = assuan_transact (ctx, cmd, export_cert_cb, &exp,
+			 NULL, NULL, NULL, NULL);
+  assuan_disconnect (ctx);
+  close (output_fds[0]);
+
+  /* For compatibility with GPGSM 2.0.0, we fall back to a work around
+     in that case.  */
+  if (gpg_err_code (err) == GPG_ERR_ASS_NO_OUTPUT)
+    {
+      if (cert->cert_der)
+	{
+	  free (cert->cert_der);
+	  cert->cert_der = NULL;
+	}
+      err = export_cert_compat (fpr, cert);
+    }
+
+  return err;
+}
+
+
 static gpg_error_t
 search_certs_by_field (void *hook, struct cert *cert)
 {
@@ -593,8 +690,6 @@ search_certs_by_field (void *hook, struct cert *cert)
 	return err;
 
       err = (*ctx->search_cb) (ctx->search_cb_hook, cert);
-
-      /* If necessary, release cert->der here.  */
     }
 
   return err;
