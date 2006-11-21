@@ -265,9 +265,9 @@ search_certs_line (struct search_ctx *ctx)
 
   /* Strip a trailing carriage return.  */
   if (ctx->pending_len > 0
-      && ctx->pending[ctx->pending_len] == '\r')
+      && ctx->pending[ctx->pending_len - 1] == '\r')
     ctx->pending_len--;
-  ctx->pending[ctx->pending_len] = '\0';
+  ctx->pending[ctx->pending_len - 1] = '\0';
   ctx->pending_len = 0;
 
   cert = &ctx->cert;
@@ -605,7 +605,8 @@ export_cert_cb (void *hook, char *line, size_t line_len)
 
   if (exp->buffer_size - exp->buffer_len < line_len)
     {
-      unsigned int new_buffer_size = exp->buffer_size * 2;
+      unsigned int new_buffer_size = exp->buffer_size ?
+	(exp->buffer_size * 2) : EXP_DATA_START;
       char *new_buffer = realloc (exp->buffer, new_buffer_size);
 
       if (!new_buffer)
@@ -616,6 +617,7 @@ export_cert_cb (void *hook, char *line, size_t line_len)
     }
 
   memcpy (exp->buffer + exp->buffer_len, line, line_len);
+  exp->buffer_len += line_len;
 
   return 0;
 }
@@ -657,10 +659,15 @@ export_cert (char *fpr, struct cert *cert)
   assuan_disconnect (ctx);
   close (output_fds[0]);
 
-  /* For compatibility with GPGSM 2.0.0, we fall back to a work around
-     in that case.  */
-  if (gpg_err_code (err) == GPG_ERR_ASS_NO_OUTPUT)
+  if (!err)
     {
+      cert->cert_der = exp.buffer;
+      cert->cert_der_len = exp.buffer_len;
+    }
+  else if (gpg_err_code (err) == GPG_ERR_ASS_NO_OUTPUT)
+    {
+      /* For compatibility with GPGSM 2.0.0, we fall back to a work
+	 around in that case.  */
       if (cert->cert_der)
 	{
 	  free (cert->cert_der);

@@ -1,5 +1,8 @@
 2006-11-21  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/cert-gpgsm.c (search_certs_line): Fix off-by-one error.
+	(export_cert_cb): Fix bug if EXP->buffer_size is 0.
+
 	* src/cert-gpgsm.c (cert_reset): Free CERT->cert_der if set.
 	(export_cert): Reimplement using data channel.
 	(export_cert_compat): This contains the old version for
