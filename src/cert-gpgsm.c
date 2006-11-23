@@ -378,8 +378,10 @@ search_certs_line (struct search_ctx *ctx)
     case RT_UID:
       if (cert->valid)
 	{
-	  /* Field 2 has the trust info, and field 10 has the user ID.  */
-	  if (fields >= 10)
+	  /* Field 2 has the trust info, and field 10 has the user ID.
+	     Note that more than one UID field can appear.  We only
+	     remember the last one.  It's not used anyway.  */
+	  if (fields >= 10 && !cert->uid)
 	    {
 	      if (decode_c_string (field[9], &cert->uid, 0))
 		return gpg_error (GPG_ERR_ENOMEM);	/* FIXME */
