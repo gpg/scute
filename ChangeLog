@@ -1,3 +1,11 @@
+2006-11-24  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/pkcs11.h: New file.
+	* src/Makefile.am (libscute_la_SOURCES): Add pkcs11.h.
+	* src/cryptoki.h: Include "pkcs11.h" instead of original PKCS #11
+	header file.
+	* tests/t-support.h (mechanism_type_str): Remove most mechanisms.
+
 2006-11-23  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/cert-gpgsm.c (search_certs_line): Don't overwrite CERT->uid.

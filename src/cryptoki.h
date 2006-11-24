@@ -38,12 +38,6 @@
 #define CRYPTOKI_VERSION_MINOR	20
 
 
-#define CK_DISABLE_TRUE_FALSE	1
-
-#ifdef HAVE_W32_SYSTEM
-#include "cryptoki-w32.h"
-#else
-#include "cryptoki-generic.h"
-#endif
+#include "pkcs11.h"
 
 #endif	/* !_CRYPTOKI_H_ */

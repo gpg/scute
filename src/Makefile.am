@@ -48,7 +48,7 @@ libscute_la_LDFLAGS = $(scute_version_script_cmd) -version-info \
 libscute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
 libscute_la_LIBADD = @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
-libscute_la_SOURCES = cryptoki.h debug.h settings.h support.h		\
+libscute_la_SOURCES = cryptoki.h pkcs11.h debug.h settings.h support.h	\
 	locking.h locking.c error-mapping.h error-mapping.c		\
 	agent.h agent.c							\
 	slots.h slots.c table.h table.c					\
