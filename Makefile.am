@@ -1,10 +1,7 @@
 # Makefile.am - Top level Makefile for scute.
 # Copyright (C) 2006 g10 Code GmbH
 # 
-# This file is part of scute[1].
-#
-# [1] Derived from the RSA Security Inc. PKCS #11 Cryptographic Token
-# Interface (Cryptoki).
+# This file is part of Scute.
 #
 # Scute is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -43,4 +40,4 @@ else
 tests = 
 endif
 
-SUBDIRS = include src ${tests} doc
+SUBDIRS = src ${tests} doc

@@ -7,11 +7,6 @@ Security related bug reports: security@gnupg.org
 g10 Code GmbH <code@g10code.com>
  - Design and implementation
 
-RSA Security Inc.
- - "RSA Security Inc. PKCS #11 Cryptographic Token Interface (Cryptoki)"
-   e.g. include/cryptoki-generic.h, include/cryptoki-w32.h,
-   include/pkcs11.h, include/pkcs11f.h and include/pkcs11t.h
-
 
  Copyright 2006 g10 Code GmbH
 

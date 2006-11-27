@@ -417,12 +417,8 @@ and reopening the security device manager.
 Copyright and License
 =====================
 
-The majority of files are copyrighted by g10 Code GmbH and licensed
-under the GPL with a special exception for Mozilla.
-
-Some files in the include/ directory are copyrighted by RSA Security
-Inc. and licensed under the conditions found in the file
-include/disclaimer.txt.
+Scute is copyrighted by g10 Code GmbH and licensed under the GPL with
+a special exception for Mozilla.
 
 
 g10 Code GmbH

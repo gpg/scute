@@ -1,10 +1,7 @@
 /* error-mapping.c - Scute error mapping.
    Copyright (C) 2006 g10 Code GmbH
 
-   This file is part of Scute[1].
-
-   [1] Derived from the RSA Security Inc. PKCS #11 Cryptographic Token
-   Interface (Cryptoki).
+   This file is part of Scute.
  
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by

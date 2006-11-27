@@ -1,3 +1,15 @@
+2006-11-27  Marcus Brinkmann  <marcus@g10code.de>
+
+	* README (Copyright and License): Update copyright notice.  Also
+	for all other files.
+	* AUTHORS (Maintainer): Removed RSA Security Inc.
+	* include/pkcs11t.h, include/pkcs11f.h, include/pkcs11.h,
+	include/disclaimer.txt, include/cryptoki-w32.h,
+	include/cryptoki-generic.h, include/README, include/Makefile.am:
+	Files removed.
+	* configure.ac (AC_CONFIG_FILES): Removed include/Makefile.
+	* Makefile.am (SUBDIRS): Removed include directory.
+
 2006-11-24  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/pkcs11.h: New file.
