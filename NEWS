@@ -1,3 +1,18 @@
+Noteworthy changes in version 1.1.0 (unreleased)
+------------------------------------------------
+
+ * Scute now comes with a manual.
+
+ * Code licensed from RSA Security Inc. has been removed due to
+   licensing issues ("advertisment clause").
+
+ * A memory leak has been fixed.  Note that you need libassuan 1.0.1
+   to fix another memory leak.
+
+ * Scute now supports certificates larger than the kernel pipe buffer
+   with GPGSM versions later than 2.0.0 (exclusive).
+
+
 Noteworthy changes in version 1.0.0 (2006-11-11)
 ------------------------------------------------
 
