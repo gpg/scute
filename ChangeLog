@@ -1,5 +1,7 @@
 2006-11-27  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/pkcs11.h: Add more definitions provided by Andreas Jellinghaus.
+
 	* README (Copyright and License): Update copyright notice.  Also
 	for all other files.
 	* AUTHORS (Maintainer): Removed RSA Security Inc.
