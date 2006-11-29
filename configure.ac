@@ -98,10 +98,6 @@ AH_VERBATIM([_REENTRANT],
 # Checks for programs.
 AC_PROG_CC
 
-# FIXME: We should support setting the CFLAGS by the user.  But
-# -std=gnu99 is required.
-CFLAGS="-std=gnu99 -Wall -Wno-pointer-sign -g -O3"
-
 AC_ARG_ENABLE(optimization,
    AC_HELP_STRING([--disable-optimization],
                   [disable compiler optimization]),
