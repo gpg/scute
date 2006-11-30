@@ -85,6 +85,9 @@ AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 AM_MAINTAINER_MODE
 AC_CANONICAL_HOST
 
+# Autobuilder support.
+AB_INIT
+
 # Enable GNU extensions on systems that have them.
 AC_GNU_SOURCE
 

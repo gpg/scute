@@ -1,3 +1,8 @@
+2006-11-30  Marcus Brinkmann  <marcus@g10code.de>
+
+	* m4/autobuild.m4: New file.
+	* configure.ac: Invoke AB_INIT.
+
 2006-11-29  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac (CFLAGS): Remove variable.
