@@ -48,6 +48,11 @@
 #ifndef PKCS11_H
 #define PKCS11_H 1
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
 /* The version of cryptoki we implement.  The revision is changed with
    each modification of this file.  If you do not use the "official"
    version of this file, please consider deleting the revision macro
@@ -674,11 +679,11 @@ _CK_DECLARE_FUNCTION (C_Logout, (ck_session_handle_t session));
 
 _CK_DECLARE_FUNCTION (C_CreateObject,
 		      (ck_session_handle_t session,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long count, ck_object_handle_t *object));
 _CK_DECLARE_FUNCTION (C_CopyObject,
 		      (ck_session_handle_t session, ck_object_handle_t object,
-		       struct ck_attribute *template, unsigned long count,
+		       struct ck_attribute *templ, unsigned long count,
 		       ck_object_handle_t *new_object));
 _CK_DECLARE_FUNCTION (C_DestroyObject,
 		      (ck_session_handle_t session,
@@ -690,16 +695,16 @@ _CK_DECLARE_FUNCTION (C_GetObjectSize,
 _CK_DECLARE_FUNCTION (C_GetAttributeValue,
 		      (ck_session_handle_t session,
 		       ck_object_handle_t object,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long count));
 _CK_DECLARE_FUNCTION (C_SetAttributeValue,
 		      (ck_session_handle_t session,
 		       ck_object_handle_t object,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long count));
 _CK_DECLARE_FUNCTION (C_FindObjectsInit,
 		      (ck_session_handle_t session,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long count));
 _CK_DECLARE_FUNCTION (C_FindObjects,
 		      (ck_session_handle_t session,
@@ -844,7 +849,7 @@ _CK_DECLARE_FUNCTION (C_DecryptVerifyUpdate,
 _CK_DECLARE_FUNCTION (C_GenerateKey,
 		      (ck_session_handle_t session,
 		       struct ck_mechanism *mechanism,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long count,
 		       ck_object_handle_t *key));
 _CK_DECLARE_FUNCTION (C_GenerateKeyPair,
@@ -869,14 +874,14 @@ _CK_DECLARE_FUNCTION (C_UnwrapKey,
 		       ck_object_handle_t unwrapping_key,
 		       unsigned char *wrapped_key,
 		       unsigned long wrapped_key_len,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long attribute_count,
 		       ck_object_handle_t *key));
 _CK_DECLARE_FUNCTION (C_DeriveKey,
 		      (ck_session_handle_t session,
 		       struct ck_mechanism *mechanism,
 		       ck_object_handle_t base_key,
-		       struct ck_attribute *template,
+		       struct ck_attribute *templ,
 		       unsigned long attribute_count,
 		       ck_object_handle_t *key));
 
@@ -1227,5 +1232,9 @@ typedef struct ck_c_initialize_args *CK_C_INITIALIZE_ARGS_PTR;
 #ifdef __WIN32
 #pragma pack(pop, cryptoki)
 #endif	/* !CRYPTOKI_COMPAT */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* PKCS11_H */
