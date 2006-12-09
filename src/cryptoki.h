@@ -30,10 +30,6 @@
 #ifndef _CRYPTOKI_H_
 #define _CRYPTOKI_H_	1
 
-/* The version of cryptoki we implement.  */
-#define CRYPTOKI_VERSION_MAJOR	2
-#define CRYPTOKI_VERSION_MINOR	20
-
 
 #include "pkcs11.h"
 

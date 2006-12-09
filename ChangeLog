@@ -1,3 +1,19 @@
+2006-12-09  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/pkcs11.h [__WIN32]: Changed to [_WIN32 ||
+	CRYPTOKI_FORCE_WIN32].
+	(ck_rv_t): Changed to unsigned long.
+	(CRYPTOKI_VERSION_MAJOR, CRYPTOKI_VERSION_MINOR,
+	CRYPTOKI_VERSION_REVISION): New macros.
+	(CKO_VENDOR_DEFINED, CKH_VENDOR_DEFINED, CKK_VENDOR_DEFINED,
+	CKC_VENDOR_DEFINED, CKA_VENDOR_DEFINED, CKM_VENDOR_DEFINED,
+	CKF_EXTENSION, CKR_VENDOR_DEFINED): Add cast to suppress compiler
+	warning.
+	Submitted by Alon Bar-Lev.
+
+	* src/cryptoki.h (CRYPTOKI_VERSION_MAJOR, CRYPTOKI_VERSION_MINOR):
+	Removed.
+
 2006-11-30  Marcus Brinkmann  <marcus@g10code.de>
 
 	* m4/autobuild.m4: New file.

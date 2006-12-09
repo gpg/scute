@@ -48,13 +48,23 @@
 #ifndef PKCS11_H
 #define PKCS11_H 1
 
+/* The version of cryptoki we implement.  The revision is changed with
+   each modification of this file.  If you do not use the "official"
+   version of this file, please consider deleting the revision macro
+   (you may use a macro with a different name to keep track of your
+   versions).  */
+#define CRYPTOKI_VERSION_MAJOR		2
+#define CRYPTOKI_VERSION_MINOR		20
+#define CRYPTOKI_VERSION_REVISION	3
+
+
 #ifndef CRYPTOKI_COMPAT
 #define CRYPTOKI_COMPAT 1
 #endif
 
 /* System dependencies.  */
 
-#ifdef __WIN32
+#if defined(_WIN32) || defined(CRYPTOKI_FORCE_WIN32)
 
 /* There is a matching pop below.  */
 #pragma pack(push, cryptoki, 1)
@@ -207,7 +217,7 @@ typedef unsigned long ck_object_class_t;
 #define CKO_HW_FEATURE		(5)
 #define CKO_DOMAIN_PARAMETERS	(6)
 #define CKO_MECHANISM		(7)
-#define CKO_VENDOR_DEFINED	(1 << 31)
+#define CKO_VENDOR_DEFINED	((ck_object_class_t) (1 << 31))
 
 
 typedef unsigned long ck_hw_feature_type_t;
@@ -215,7 +225,7 @@ typedef unsigned long ck_hw_feature_type_t;
 #define CKH_MONOTONIC_COUNTER	(1)
 #define CKH_CLOCK		(2)
 #define CKH_USER_INTERFACE	(3)
-#define CKH_VENDOR_DEFINED	(1 << 31)
+#define CKH_VENDOR_DEFINED	((ck_hw_feature_type_t) (1 << 31))
 
 
 typedef unsigned long ck_key_type_t;
@@ -245,7 +255,7 @@ typedef unsigned long ck_key_type_t;
 #define CKK_AES			(0x1f)
 #define CKK_BLOWFISH		(0x20)
 #define CKK_TWOFISH		(0x21)
-#define CKK_VENDOR_DEFINED	(1 << 31)
+#define CKK_VENDOR_DEFINED	((ck_key_type_t) (1 << 31))
 
 
 typedef unsigned long ck_certificate_type_t;
@@ -253,7 +263,7 @@ typedef unsigned long ck_certificate_type_t;
 #define CKC_X_509		(0)
 #define CKC_X_509_ATTR_CERT	(1)
 #define CKC_WTLS		(2)
-#define CKC_VENDOR_DEFINED	(1 << 31)
+#define CKC_VENDOR_DEFINED	((ck_certificate_type_t) (1 << 31))
 
 
 typedef unsigned long ck_attribute_type_t;
@@ -342,7 +352,7 @@ typedef unsigned long ck_attribute_type_t;
 #define CKA_WRAP_TEMPLATE		(CKF_ARRAY_ATTRIBUTE | 0x211)
 #define CKA_UNWRAP_TEMPLATE		(CKF_ARRAY_ATTRIBUTE | 0x212)
 #define CKA_ALLOWED_MECHANISMS		(CKF_ARRAY_ATTRIBUTE | 0x600)
-#define CKA_VENDOR_DEFINED		(1 << 31)
+#define CKA_VENDOR_DEFINED		((ck_attribute_type_t) (1 << 31))
 
 
 struct ck_attribute
@@ -546,7 +556,7 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_DSA_PARAMETER_GEN		(0x2000)
 #define CKM_DH_PKCS_PARAMETER_GEN	(0x2001)
 #define CKM_X9_42_DH_PARAMETER_GEN	(0x2002)
-#define CKM_VENDOR_DEFINED		(1 << 31)
+#define CKM_VENDOR_DEFINED		((ck_mechanism_type_t) (1 << 31))
 
 
 struct ck_mechanism
@@ -577,14 +587,14 @@ struct ck_mechanism_info
 #define CKF_WRAP		(1 << 17)
 #define CKF_UNWRAP		(1 << 18)
 #define CKF_DERIVE		(1 << 19)
-#define CKF_EXTENSION		(1 << 31)
+#define CKF_EXTENSION		((ck_flags_t) (1 << 31))
 
 
 /* Flags for C_WaitForSlotEvent.  */
 #define CKF_DONT_BLOCK				(1)
 
 
-typedef unsigned int ck_rv_t;
+typedef unsigned long ck_rv_t;
 
 
 typedef ck_rv_t (*ck_notify_t) (ck_session_handle_t session,
@@ -1060,7 +1070,8 @@ struct ck_c_initialize_args
 #define CKR_CRYPTOKI_ALREADY_INITIALIZED	(0x191)
 #define CKR_MUTEX_BAD				(0x1a0)
 #define CKR_MUTEX_NOT_LOCKED			(0x1a1)
-#define CKR_VENDOR_DEFINED			(1 << 31)
+#define CKR_FUNCTION_REJECTED			(0x200)
+#define CKR_VENDOR_DEFINED			((ck_rv_t) (1 << 31))
 
 
 
