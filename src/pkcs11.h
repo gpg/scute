@@ -308,7 +308,7 @@ typedef unsigned long ck_object_class_t;
 #define CKO_HW_FEATURE		(5)
 #define CKO_DOMAIN_PARAMETERS	(6)
 #define CKO_MECHANISM		(7)
-#define CKO_VENDOR_DEFINED	(unsigned long) (1 << 31))
+#define CKO_VENDOR_DEFINED	((unsigned long) (1 << 31))
 
 
 typedef unsigned long ck_hw_feature_type_t;
