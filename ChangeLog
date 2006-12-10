@@ -1,3 +1,7 @@
+2006-12-10  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/pkcs11.h [CRYPTOKI_COMPAT]: Rewrote the compatibility layer.
+
 2006-12-09  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/pkcs11.h [__cplusplus]: Protect with extern "C".
