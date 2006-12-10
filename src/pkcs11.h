@@ -86,7 +86,7 @@ extern "C" {
 #endif
 
 
-#ifdef CRYPTOKI_COMPAT
+#if CRYPTOKI_COMPAT
   /* If we are in compatibility mode, switch all exposed names to the
      PKCS #11 variant.  There are corresponding #undefs below.  */
 
@@ -1160,7 +1160,7 @@ struct ck_c_initialize_args
 
 /* Compatibility layer.  */
 
-#ifdef CRYPTOKI_COMPAT
+#if CRYPTOKI_COMPAT
 
 #undef CK_DEFINE_FUNCTION
 #define CK_DEFINE_FUNCTION(retval, name) retval CK_SPEC name
@@ -1323,7 +1323,7 @@ typedef struct ck_c_initialize_args *CK_C_INITIALIZE_ARGS_PTR;
 /* System dependencies.  */
 #ifdef __WIN32
 #pragma pack(pop, cryptoki)
-#endif	/* !CRYPTOKI_COMPAT */
+#endif
 
 #ifdef __cplusplus
 }
