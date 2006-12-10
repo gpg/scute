@@ -59,7 +59,7 @@ extern "C" {
    versions).  */
 #define CRYPTOKI_VERSION_MAJOR		2
 #define CRYPTOKI_VERSION_MINOR		20
-#define CRYPTOKI_VERSION_REVISION	3
+#define CRYPTOKI_VERSION_REVISION	4
 
 
 #ifndef CRYPTOKI_COMPAT
