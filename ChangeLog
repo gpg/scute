@@ -1,5 +1,9 @@
 2006-12-17  Marcus Brinkmann  <marcus@g10code.de>
 
+	* src/pkcs11.h: Minor cosmetic changes.  Require CRYPTOKI_GNU now
+	to switch on the GNU API, and do not check what CRYPTOKI_COMPAT is
+	defined to, just if it is defined at all.
+
 	* src/pkcs11.h [__WIN32]: Changed to [_WIN32 ||
 	CRYPTOKI_FORCE_WIN32] at the end.
 	Submitted by Alon Bar-Lev.
