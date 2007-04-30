@@ -1,6 +1,7 @@
 2007-04-30  Marcus Brinkmann  <marcus@g10code.de>
 
-	* src/agent.h (scute_agent_is_trusted): New prototype.  Include <stdbool.h>.
+	* src/agent.h (scute_agent_is_trusted): New prototype.  Include
+	<stdbool.h>.
 	* src/agent.c (scute_agent_is_trusted): New implementation.
 	* src/cert.h (struct cert): New member IS_TRUSTED.
 	* src/cert-gpgsm.c (export_cert): Set CERT->is_trusted.
