@@ -84,6 +84,11 @@ struct cert
      a PKCS #11 object.  */
   unsigned char *cert_der;
   int cert_der_len;
+
+  /* If the certificate is trusted or not.  For performance reasons,
+     this is not entered by the search function, but afterwards by the
+     filter before converting it into a PKCS #11 object.  */
+  bool is_trusted;
 };
 
 

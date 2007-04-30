@@ -31,6 +31,7 @@
 #define AGENT_H	1
 
 #include <gpg-error.h>
+#include <stdbool.h>
 
 
 /* The information structure for a smart card.  */
@@ -100,5 +101,8 @@ void scute_agent_release_card_info (struct agent_card_info_s *info);
 gpg_error_t scute_agent_sign (char *grip, unsigned char *data, int len,
 			      unsigned char *sig_result,
 			      unsigned int *sig_len);
+
+/* Determine if FPR is trusted.  */
+gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted);
 
 #endif	/* AGENT_H */

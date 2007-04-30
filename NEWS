@@ -12,6 +12,8 @@ Noteworthy changes in version 1.1.0 (unreleased)
  * Scute now supports certificates larger than the kernel pipe buffer
    with GPGSM versions later than 2.0.0 (exclusive).
 
+ * Scute now sets the CKA_TRUSTED attribute to something useful.
+
 
 Noteworthy changes in version 1.0.0 (2006-11-11)
 ------------------------------------------------

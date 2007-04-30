@@ -630,6 +630,25 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   return 0;
 }
 
+
+/* Determine if FPR is trusted.  */
+gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted)
+{
+  gpg_error_t err;
+  bool trusted = false;
+  char cmd[150];
+
+  snprintf (cmd, sizeof (cmd), "ISTRUSTED %s", fpr);
+  err = assuan_transact (agent_ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
+  if (err && gpg_err_code (err) != GPG_ERR_NOT_TRUSTED)
+    return err;
+  else if (!err)
+    trusted = true;
+
+  *is_trusted = trusted;
+  return 0;
+}
+
 
 void
 scute_agent_finalize (void)

@@ -382,7 +382,7 @@ scute_attr_cert (struct cert *cert,
 			  'L', 'a', 'b', 'e', 'l' };
 
   CK_CERTIFICATE_TYPE obj_cert_type = CKC_X_509;
-  CK_BBOOL obj_trusted = CK_FALSE;
+  CK_BBOOL obj_trusted = cert->is_trusted;
   CK_ULONG obj_cert_cat = 0;
   CK_BYTE obj_check_value[3] = { '\0', '\0', '\0' };
   CK_DATE obj_start_date;

@@ -19,6 +19,10 @@
    exporting the information from GPGSM (ISTRUSTED) will not be
    useful.  It's unclear if this can be improved in a meaningful way.
 
+* Could be done better:
+** Search for grip/fingerprint directly instead iterating over all
+   keys with GPGSM?
+
 * Standard ambiguities, or non-conformance in the applications:
 ** If the token is removed, the current sessions are closed.  If then
    a new token is inserted, and the application calls C_OpenSession, a

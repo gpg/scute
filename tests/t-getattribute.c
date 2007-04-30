@@ -29,34 +29,54 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "t-support.h"
+
+/* If printable characters should be output "as-is".  */
+bool printable;
 
 CK_RV
 dump_one (CK_ATTRIBUTE_PTR attr, unsigned char *data, int max_size)
 {
-  bool some;
   int i;
+  int col;
 
   if (attr->ulValueLen < 0 || attr->ulValueLen > max_size)
     return CKR_GENERAL_ERROR;
 
-  some = false;
+  col = 0;
   for (i = 0; i < attr->ulValueLen; i++)
     {
-      if (some == false)
+      if (col == 0)
+	printf ("     ");
+
+      if (printable)
 	{
-	  printf ("     ");
-	  some = true;
+	  if (isprint (data[i]))
+	    {
+	      printf ("%c", data[i]);
+	      col++;
+	    }
+	  else
+	    {
+	      printf ("\\x%02x", data[i]);
+	      col += 4;
+	    }
 	}
-      printf ("%02x", data[i]);
-      if (((i + 1) % 32) == 0)
+      else
+	{
+	  printf ("%02x", data[i]);
+	  col += 2;
+	}
+
+      if (col >= 64)
 	{
 	  printf ("\n");
-	  some = false;
+	  col = 0;
 	}
     }
-  if (some)
+  if (col)
     printf ("\n");
 
   return 0;
@@ -508,6 +528,9 @@ main (int argc, char *argv[])
   CK_ULONG slots_count;
   int i;
 
+  if (argc > 1 && !strcmp ("--printable", argv[1]))
+    printable = true;
+    
   init_cryptoki ();
 
   err = C_GetSlotList (true, NULL, &slots_count);

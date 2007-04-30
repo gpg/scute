@@ -675,6 +675,9 @@ export_cert (char *fpr, struct cert *cert)
       err = export_cert_compat (fpr, cert);
     }
 
+  if (!err)
+    err = scute_agent_is_trusted (fpr, &cert->is_trusted);
+
   return err;
 }
 
