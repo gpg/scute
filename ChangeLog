@@ -1,3 +1,7 @@
+2007-04-30  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/table.c (scute_table_dealloc): Return, but not a value.
+
 2007-02-09  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/pkcs11.h: Add definitions for SHA.

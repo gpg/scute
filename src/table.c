@@ -229,7 +229,7 @@ scute_table_dealloc (scute_table_t table, int *index)
   void *data = NULL;
 
   if (idx == INDEX_EOT)
-    return NULL;
+    return;
 
   assert (idx >= 0 && idx < table->last_used);
   assert (table->data[idx] != NULL);
