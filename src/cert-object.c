@@ -1,5 +1,5 @@
 /* cert-object.c - Convert a GPGSM certificate into a PKCS #11 object.
-   Copyright (C) 2006 g10 Code GmbH
+   Copyright (C) 2006, 2007 g10 Code GmbH
 
    This file is part of Scute.
  

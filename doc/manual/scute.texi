@@ -20,7 +20,7 @@ This is Edition @value{EDITION}, last updated @value{UPDATED}, of
 @cite{The Scute Manual}, for Version @value{VERSION}.
 
 @c NOTE: Don't forget to update the year for the TeX version, too.
-Copyright @copyright{} 2002, 2003, 2004, 2005, 2006 g10 Code GmbH.
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
 
 The Scute Manual is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 @center for version @value{VERSION}
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2002, 2003, 2004, 2005, 2006 g10 Code GmbH.
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
 
 
 The Scute Manual is free software; you can redistribute it and/or modify
@@ -528,7 +528,13 @@ manager.
 @section Authentication With Service
 
 Before you access a web service which requires client authentication,
-for instance a fictious web service @indicateurl{https://example.com},
+for instance a fictious web service
+@ifnottex
+@indicateurl{https://example.com},
+@end ifnottex
+@iftex
+@code{https://example.com},
+@end iftex
 the OpenPGP card should be present.  In this case, a pop-up window will
 appear that requests you to enter the PIN number protecting the
 authentication key on the OpenPGP card.  After entering the PIN number,

@@ -1,5 +1,5 @@
 # Makefile.am - Doc directory Makefile for scute.
-# Copyright (C) 2006 g10 Code GmbH
+# Copyright (C) 2006, 2007 g10 Code GmbH
 # 
 # This file is part of scute.
 #
@@ -36,7 +36,19 @@ images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
 	firefox-dm-load.png firefox-dm-token-present.png firefox-pref.png \
 	firefox-pref-view.png
 
+images_pdf = $(images:.png=.pdf)
+
 EXTRA_DIST = $(images)
+CLEANFILES = $(images_pdf)
 
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = gpl.texi
+
+scute.dvi: $(images_pdf)
+scute.pdf: $(images_pdf)
+
+%.eps : %.png
+	$(CONVERT) -resize 50% `test -f '$<' || echo '$(srcdir)/'`$< $@
+
+%.pdf : %.eps
+	$(EPSTOPDF) `test -f '$<' || echo '$(srcdir)/'`$< --outfile=$@

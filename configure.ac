@@ -1,5 +1,5 @@
 # configure.ac: Configure script for Scute.
-# Copyright (C) 2006 g10 Code GmbH
+# Copyright (C) 2006, 2007 g10 Code GmbH
 # 
 # This file is part of Scute.
 #
@@ -46,8 +46,8 @@ min_automake_version="1.9.3"
 # for snapshot releases please do an "svn up" right before recreating
 # the configure script, so that a proper revision number for all files
 # is available when running a "make distcheck".
-m4_define(my_version, [1.0.0])
-m4_define(my_iscvs, yes)
+m4_define(my_version, [1.1.0])
+#m4_define(my_iscvs, yes)
 AC_INIT([scute], my_version[]m4_ifdef([my_iscvs], [-cvs[]m4_translit(
                [$Revision: 1179 $],[Ra-z $:])]),
                [marcus@g10code.com])
@@ -60,7 +60,7 @@ AC_INIT([scute], my_version[]m4_ifdef([my_iscvs], [-cvs[]m4_translit(
 #
 LIBSCUTE_LT_CURRENT=0
 LIBSCUTE_LT_AGE=0
-LIBSCUTE_LT_REVISION=0
+LIBSCUTE_LT_REVISION=1
 
 # Version numbers reported by the PKCS #11 module to its users.
 VERSION_MAJOR=1
@@ -256,6 +256,10 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_REALLOC
+
+# Check for programs needed for the manual.
+AC_CHECK_PROG(CONVERT, convert, convert)
+AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 
 # Test if tests can be run
 ok=yes

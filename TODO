@@ -1,9 +1,7 @@
-* Undergoing clean-up:
-** p11-closeallsessions.c, p11-closesession.c, p11-findobjects.c,
-   p11-findobjectsfinal.c, p11-findobjectsinit.c, p11-getattributevalue.c,
-   p11-getmechanisminfo.c, p11-getmechanismlist.c, p11-getsessioninfo.c,
-   p11-getslotinfo.c, p11-getslotlist.c, p11-gettokeninfo.c,
-   p11-opensession.c, p11-sign.c, p11-signinit.c
+* Manual:
+** Some FIXME's which need attention.
+** The pictures in PDF output are blurry.
+** The pictures in info output do not exist.
 
 * Bugs or misfeatures:
 ** Mozilla presents the other certificates in "Websites".  Only the
