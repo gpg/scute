@@ -1,3 +1,12 @@
+2008-08-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/cryptoki.h (CRYPTOKI_EXPORTS): Define symbol.
+	* src/error-mapping.h: Do not include <error.h>.
+	(scute_sys_to_ck): Change type of ERR to int.
+	* src/error-mapping.c: Do not include <error.h>.
+	(scute_sys_to_ck): Change type of ERR to int.
+	* src/slots.c (slot_create_session): Change type of ERR to int.
+
 2007-05-03  Marcus Brinkmann  <marcus@g10code.de>
 
 	Released version 1.1.0.

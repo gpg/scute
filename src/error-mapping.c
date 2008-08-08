@@ -32,7 +32,6 @@
 #endif
 
 #include <errno.h>
-#include <error.h>
 
 #include <gpg-error.h>
 
@@ -44,7 +43,7 @@
 
 /* Map a system error code to a cryptoki return value.  */
 CK_RV
-scute_sys_to_ck (error_t err)
+scute_sys_to_ck (int err)
 {
   switch (err)
     {

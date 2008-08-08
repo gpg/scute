@@ -729,7 +729,7 @@ CK_RV
 slot_create_session (slot_iterator_t id, session_iterator_t *session,
 		     bool rw)
 {
-  error_t err;
+  int err;
   struct slot *slot = scute_table_data (slots, id);
   unsigned int tsid;
   void *rawp;

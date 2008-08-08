@@ -31,6 +31,7 @@
 #define _CRYPTOKI_H_	1
 
 
+#define CRYPTOKI_EXPORTS
 #include "pkcs11.h"
 
 #endif	/* !_CRYPTOKI_H_ */

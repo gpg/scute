@@ -31,14 +31,13 @@
 #define ERROR_MAPPING_H	1
 
 #include <errno.h>
-#include <error.h>
 
 #include <gpg-error.h>
 
 #include "cryptoki.h"
 
 /* Map a system error code to a cryptoki return value.  */
-CK_RV scute_sys_to_ck (error_t err);
+CK_RV scute_sys_to_ck (int err);
 
 /* Map a GnuPG error code to a cryptoki return value.  */
 CK_RV scute_gpg_err_to_ck (gpg_error_t err);
