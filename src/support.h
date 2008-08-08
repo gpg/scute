@@ -51,5 +51,34 @@ scute_copy_string (char *dest, char *src, int max_len)
   while (i++ < max_len)
     *(dest++) = ' ';
 }
+
+#ifndef HAVE_STPCPY
+#include "stpcpy.h"
+#endif
+
+/*-- Simple replacement functions. */
+#ifndef HAVE_TTYNAME
+/* Systems without ttyname (W32) will merely return NULL. */
+static inline char *
+ttyname (int fd) 
+{
+  return NULL;
+}
+#endif /* !HAVE_TTYNAME */
+
+
+
+const char *get_gpgsm_path (void);
+const char *get_gpg_agent_path (void);
+
+/* Set up the default home directory.  The usual --homedir option
+   should be parsed later. */
+const char *default_homedir (void);
+
+/* Construct a filename from the NULL terminated list of parts.  Tilde
+   expansion is done here.  */
+char *make_filename (const char *first_part, ...);
+
+
     
 #endif	/* !SUPPORT_H */

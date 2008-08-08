@@ -29,7 +29,7 @@
 
 ## Process this file with automake to produce Makefile.in
 
-EXTRA_DIST = libscute.vers scute.def
+EXTRA_DIST = libscute.vers scute.def versioninfo.rc.in
 
 lib_LTLIBRARIES = libscute.la
 
@@ -39,15 +39,53 @@ else
 scute_version_script_cmd =
 endif
 
-libscute_la_LDFLAGS = $(scute_version_script_cmd) -version-info \
-  @LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+if HAVE_W32_SYSTEM
+
+LTRCCOMPILE = $(LIBTOOL) --mode=compile $(RC) \
+     `echo $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) | \
+     sed -e 's/-I/--include-dir /g;s/-D/--define /g'`
+
+SUFFIXES: .rc .lo
+
+.rc.lo:
+	$(LTRCCOMPILE) -i $< -o $@
+
+scute_res = versioninfo.lo
+scute_res_ldflag = -Wl,.libs/versioninfo.o
+
+no_undefined = -no-undefined
+export_symbols = -export-symbols $(srcdir)/scute.def
+
+install-def-file:
+	$(INSTALL) $(srcdir)/scute.def $(DESTDIR)$(libdir)/scute.def
+
+uninstall-def-file:
+	-rm $(DESTDIR)$(libdir)/scute.def
+
+scute_deps = $(scute_res) scute.def
+
+else
+scute_res =
+scute_res_ldflag =
+no_undefined =
+export_symbols =
+install-def-file:
+uninstall-def-file:
+
+scute_deps =
+endif
+
+libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) $(export_symbols) \
+	$(scute_version_script_cmd) -version-info \
+	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
 
 libscute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
-libscute_la_LIBADD = @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
 libscute_la_SOURCES = cryptoki.h pkcs11.h debug.h settings.h support.h	\
 	locking.h locking.c error-mapping.h error-mapping.c		\
-	agent.h agent.c							\
+	get-path.c agent.h agent.c					\
 	slots.h slots.c table.h table.c					\
 	cert.h cert-gpgsm.c cert-object.c gpgsm.h gpgsm.c		\
 	p11-cancelfunction.c p11-closeallsessions.c p11-closesession.c	\

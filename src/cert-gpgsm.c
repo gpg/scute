@@ -44,6 +44,11 @@
 #include "support.h"
 
 
+#ifndef HAVE_W32_SYSTEM
+#define COMPAT_FALLBACK
+#endif
+
+
 /* The maximum length of a key listing line.  We take the double of
    the allowed Assuan line length to avoid a memmove after a part of a
    line has been processed.  FIXME: There is actually no limit on the
@@ -128,7 +133,14 @@ parse_timestamp (const char *timestamp, char **endp)
 
       if (endp)
         *endp = (char*)(timestamp + 15);
+#ifdef HAVE_TIMEGM
       return timegm (&buf);
+#else
+      /* FIXME: Need to set TZ to UTC, but that is not
+	 thread-safe.  */
+      return mktime (&buf);
+#endif
+
     }
   else
     return (time_t)strtoul (timestamp, endp, 10);
@@ -519,6 +531,7 @@ struct search_ctx_by_field
 };
   
 
+#ifdef COMPAT_FALLBACK
 /* This is a compatibility function for GPGSM 2.0.0, which does not
    support the --data option with the EXPORT command.  */
 static gpg_error_t
@@ -581,6 +594,7 @@ export_cert_compat (char *fpr, struct cert *cert)
   close (output_fds[0]);
   return err;
 }
+#endif
 
 
 struct export_hook
@@ -630,23 +644,11 @@ export_cert (char *fpr, struct cert *cert)
   const char *argv[] = { "gpgsm", "--server", NULL };
 #define COMMANDLINELEN 80
   char cmd[COMMANDLINELEN];
-  int output_fds[2];
-  int child_fds[2];
   struct export_hook exp;
 
-  if(pipe (output_fds) < 0)
-    return gpg_error_from_syserror ();
-
-  child_fds[0] = output_fds[1];
-  child_fds[1] = -1;
-
-  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, child_fds);
-  close (output_fds[1]);
+  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
   if (err)
-    {
-      close (output_fds[0]);
-      return err;
-    }
+    return err;
 
   exp.buffer = NULL;
   exp.buffer_len = 0;
@@ -656,13 +658,13 @@ export_cert (char *fpr, struct cert *cert)
   err = assuan_transact (ctx, cmd, export_cert_cb, &exp,
 			 NULL, NULL, NULL, NULL);
   assuan_disconnect (ctx);
-  close (output_fds[0]);
 
   if (!err)
     {
       cert->cert_der = exp.buffer;
       cert->cert_der_len = exp.buffer_len;
     }
+#ifdef COMPAT_FALLBACK
   else if (gpg_err_code (err) == GPG_ERR_ASS_NO_OUTPUT)
     {
       /* For compatibility with GPGSM 2.0.0, we fall back to a work
@@ -674,6 +676,7 @@ export_cert (char *fpr, struct cert *cert)
 	}
       err = export_cert_compat (fpr, cert);
     }
+#endif
 
   if (!err)
     err = scute_agent_is_trusted (fpr, &cert->is_trusted);

@@ -1,6 +1,9 @@
 Noteworthy changes in version 1.2.0 (unreleased)
 ------------------------------------------------
 
+ * Ported to Windows 32.
+
+ * GPG Agent can now be launched on demand.
 
 Noteworthy changes in version 1.1.0 (2007-05-03)
 ------------------------------------------------

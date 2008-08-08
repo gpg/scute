@@ -1,5 +1,5 @@
 # configure.ac: Configure script for Scute.
-# Copyright (C) 2006, 2007 g10 Code GmbH
+# Copyright (C) 2006, 2007, 2008 g10 Code GmbH
 # 
 # This file is part of Scute.
 #
@@ -47,10 +47,13 @@ min_automake_version="1.9.3"
 # the configure script, so that a proper revision number for all files
 # is available when running a "make distcheck".
 m4_define(my_version, [1.2.0])
-m4_define(my_iscvs, yes)
-AC_INIT([scute], my_version[]m4_ifdef([my_iscvs], [-cvs[]m4_translit(
-               [$Revision: 1179 $],[Ra-z $:])]),
-               [marcus@g10code.com])
+m4_define(my_issvn, yes)
+m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
+            || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
+
+AC_INIT([scute],
+        [my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision])],
+        [marcus@g10code.com])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -73,6 +76,7 @@ NEED_GPGSM_VERSION=1.9.6
 have_gpg_error=no
 have_libassuan=no
 
+BUILD_REVISION=svn_revision
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
@@ -141,7 +145,41 @@ case "${host}" in
 esac
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
+GPGSM_DEFAULT=no
+GPG_AGENT_DEFAULT=no
+have_w32_system=no
+case "${host}" in
+    *-mingw32*)
+        # special stuff for Windoze NT
+	GPGSM_DEFAULT='c:\\gnupg\\gpgsm.exe'
+        GPG_AGENT_DEFAULT='c:\\gnupg\\gpg-agent.exe'
+	have_w32_system=yes
+        ;;
+    *)
+	;;
+esac
+
+if test "$have_w32_system" = yes; then
+   AC_DEFINE(HAVE_W32_SYSTEM,1, [Defined if we run on a W32 API based system])
+fi
+AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
+
+# Generate values for the DLL version info
+if test "$have_w32_system" = yes; then
+    BUILD_TIMESTAMP=`date --iso-8601=minutes`
+    changequote(,)dnl 
+    BUILD_FILEVERSION=`echo "$VERSION" | sed 's/\([0-9.]*\).*/\1./;s/\./,/g'`
+    changequote([,])dnl
+    BUILD_FILEVERSION="${BUILD_FILEVERSION}${BUILD_REVISION}"
+fi
+AC_SUBST(BUILD_REVISION)
+AC_SUBST(BUILD_TIMESTAMP)
+AC_SUBST(BUILD_FILEVERSION)
+
 # Checks for libraries.
+
+AC_CHECK_FUNCS([ttyname localtime_r timegm])
+AC_REPLACE_FUNCS([vasprintf stpcpy])
 
 # The error code library.  Error codes are sent over the IPC layer and
 # have to be interpreted.
@@ -153,7 +191,6 @@ AM_PATH_LIBASSUAN("$NEED_LIBASSUAN_VERSION",
                   have_libassuan=yes, have_libassuan=no)
 
 # GPGSM
-GPGSM_DEFAULT=no
 NO_OVERRIDE=no
 AC_ARG_WITH(gpgsm,
 	    AC_HELP_STRING([--with-gpgsm=PATH], [use GpgSM binary at PATH]),
@@ -246,6 +283,42 @@ if test "$ok" = "maybe"; then
 fi
 gpgsm_ok="$ok"
 
+# GPG_AGENT
+NO_OVERRIDE=no
+AC_ARG_WITH(gpg-agent,
+	    AC_HELP_STRING([--with-gpg-agent=PATH], [use GPG Agent binary at PATH]),
+	    GPG_AGENT=$withval, NO_OVERRIDE=yes)
+if test "$NO_OVERRIDE" = "yes" || test "$GPG_AGENT" = "yes"; then
+  GPG_AGENT=
+  NO_OVERRIDE=yes
+  if test "$cross_compiling" != "yes"; then
+    AC_PATH_PROG(GPG_AGENT, gpg-agent)
+  fi
+  if test -z "$GPG_AGENT"; then
+    GPG_AGENT="$GPG_AGENT_DEFAULT"
+  fi
+fi
+if test "$GPG_AGENT" = no; then
+  if test "$NO_OVERRIDE" = "yes"; then
+    if test "$cross_compiling" != "yes"; then
+      AC_MSG_WARN([
+***
+*** Could not find GPG Agent, install GPG Agent or use --with-gpg-agent=PATH to enable it
+***])
+    else
+      AC_MSG_ERROR([
+***
+*** Can not determine path to GPG Agent when cross-compiling, use --with-gpg-agent=PATH
+***])
+    fi
+  fi
+else
+  AC_DEFINE_UNQUOTED(GPG_AGENT_PATH, "$GPG_AGENT", [Path to the GPG_AGENT binary.])
+  AC_DEFINE(ENABLE_GPG_AGENT,1, [Whether GPG Agent support is enabled])
+fi
+AM_CONDITIONAL(HAVE_GPG_AGENT, test "$GPG_AGENT" != "no")
+
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h string.h])
@@ -303,5 +376,6 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  tests/Makefile
 		 doc/manual/Makefile
-		 doc/Makefile])
+		 doc/Makefile
+                 src/versioninfo.rc])
 AC_OUTPUT

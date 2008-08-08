@@ -9,6 +9,7 @@
 ** Mozilla does not unload the right security token!!!
 ** Duplicate certificates should be removed from the object list (this
    can occur when including all certificate chains).
+** Windows: Find thread-safe replacement for localtime_r and timegm.
 
 * Missing features:
 ** Implement random number generation function C_GenerateRandom.

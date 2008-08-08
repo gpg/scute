@@ -1,5 +1,5 @@
 /* t-getslotinfo.c - Regression test.
-   Copyright (C) 2006 g10 Code GmbH
+   Copyright (C) 2006, 2008 g10 Code GmbH
 
    This file is part of Scute.
  
@@ -105,7 +105,11 @@ main (int argc, char *argv[])
       printf ("    Firmware version: %i.%i\n", info.firmwareVersion.major,
 	      info.firmwareVersion.minor);
     }
+#ifdef WIN32
+  _sleep (2);
+#else
   sleep (2);
+#endif
     }
 
   return 0;

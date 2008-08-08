@@ -1,5 +1,37 @@
 2008-08-08  Marcus Brinkmann  <marcus@g10code.de>
 
+	* configure.ac: Update svn macros.
+	(BUILD_REVISION, BUILD_FILEVERSION, BUILD_TIMESTAMP): New.
+	(AC_CONFIG_OUTPUT): Add src/versioninfo.rc.
+	(GPG_AGENT_DEFAULT, GPG_AGENT): New.
+	(AC_REPLACE_FUNCS): Add vasprintf and stpcpy.
+	(AC_CHECK_FUNCS): Add ttyname, localtime_r and timegm.
+	* src/stpcpy.h, src/stpcpy.c, src/realloc.c: New file from gnulib.
+	* src/vasprintf.c: New file from libiberty.
+	* src/support.h [!HAVE_STPCPY]: Include "stpcpy.h".
+	[!HAVE_TTYNAME]: Define simple replacement function.
+	(get_gpgsm_path, get_gpg_agent_path)
+	(default_homedir, make_filename): New prototypes.
+	* src/Makefile.am: Add W32 support.
+	(libscute_la_SOURCES): Add get-path.c.
+	(EXTRA_DIST): Add versioninfo.rc.in.
+	* src/versioninfo.rc.in: New file.
+	* src/get-path.c: New file.
+	* src/agent.c (PATHSEP_C): New macro.
+	(build_w32_commandline_copy)
+	(build_w32_commandline) [HAVE_W32_SYSTEM]: New functions.
+	(spawn_process_deatched): New function.
+	(agent_connect): Start gpg-agent if it is not running yet.
+	(agent_configure): Also pass xauthority and pinentry-user-data.
+	* src/cert-gpgsm.c (COMPAT_FALLBACK) [!HAVE_W32_SYSTEM]: New
+	macro.
+	(export_cert_compat) [!COMPAT_FALLBACK]: Remove.
+	(export_cert) [!COMPAT_FALLBACK]: Don't call export_cert_compat.
+	Don't create (unused) output pipe cruft.
+	* src/cert-object.c (time_to_ck_date) [!HAVE_LOCALTIME_R]: Fall
+	back to localtime.
+	* tests/t-getslotinfo.c (main) [WIN32]: Call _sleep instead sleep.
+
 	* src/cryptoki.h (CRYPTOKI_EXPORTS): Define symbol.
 	* src/error-mapping.h: Do not include <error.h>.
 	(scute_sys_to_ck): Change type of ERR to int.
@@ -246,7 +278,7 @@
 	* Initial version.
 
 
- Copyright 2006 g10 Code GmbH
+ Copyright 2006, 2007, 2008 g10 Code GmbH
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

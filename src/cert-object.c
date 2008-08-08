@@ -59,8 +59,18 @@ time_to_ck_date (time_t *atime, CK_DATE *ckdate)
   if (!*atime)
     return false;
 
+#ifdef HAVE_LOCALTIME_R
   if (!localtime_r (atime, &broken_time))
     return false;
+#else
+  {
+    /* FIXME: This is not thread-safe, but it minimizes risk.  */
+    struct tm *b_time = localtime (atime);
+    if (!b_time)
+      return false;
+    memcpy (&broken_time, b_time, sizeof (*b_time));
+  }
+#endif
 
   /* We can only represent years until 9999.  */
   if (!(broken_time.tm_year >= 0 && broken_time.tm_year <= 8099

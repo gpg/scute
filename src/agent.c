@@ -1,5 +1,5 @@
 /* agent.c - Talking to gpg-agent.
-   Copyright (C) 2006, 2007 g10 Code GmbH
+   Copyright (C) 2006, 2007, 2008 g10 Code GmbH
 
    This file is part of Scute.
  
@@ -45,53 +45,337 @@
 #include "support.h"
 #include "agent.h"
 
+#ifdef HAVE_W32_SYSTEM
+#define PATHSEP_C ';'
+#else
+#define PATHSEP_C ':'
+#endif
+
 
 /* The global agent context.  */
 static assuan_context_t agent_ctx = NULL;
+
+
+#ifdef HAVE_W32_SYSTEM
+/* Helper function to build_w32_commandline. */
+static char *
+build_w32_commandline_copy (char *buffer, const char *string)
+{
+  char *p = buffer;
+  const char *s;
+
+  if (!*string) /* Empty string. */
+    p = stpcpy (p, "\"\"");
+  else if (strpbrk (string, " \t\n\v\f\""))
+    {
+      /* Need top do some kind of quoting.  */
+      p = stpcpy (p, "\"");
+      for (s=string; *s; s++)
+        {
+          *p++ = *s;
+          if (*s == '\"')
+            *p++ = *s;
+        }
+      *p++ = '\"';
+      *p = 0;
+    }
+  else
+    p = stpcpy (p, string);
+
+  return p;
+}
+
+
+/* Build a command line for use with W32's CreateProcess.  On success
+   CMDLINE gets the address of a newly allocated string.  */
+static gpg_error_t
+build_w32_commandline (const char *pgmname, const char * const *argv, 
+                       char **cmdline)
+{
+  int i, n;
+  const char *s;
+  char *buf, *p;
+
+  *cmdline = NULL;
+  n = 0;
+  s = pgmname;
+  n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
+  for (; *s; s++)
+    if (*s == '\"')
+      n++;  /* Need to double inner quotes.  */
+  for (i=0; (s=argv[i]); i++)
+    {
+      n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
+      for (; *s; s++)
+        if (*s == '\"')
+          n++;  /* Need to double inner quotes.  */
+    }
+  n++;
+
+  buf = p = malloc (n);
+  if (!buf)
+    return gpg_error_from_syserror ();
+
+  p = build_w32_commandline_copy (p, pgmname);
+  for (i=0; argv[i]; i++) 
+    {
+      *p++ = ' ';
+      p = build_w32_commandline_copy (p, argv[i]);
+    }
+
+  *cmdline= buf;
+  return 0;
+}
+#endif /*HAVE_W32_SYSTEM*/
+
+
+/* Spawn a new process and immediatley detach from it.  The name of
+   the program to exec is PGMNAME and its arguments are in ARGV (the
+   programname is automatically passed as first argument).  An error
+   is returned if pgmname is not executable; to make this work it is
+   necessary to provide an absolute file name.  All standard file
+   descriptors are connected to /dev/null.  */
+static gpg_error_t
+spawn_process_detached (const char *pgmname, const char *argv[])
+{
+#ifdef HAVE_W32_SYSTEM
+  gpg_error_t err;
+  SECURITY_ATTRIBUTES sec_attr;
+  PROCESS_INFORMATION pi = 
+    {
+      NULL,      /* Returns process handle.  */
+      0,         /* Returns primary thread handle.  */
+      0,         /* Returns pid.  */
+      0          /* Returns tid.  */
+    };
+  STARTUPINFO si;
+  int cr_flags;
+  char *cmdline;
+
+  if (access (pgmname, X_OK))
+    return gpg_error_from_syserror ();
+
+  /* Prepare security attributes.  */
+  memset (&sec_attr, 0, sizeof sec_attr );
+  sec_attr.nLength = sizeof sec_attr;
+  sec_attr.bInheritHandle = FALSE;
+  
+  /* Build the command line.  */
+  err = build_w32_commandline (pgmname, argv, &cmdline);
+  if (err)
+    return err; 
+
+  /* Start the process.  */
+  memset (&si, 0, sizeof si);
+  si.cb = sizeof (si);
+  si.dwFlags = STARTF_USESHOWWINDOW;
+  si.wShowWindow = SW_MINIMIZE;
+
+  cr_flags = (CREATE_DEFAULT_ERROR_MODE
+              | GetPriorityClass (GetCurrentProcess ())
+              | CREATE_NEW_PROCESS_GROUP
+              | DETACHED_PROCESS); 
+  DEBUG ("CreateProcess(detached), path=`%s' cmdline=`%s'\n",
+	 pgmname, cmdline);
+  if (!CreateProcess (pgmname,       /* Program to start.  */
+                      cmdline,       /* Command line arguments.  */
+                      &sec_attr,     /* Process security attributes.  */
+                      &sec_attr,     /* Thread security attributes.  */
+                      FALSE,         /* Inherit handles.  */
+                      cr_flags,      /* Creation flags.  */
+                      NULL,          /* Environment.  */
+                      NULL,          /* Use current drive/directory.  */
+                      &si,           /* Startup information. */
+                      &pi            /* Returns process information.  */
+                      ))
+    {
+      DEBUG ("CreateProcess(detached) failed: %i\n", GetLastError ());
+      free (cmdline);
+      return gpg_error (GPG_ERR_GENERAL);
+    }
+  free (cmdline);
+  cmdline = NULL;
+
+  DEBUG ("CreateProcess(detached) ready: hProcess=%p hThread=%p"
+	 " dwProcessID=%d dwThreadId=%d\n",
+	 pi.hProcess, pi.hThread,
+	 (int) pi.dwProcessId, (int) pi.dwThreadId);
+
+  CloseHandle (pi.hThread); 
+
+  return 0;
+
+#else
+  pid_t pid;
+  int i;
+
+  if (getuid() != geteuid())
+    return gpg_error (GPG_ERR_BUG);
+
+  if (access (pgmname, X_OK))
+    return gpg_error_from_syserror ();
+
+  pid = fork ();
+  if (pid == (pid_t)(-1))
+    {
+      DEBUG (_("error forking process: %s\n"), strerror (errno));
+      return gpg_error_from_syserror ();
+    }
+  if (!pid)
+    {
+      gcry_control (GCRYCTL_TERM_SECMEM);
+      if (setsid() == -1 || chdir ("/"))
+        _exit (1);
+      pid = fork (); /* Double fork to let init take over the new child. */
+      if (pid == (pid_t)(-1))
+        _exit (1);
+      if (pid)
+        _exit (0);  /* Let the parent exit immediately. */
+
+      do_exec (pgmname, argv, -1, -1, -1, NULL);
+
+      /*NOTREACHED*/
+    }
+  
+  if (waitpid (pid, NULL, 0) == -1)
+    DEBUG ("waitpid failed in spawn_process_detached: %s", strerror (errno));
+
+  return 0;
+#endif /* !HAVE_W32_SYSTEM*/
+}
 
 
 /* Establish a connection to a running GPG agent.  */
 static gpg_error_t
 agent_connect (assuan_context_t *ctx_r)
 {
+  /* If we ever failed to connect via a socket we will force the use
+     of the pipe based server for the lifetime of the process.  */
+  static int force_pipe_server = 0;
+
   gpg_error_t err = 0;
   char *infostr;
   char *ptr;
-  int pid;
-  int protocol_version;
 
-  infostr = getenv ("GPG_AGENT_INFO");
-  if (!infostr)
+ restart:
+
+  infostr = force_pipe_server ? NULL : getenv ("GPG_AGENT_INFO");
+  if (!infostr || !*infostr)
     {
-      DEBUG ("missing GPG_AGENT_INFO environment variable");
-      return gpg_error (GPG_ERR_NO_AGENT);
+      char *sockname;
+
+      /* First check whether we can connect at the standard
+         socket.  */
+      sockname = make_filename (default_homedir (), "S.gpg-agent", NULL);
+      if (! sockname)
+	return gpg_error_from_errno (errno);
+	
+      err = assuan_socket_connect (ctx_r, sockname, 0);
+
+      if (err)
+        {
+	  const char *agent_program;
+
+          /* With no success start a new server.  */
+	  DEBUG ("no running GPG agent, starting one");
+          
+          agent_program = get_gpg_agent_path ();
+
+#ifdef HAVE_W32_SYSTEM
+          {
+            /* Under Windows we start the server in daemon mode.  This
+               is because the default is to use the standard socket
+               and thus there is no need for the GPG_AGENT_INFO
+               envvar.  This is possible as we don't have a real unix
+               domain socket but use a plain file and thus there is no
+               need to care about non-local file systems. */
+            const char *argv[3];
+
+            argv[0] = "--daemon";
+            argv[1] = "--use-standard-socket"; 
+            argv[2] = NULL;  
+
+            err = spawn_process_detached (agent_program, argv);
+            if (err)
+              DEBUG ("failed to start agent `%s': %s\n",
+		     agent_program, gpg_strerror (err));
+            else
+              {
+                /* Give the agent some time to prepare itself. */
+                _sleep (3);
+                /* Now try again to connect the agent.  */
+                err = assuan_socket_connect (ctx_r, sockname, 0);
+              }
+          }
+#else /*!HAVE_W32_SYSTEM*/
+          {
+            const char *pgmname;
+            const char *argv[3];
+            int no_close_list[3];
+            int i;
+
+            if ( !(pgmname = strrchr (agent_program, '/')))
+              pgmname = agent_program;
+            else
+              pgmname++;
+            
+            argv[0] = pgmname;
+            argv[1] = "--server";
+            argv[2] = NULL;
+            
+            i=0;
+            no_close_list[i++] = fileno (stderr);
+            no_close_list[i] = -1;
+            
+            /* Connect to the agent and perform initial handshaking. */
+            err = assuan_pipe_connect (ctx_r, agent_program, argv,
+				       no_close_list);
+          }
+#endif /*!HAVE_W32_SYSTEM*/
+        }
+      free (sockname);
     }
-
-  infostr = strdup (infostr);
-  if (!infostr)
-    return gpg_error_from_errno (errno);
-
-  if (!(ptr = strchr (infostr, ':')) || ptr == infostr)
+  else
     {
-      DEBUG ("malformed GPG_AGENT_INFO environment variable");
+      int pid;
+      int protocol_version;
+
+      infostr = strdup (infostr);
+      if (!infostr)
+	return gpg_error_from_errno (errno);
+
+      if (!(ptr = strchr (infostr, PATHSEP_C)) || ptr == infostr)
+	{
+	  DEBUG ("malformed GPG_AGENT_INFO environment variable");
+	  free (infostr);
+	  force_pipe_server = 1;
+	  goto restart;
+	}
+
+      *(ptr++) = 0;
+      pid = atoi (ptr);
+      while (*ptr && *ptr != PATHSEP_C)
+	ptr++;
+      protocol_version = *ptr ? atoi (ptr + 1) : 0;
+      if (protocol_version != 1)
+	{
+	  DEBUG ("GPG agent protocol version '%d' not supported",
+		 protocol_version);
+	  free (infostr);
+	  force_pipe_server = 1;
+	  goto restart;
+	}
+      
+      err = assuan_socket_connect (ctx_r, infostr, pid);
       free (infostr);
-      return gpg_error (GPG_ERR_NO_AGENT);
-    }
-  *(ptr++) = 0;
-  pid = atoi (ptr);
-  while (*ptr && *ptr != ':')
-    ptr++;
-  protocol_version = *ptr ? atoi (ptr + 1) : 0;
-  if (protocol_version != 1)
-    {
-      DEBUG ("GPG agent protocol version '%d' not supported",
-	     protocol_version);
-      free (infostr);
-      return gpg_error (GPG_ERR_NO_AGENT);
+      if (err)
+	{
+	  DEBUG ("cannot connect to GPG agent: %s", gpg_strerror (err));
+	  force_pipe_server = 1;
+	  goto restart;
+	}
     }
 
-  err = assuan_socket_connect (ctx_r, infostr, pid);
-  free (infostr);
   if (err)
     {
       DEBUG ("cannot connect to GPG agent: %s", gpg_strerror (err));
@@ -139,6 +423,8 @@ agent_configure (assuan_context_t ctx)
   char *old_lc = NULL;
   char *dft_lc = NULL;
 #endif
+  char *dft_xauthority = NULL;
+  char *dft_pinentry_user_data = NULL;
 
   err = agent_simple_cmd (ctx, "RESET");
   if (err)
@@ -204,6 +490,18 @@ agent_configure (assuan_context_t ctx)
       free (old_lc);
     }
 #endif
+
+  dft_xauthority = getenv ("XAUTHORITY");
+  if (dft_xauthority)
+    err = agent_simple_cmd (ctx, "OPTION xauthority=%s", dft_display);
+  if (err)
+    return err;
+
+  dft_pinentry_user_data = getenv ("PINENTRY_USER_DATA");
+  if (dft_pinentry_user_data)
+    err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s", dft_display);
+  if (err)
+    return err;
 
   return err;
 }
