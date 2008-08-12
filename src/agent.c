@@ -126,7 +126,6 @@ build_w32_commandline (const char *pgmname, const char * const *argv,
   *cmdline= buf;
   return 0;
 }
-#endif /*HAVE_W32_SYSTEM*/
 
 
 /* Spawn a new process and immediatley detach from it.  The name of
@@ -138,7 +137,6 @@ build_w32_commandline (const char *pgmname, const char * const *argv,
 static gpg_error_t
 spawn_process_detached (const char *pgmname, const char *argv[])
 {
-#ifdef HAVE_W32_SYSTEM
   gpg_error_t err;
   SECURITY_ATTRIBUTES sec_attr;
   PROCESS_INFORMATION pi = 
@@ -204,45 +202,8 @@ spawn_process_detached (const char *pgmname, const char *argv[])
   CloseHandle (pi.hThread); 
 
   return 0;
-
-#else
-  pid_t pid;
-  int i;
-
-  if (getuid() != geteuid())
-    return gpg_error (GPG_ERR_BUG);
-
-  if (access (pgmname, X_OK))
-    return gpg_error_from_syserror ();
-
-  pid = fork ();
-  if (pid == (pid_t)(-1))
-    {
-      DEBUG (_("error forking process: %s\n"), strerror (errno));
-      return gpg_error_from_syserror ();
-    }
-  if (!pid)
-    {
-      gcry_control (GCRYCTL_TERM_SECMEM);
-      if (setsid() == -1 || chdir ("/"))
-        _exit (1);
-      pid = fork (); /* Double fork to let init take over the new child. */
-      if (pid == (pid_t)(-1))
-        _exit (1);
-      if (pid)
-        _exit (0);  /* Let the parent exit immediately. */
-
-      do_exec (pgmname, argv, -1, -1, -1, NULL);
-
-      /*NOTREACHED*/
-    }
-  
-  if (waitpid (pid, NULL, 0) == -1)
-    DEBUG ("waitpid failed in spawn_process_detached: %s", strerror (errno));
-
-  return 0;
-#endif /* !HAVE_W32_SYSTEM*/
 }
+#endif
 
 
 /* Establish a connection to a running GPG agent.  */
@@ -494,13 +455,17 @@ agent_configure (assuan_context_t ctx)
   dft_xauthority = getenv ("XAUTHORITY");
   if (dft_xauthority)
     err = agent_simple_cmd (ctx, "OPTION xauthority=%s", dft_display);
-  if (err)
+  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
+    err = 0;
+  else if (err)
     return err;
 
   dft_pinentry_user_data = getenv ("PINENTRY_USER_DATA");
   if (dft_pinentry_user_data)
     err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s", dft_display);
-  if (err)
+  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
+    err = 0;
+  else if (err)
     return err;
 
   return err;
