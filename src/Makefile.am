@@ -1,5 +1,5 @@
 # Makefile.am - Makefile src/ for scute.
-# Copyright (C) 2006 g10 Code GmbH
+# Copyright (C) 2006, 2008 g10 Code GmbH
 # 
 # This file is part of Scute.
 #
@@ -31,59 +31,7 @@
 
 EXTRA_DIST = libscute.vers scute.def versioninfo.rc.in
 
-lib_LTLIBRARIES = libscute.la
-
-if HAVE_LD_VERSION_SCRIPT
-scute_version_script_cmd = -Wl,--version-script=$(srcdir)/libscute.vers
-else
-scute_version_script_cmd =
-endif
-
-if HAVE_W32_SYSTEM
-
-LTRCCOMPILE = $(LIBTOOL) --mode=compile $(RC) \
-     `echo $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) | \
-     sed -e 's/-I/--include-dir /g;s/-D/--define /g'`
-
-SUFFIXES: .rc .lo
-
-.rc.lo:
-	$(LTRCCOMPILE) -i $< -o $@
-
-scute_res = versioninfo.lo
-scute_res_ldflag = -Wl,.libs/versioninfo.o
-
-no_undefined = -no-undefined
-export_symbols = -export-symbols $(srcdir)/scute.def
-
-install-def-file:
-	$(INSTALL) $(srcdir)/scute.def $(DESTDIR)$(libdir)/scute.def
-
-uninstall-def-file:
-	-rm $(DESTDIR)$(libdir)/scute.def
-
-scute_deps = $(scute_res) scute.def
-
-else
-scute_res =
-scute_res_ldflag =
-no_undefined =
-export_symbols =
-install-def-file:
-uninstall-def-file:
-
-scute_deps =
-endif
-
-libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) $(export_symbols) \
-	$(scute_version_script_cmd) -version-info \
-	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
-libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
-libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
-
-libscute_la_CPPFLAGS = -I$(srcdir)/../include \
-	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
-libscute_la_SOURCES = cryptoki.h pkcs11.h debug.h settings.h support.h	\
+sources = cryptoki.h pkcs11.h debug.h settings.h support.h		\
 	locking.h locking.c error-mapping.h error-mapping.c		\
 	get-path.c agent.h agent.c					\
 	slots.h slots.c table.h table.c					\
@@ -111,3 +59,53 @@ libscute_la_SOURCES = cryptoki.h pkcs11.h debug.h settings.h support.h	\
 	p11-unwrapkey.c p11-verify.c p11-verifyfinal.c p11-verifyinit.c	\
 	p11-verifyrecover.c p11-verifyrecoverinit.c p11-verifyupdate.c	\
 	p11-waitforslotevent.c p11-wrapkey.c
+
+
+if HAVE_LD_VERSION_SCRIPT
+scute_version_script_cmd = -Wl,--version-script=$(srcdir)/libscute.vers
+else
+scute_version_script_cmd =
+endif
+
+
+EXEEXT = .dll
+
+if HAVE_W32_SYSTEM
+
+bin_PROGRAMS = scute
+
+AM_CFLAGS = @LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@ -shared
+
+scute_SOURCES = $(sources) versioninfo.rc
+
+scute_DEPENDENCIES = @LTLIBOBJS@ versioninfo.o libgpg-error.a libassuan.a
+
+libgpg-error.a:
+	ln -s $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
+
+libassuan.a:
+	ln -s $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
+
+clean-local:
+	rm -f libgpg-error.a libassuan.a
+
+
+scute_LDADD = @LTLIBOBJS@ $(srcdir)/scute.def -L. -lassuan -lgpg-error 
+
+.rc.o:
+	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
+
+else
+
+lib_LTLIBRARIES = libscute.la
+
+libscute_la_LDFLAGS = $(scute_version_script_cmd) -version-info \
+	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+
+libscute_la_CPPFLAGS = -I$(srcdir)/../include \
+	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
+libscute_la_SOURCES = $(sources)
+
+endif
