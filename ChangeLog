@@ -1,3 +1,7 @@
+2008-08-21  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/agent.c (agent_configure): Fix cut and paste error.
+
 2008-08-11  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/agent.c (spawn_process_detachted) [! HAVE_W32_SYSTEM]: Remove.

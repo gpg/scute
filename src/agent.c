@@ -454,7 +454,7 @@ agent_configure (assuan_context_t ctx)
 
   dft_xauthority = getenv ("XAUTHORITY");
   if (dft_xauthority)
-    err = agent_simple_cmd (ctx, "OPTION xauthority=%s", dft_display);
+    err = agent_simple_cmd (ctx, "OPTION xauthority=%s", dft_xauthority);
   if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
     err = 0;
   else if (err)
@@ -462,7 +462,8 @@ agent_configure (assuan_context_t ctx)
 
   dft_pinentry_user_data = getenv ("PINENTRY_USER_DATA");
   if (dft_pinentry_user_data)
-    err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s", dft_display);
+    err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s",
+	                    dft_pinentry_user_data);
   if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
     err = 0;
   else if (err)
