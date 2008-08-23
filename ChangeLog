@@ -1,5 +1,9 @@
 2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
 
+	* src/Makefile.am [HAVE_W32_SYSTEM]: Build autonomous DLL.
+
+2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
+
 	* src/agent.c (gnupg_allow_set_foregound_window)
 	[!HAVE_W32_SYSTEM]: Define it.
 

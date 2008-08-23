@@ -68,6 +68,60 @@ scute_version_script_cmd =
 endif
 
 
+lib_LTLIBRARIES = libscute.la
+
+if HAVE_W32_SYSTEM
+
+LTRCCOMPILE = $(LIBTOOL) --mode=compile $(RC) \
+     `echo $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) | \
+     sed -e 's/-I/--include-dir /g;s/-D/--define /g'`
+
+SUFFIXES: .rc .lo
+
+.rc.lo:
+	$(LTRCCOMPILE) -i $< -o $@
+
+scute_res = versioninfo.lo
+scute_res_ldflag = -Wl,.libs/versioninfo.o
+
+no_undefined = -no-undefined
+export_symbols = -export-symbols $(srcdir)/scute.def
+
+install-def-file:
+	$(INSTALL) $(srcdir)/scute.def $(DESTDIR)$(libdir)/scute.def
+
+uninstall-def-file:
+	-rm $(DESTDIR)$(libdir)/scute.def
+
+scute_deps = $(scute_res) scute.def
+
+else
+
+scute_res =
+scute_res_ldflag =
+no_undefined =
+export_symbols =
+install-def-file:
+uninstall-def-file:
+
+scute_deps =
+
+endif
+
+libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) $(export_symbols) \
+	$(scute_version_script_cmd) -version-info \
+	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+
+libscute_la_CPPFLAGS = -I$(srcdir)/../include \
+	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
+libscute_la_SOURCES = $(sources)
+
+# The above rules only build a static library on W32.  We build the
+# DLL below, such that it is autonomous (does not link to any other
+# non-standard DLL).
+
 EXEEXT = .dll
 
 if HAVE_W32_SYSTEM
@@ -76,7 +130,7 @@ bin_PROGRAMS = scute
 
 AM_CFLAGS = @LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@ -shared
 
-scute_SOURCES = $(sources) versioninfo.rc
+scute_SOURCES = dllmain.c $(sources) versioninfo.rc
 
 scute_DEPENDENCIES = @LTLIBOBJS@ versioninfo.o libgpg-error.a libassuan.a
 
@@ -90,22 +144,9 @@ clean-local:
 	rm -f libgpg-error.a libassuan.a
 
 
-scute_LDADD = @LTLIBOBJS@ $(srcdir)/scute.def -L. -lassuan -lgpg-error 
+scute_LDADD = @LTLIBOBJS@ $(srcdir)/scute.def -L. -lassuan -lgpg-error -lws2_32
 
-.rc.o:
-	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
-
-else
-
-lib_LTLIBRARIES = libscute.la
-
-libscute_la_LDFLAGS = $(scute_version_script_cmd) -version-info \
-	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
-libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
-libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
-
-libscute_la_CPPFLAGS = -I$(srcdir)/../include \
-	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
-libscute_la_SOURCES = $(sources)
+#.rc.o:
+#	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
 
 endif
