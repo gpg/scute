@@ -38,6 +38,14 @@
 #include <string.h>
 #include <stdarg.h>
 
+#ifdef HAVE_W32_SYSTEM
+#define PATHSEP_C ';'
+#define WINVER 0x0500  /* Required for AllowSetForegroundWindow.  */
+#include <windows.h>
+#else
+#define PATHSEP_C ':'
+#endif
+
 #include <assuan.h>
 #include <gpg-error.h>
 
@@ -45,18 +53,24 @@
 #include "support.h"
 #include "agent.h"
 
-#ifdef HAVE_W32_SYSTEM
-#define PATHSEP_C ';'
-#else
-#define PATHSEP_C ':'
-#endif
-
 
 /* The global agent context.  */
 static assuan_context_t agent_ctx = NULL;
 
 
 #ifdef HAVE_W32_SYSTEM
+/* Hack required for Windows.  */
+void 
+gnupg_allow_set_foregound_window (pid_t pid)
+{
+  if (!pid || pid == (pid_t)(-1))
+    return;
+  if (!AllowSetForegroundWindow (pid))
+    DEBUG ("AllowSetForegroundWindow(%lu) failed: %i\n",
+	   (unsigned long)pid, GetLastError ());
+}
+
+
 /* Helper function to build_w32_commandline. */
 static char *
 build_w32_commandline_copy (char *buffer, const char *string)
@@ -230,7 +244,7 @@ agent_connect (assuan_context_t *ctx_r)
       sockname = make_filename (default_homedir (), "S.gpg-agent", NULL);
       if (! sockname)
 	return gpg_error_from_errno (errno);
-	
+
       err = assuan_socket_connect (ctx_r, sockname, 0);
 
       if (err)
@@ -238,7 +252,7 @@ agent_connect (assuan_context_t *ctx_r)
 	  const char *agent_program;
 
           /* With no success start a new server.  */
-	  DEBUG ("no running GPG agent, starting one");
+	  DEBUG ("no running GPG agent at %s, starting one\n", sockname);
           
           agent_program = get_gpg_agent_path ();
 
@@ -263,7 +277,7 @@ agent_connect (assuan_context_t *ctx_r)
             else
               {
                 /* Give the agent some time to prepare itself. */
-                _sleep (3);
+                Sleep (3 * 1000);
                 /* Now try again to connect the agent.  */
                 err = assuan_socket_connect (ctx_r, sockname, 0);
               }
@@ -347,6 +361,26 @@ agent_connect (assuan_context_t *ctx_r)
 }
 
 
+/* This is the default inquiry callback.  It mainly handles the
+   Pinentry notifications.  */
+static int
+default_inq_cb (void *opaque, const char *line)
+{
+  (void)opaque;
+
+  if (!strncmp (line, "PINENTRY_LAUNCHED", 17) && (line[17]==' '||!line[17]))
+    {
+      gnupg_allow_set_foregound_window ((pid_t)strtoul (line+17, NULL, 10));
+      /* We do not pass errors to avoid breaking other code.  */
+    }
+  else
+    DEBUG ("ignoring gpg-agent inquiry `%s'\n", line);
+
+  return 0;
+}
+
+
+
 /* Send a simple command to the agent.  */
 static gpg_error_t 
 agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
@@ -363,7 +397,8 @@ agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
   if (res < 0)
     return gpg_error_from_errno (errno);
 
-  err = assuan_transact (ctx, optstr, NULL, NULL, NULL, NULL, NULL, NULL);
+  err = assuan_transact (ctx, optstr, NULL, NULL, default_inq_cb,
+			 NULL, NULL, NULL);
   if (err)
     DEBUG ("gpg-agent command '%s' failed: %s", optstr, gpg_strerror (err));
   free (optstr);
@@ -401,12 +436,12 @@ agent_configure (assuan_context_t ctx)
   dft_ttyname = getenv ("GPG_TTY");
   if ((!dft_ttyname || !*dft_ttyname) && ttyname (0))
     dft_ttyname = ttyname (0);
-  if (!dft_ttyname)
-    return 0;
-
-  err = agent_simple_cmd (ctx, "OPTION ttyname=%s", dft_ttyname);
-  if (err)
-    return err;
+  if (dft_ttyname)
+    {
+      err = agent_simple_cmd (ctx, "OPTION ttyname=%s", dft_ttyname);
+      if (err)
+	return err;
+    }
 
   dft_ttytype = getenv ("TERM");
   if (dft_ttytype)
@@ -464,6 +499,12 @@ agent_configure (assuan_context_t ctx)
   if (dft_pinentry_user_data)
     err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s",
 	                    dft_pinentry_user_data);
+  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
+    err = 0;
+  else if (err)
+    return err;
+
+  err = agent_simple_cmd (ctx, "OPTION allow-pinentry-notify");
   if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
     err = 0;
   else if (err)
@@ -761,7 +802,8 @@ scute_agent_learn (struct agent_card_info_s *info)
 
   memset (info, 0, sizeof (*info));
   err = assuan_transact (agent_ctx, "LEARN --send",
-			 NULL, NULL, NULL, NULL, learn_status_cb, info);
+			 NULL, NULL, default_inq_cb,
+			 NULL, learn_status_cb, info);
 
   return err;
 }
@@ -791,7 +833,8 @@ scute_agent_check_status (void)
   char flag = '-';
 
   err = assuan_transact (agent_ctx, "SCD GETINFO status",
-			 read_status_cb, &flag, NULL, NULL, NULL, NULL);
+			 read_status_cb, &flag, default_inq_cb,
+			 NULL, NULL, NULL);
 
   if (err)
     return err;
@@ -862,7 +905,8 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
     return gpg_error (GPG_ERR_INV_ARG);
 
   snprintf (cmd, sizeof (cmd), "SIGKEY %s", grip);
-  err = assuan_transact (agent_ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
+  err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
+			 NULL, NULL, NULL);
   if (err)
     return err;
 
@@ -871,12 +915,13 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   pretty_data[2 * len] = '\0';
 
   snprintf (cmd, sizeof (cmd), "sethash --hash=tls-md5sha1 %s", pretty_data);
-  err = assuan_transact (agent_ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
+  err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
+			 NULL, NULL, NULL);
   if (err)
     return err;
 
   err = assuan_transact (agent_ctx, "PKSIGN",
-			 pksign_cb, &sig, NULL, NULL, NULL, NULL);
+			 pksign_cb, &sig, default_inq_cb, NULL, NULL, NULL);
   if (err)
     return err;
 
@@ -903,7 +948,8 @@ gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted)
   char cmd[150];
 
   snprintf (cmd, sizeof (cmd), "ISTRUSTED %s", fpr);
-  err = assuan_transact (agent_ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
+  err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
+			 NULL, NULL, NULL);
   if (err && gpg_err_code (err) != GPG_ERR_NOT_TRUSTED)
     return err;
   else if (!err)

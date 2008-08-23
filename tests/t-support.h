@@ -262,10 +262,19 @@ session_state_str (CK_STATE state)
     }								\
   while (0)
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 void
 init_cryptoki (void)
 {
   CK_RV err;
+
+#ifdef _WIN32
+  WSADATA wsadat;
+  WSAStartup (0x202, &wsadat);
+#endif
 
   err = C_Initialize (NULL);
   fail_if_err (err);

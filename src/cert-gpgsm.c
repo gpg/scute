@@ -42,6 +42,7 @@
 
 #include "cert.h"
 #include "support.h"
+#include "debug.h"
 
 
 #ifndef HAVE_W32_SYSTEM
@@ -557,11 +558,13 @@ export_cert_compat (char *fpr, struct cert *cert)
   child_fds[0] = output_fds[1];
   child_fds[1] = -1;
 
-  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, child_fds);
+  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, child_fds,
+				 NULL, NULL, 128);
   close (output_fds[1]);
   if (err)
     {
       close (output_fds[0]);
+      DEBUG ("failed to spawn %s\n", get_gpgsm_path ());
       return err;
     }
 
@@ -646,9 +649,13 @@ export_cert (char *fpr, struct cert *cert)
   char cmd[COMMANDLINELEN];
   struct export_hook exp;
 
-  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
+  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+				 NULL, NULL, 128);
   if (err)
-    return err;
+    {
+      DEBUG ("spawning %s\n", get_gpgsm_path ());
+      return err;
+    }
 
   exp.buffer = NULL;
   exp.buffer_len = 0;
@@ -720,9 +727,13 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
   const char *argv[] = { "gpgsm", "--server", NULL };
   struct search_ctx_by_field search;
 
-  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
+  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+				 NULL, NULL, 128);
   if (err)
-    return err;
+    {
+      DEBUG ("spawning %s\n", get_gpgsm_path ());
+      return err;
+    }
 
   search.field = SEARCH_BY_GRIP;
   search.pattern = grip;
@@ -747,9 +758,13 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
   const char *argv[] = { "gpgsm", "--server", NULL };
   struct search_ctx_by_field search;
 
-  err = assuan_pipe_connect (&ctx, GPGSM_PATH, argv, NULL);
+  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+				 NULL, NULL, 128);
   if (err)
-    return err;
+    {
+      DEBUG ("failed to spawn %s\n", get_gpgsm_path ());
+      return err;
+    }
 
   search.field = SEARCH_BY_FPR;
   search.pattern = fpr;

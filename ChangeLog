@@ -1,3 +1,24 @@
+2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/Makefile.am [HAVE_W32_SYSTEM]: Build autonomous DLL.
+	* src/dllmain.c (DllMain): New file.
+	* src/cert-gpgsm.c: Include "debug.h".  Use
+	 assuan_pipe_connect_ext instead of assuan_pipe_connect everywhere.
+	* src/agent.c (WINVER) [HAVE_W32_SYSTEM]: Define symbol.
+	[HAVE_W32_SYSTEM]: Include <windows.h>.  Do this before including
+	<assuan.h>.
+	(gnupg_allow_set_foregound_window): New function.
+	(agent_connect): Use Sleep() instead of _sleep().
+	(default_inq_cb): New function, and use it in all transactions.
+	(agent_configure): Don't bail out if ttytname is not defined.  Set
+	allow-pinentry-notify.
+	* tests/t-support.h [_WIN32]: Include <windows.h>.
+	(init_cryptoki) [_WIN32]: Call WSAStartup.
+
+2008-08-21  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/scute.def: Start at @1 instead of @0.
+
 2008-08-21  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/agent.c (agent_configure): Fix cut and paste error.
