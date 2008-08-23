@@ -1,5 +1,10 @@
 2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
 
+	* src/agent.c (gnupg_allow_set_foregound_window)
+	[!HAVE_W32_SYSTEM]: Define it.
+
+2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
+
 	* src/Makefile.am [HAVE_W32_SYSTEM]: Build autonomous DLL.
 	* src/dllmain.c (DllMain): New file.
 	* src/cert-gpgsm.c: Include "debug.h".  Use

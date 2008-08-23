@@ -58,19 +58,21 @@
 static assuan_context_t agent_ctx = NULL;
 
 
-#ifdef HAVE_W32_SYSTEM
 /* Hack required for Windows.  */
 void 
 gnupg_allow_set_foregound_window (pid_t pid)
 {
   if (!pid || pid == (pid_t)(-1))
     return;
-  if (!AllowSetForegroundWindow (pid))
+#ifdef HAVE_W32_SYSTEM
+  else if (!AllowSetForegroundWindow (pid))
     DEBUG ("AllowSetForegroundWindow(%lu) failed: %i\n",
 	   (unsigned long)pid, GetLastError ());
+#endif
 }
 
 
+#ifdef HAVE_W32_SYSTEM
 /* Helper function to build_w32_commandline. */
 static char *
 build_w32_commandline_copy (char *buffer, const char *string)
