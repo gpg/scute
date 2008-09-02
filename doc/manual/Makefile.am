@@ -37,14 +37,15 @@ images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
 	firefox-pref-view.png
 
 images_pdf = $(images:.png=.pdf)
+images_eps = $(images:.png=.eps)
 
 EXTRA_DIST = $(images)
-CLEANFILES = $(images_pdf)
+CLEANFILES = $(images_pdf) $(images_eps)
 
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = gpl.texi
 
-scute.dvi: $(images_pdf)
+scute.dvi: $(images_eps)
 scute.pdf: $(images_pdf)
 
 %.eps : %.png

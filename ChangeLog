@@ -2,6 +2,10 @@
 
 	* Released version 1.2.0.
 
+	* doc/manual/Makefile.am (CLEANFILES): Add $(images_eps).
+	(images_eps): New variable.
+	(scute.dvi): Depend on $(images_eps) instead of $(images_pdf).
+	
 2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/Makefile.am [HAVE_W32_SYSTEM]: Build autonomous DLL.
