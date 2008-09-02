@@ -1,3 +1,7 @@
+2008-09-02  Marcus Brinkmann  <marcus@g10code.com>
+
+	* Released version 1.2.0.
+
 2008-08-23  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/Makefile.am [HAVE_W32_SYSTEM]: Build autonomous DLL.
