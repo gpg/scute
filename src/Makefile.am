@@ -146,7 +146,7 @@ clean-local:
 
 scute_LDADD = @LTLIBOBJS@ $(srcdir)/scute.def -L. -lassuan -lgpg-error -lws2_32
 
-#.rc.o:
-#	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
+.rc.o:
+	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
 
 endif
