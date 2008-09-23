@@ -83,7 +83,9 @@ search_cb (void *hook, struct cert *cert)
     }
 
   /* Add the certificate chain recursively before adding the
-     certificate.  */
+     certificate.  But ignore errors.  If the chain is incomplete, we
+     might still be able to proceed, for example with client
+     authentication.  */
   if (strcmp (cert->chain_id, cert->fpr))
     err = scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
 
