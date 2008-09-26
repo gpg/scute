@@ -46,6 +46,12 @@ struct cert
   /* True if we started to fill in a certificate.  */
   bool valid;
 
+#if 1
+  /* We disable some elements, because they are easy to get from gpgsm
+     but hard to get from the card directly.  These fields are only
+     valid when getting the certificate through gpgsm, so don't use
+     them.  */
+
   /* The key length.  */
   int length;
 
@@ -55,12 +61,6 @@ struct cert
   /* The key ID.  */
   unsigned char keyid[17];
 
-  /* The timestamp.  */
-  time_t timestamp;
-
-  /* The expiration time.  */
-  time_t expires;
-
   /* The X.509 serial number.  */
   char *issuer_serial;
 
@@ -69,6 +69,18 @@ struct cert
 
   /* The user ID strings.  */
   char *uid;
+
+  /* The timestamp.  */
+  time_t timestamp;
+
+  /* The expiration time.  */
+  time_t expires;
+#endif
+
+  /* The following entries are required to create a PKCS #11
+     certificate (in cert-object.c).  GpgSM delivers them directly, if
+     we get the cert from the card, we need to read them from the cert
+     ourselves.  */
 
   /* The fingerprint.  */
   unsigned char fpr[41];

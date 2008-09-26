@@ -47,7 +47,7 @@ typedef gpg_error_t (*cert_get_cb_t) (void *hook,
    Returns allocated attributes for the certificate object in ATTRP
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
-gpg_error_t scute_gpgsm_get_cert (char *grip, cert_get_cb_t cert_get_cb,
-				  void *hook);
+gpg_error_t scute_gpgsm_get_cert (char *grip, int no,
+				  cert_get_cb_t cert_get_cb, void *hook);
 
 #endif	/* GPGSM_H */

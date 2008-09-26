@@ -1,3 +1,25 @@
+2008-09-26  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/agent.c: Include "cert.h".
+	(GET_CERT_INIT_SIZE): New symbol.
+	(struct get_cert_s): New struct.
+	(get_cert_data_cb, scute_agent_get_cert): New functions.
+	* src/gpgsm.c: Include "agent.h".
+	(scute_gpgsm_get_cert): Take extra argument NO.  Use it to get the
+	certificate directly from the card, if possible.
+	* src/gpgsm.h (scute_gpgsm_get_cert): Add extra argument NO to
+	prototype.
+	* src/slots.c (slot_init): Pass extra argument to
+	scute_gpgsm_get_cert invocation.
+	* src/cert-object.c (scute_attr_prv, scute_attr_cert): Don't use
+	the fpr, timestamp and expire field of a certificate for now.
+
+2008-09-23  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/agent.c (GET_CERT_INIT_SIZE): New symbol.
+	(struct get_cert_s): New struct.
+	(get_cert_data_cb, scute_agent_get_cert): New functions.
+
 2008-09-03  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/Makefile.am (.rc.o): New rule.

@@ -51,6 +51,7 @@
 
 #include "debug.h"
 #include "support.h"
+#include "cert.h"
 #include "agent.h"
 
 
@@ -943,7 +944,8 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
 
 
 /* Determine if FPR is trusted.  */
-gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted)
+gpg_error_t
+scute_agent_is_trusted (char *fpr, bool *is_trusted)
 {
   gpg_error_t err;
   bool trusted = false;
@@ -958,6 +960,85 @@ gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted)
     trusted = true;
 
   *is_trusted = trusted;
+  return 0;
+}
+
+
+#define GET_CERT_INIT_SIZE 2048
+
+struct get_cert_s
+{
+  unsigned char *cert_der;
+  int cert_der_len;
+  int cert_der_size;
+};
+
+
+gpg_error_t
+get_cert_data_cb (void *opaque, const void *data, size_t data_len)
+{
+  struct get_cert_s *cert_s = opaque;
+  gpg_error_t err;
+  int needed_size;
+
+  needed_size = cert_s->cert_der_len + data_len;
+  if (needed_size > cert_s->cert_der_size)
+    {
+      unsigned char *new_cert_der;
+      int new_cert_der_size = cert_s->cert_der_size;
+
+      if (new_cert_der_size == 0)
+	new_cert_der_size = GET_CERT_INIT_SIZE;
+      while (new_cert_der_size < needed_size)
+	new_cert_der_size *= 2;
+
+      if (cert_s->cert_der == NULL)
+	new_cert_der = malloc (new_cert_der_size);
+      else
+	new_cert_der = realloc (cert_s->cert_der, new_cert_der_size);
+
+      if (new_cert_der == NULL)
+	return gpg_error_from_syserror ();
+
+      cert_s->cert_der = new_cert_der;
+      cert_s->cert_der_size = new_cert_der_size;
+    }
+
+  memcpy (cert_s->cert_der + cert_s->cert_der_len, data, data_len);
+  cert_s->cert_der_len += data_len;
+
+  return 0;
+}
+
+
+/* Try to get certificate for key numer NO.  */
+gpg_error_t
+scute_agent_get_cert (int no, struct cert *cert)
+{
+  gpg_error_t err;
+  char cmd[150];
+  struct get_cert_s cert_s;
+
+  cert_s.cert_der = NULL;
+  cert_s.cert_der_len = 0;
+  cert_s.cert_der_size = 0;
+
+  snprintf (cmd, sizeof (cmd), "SCD READCERT OPENPGP.%i", no);
+  err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
+			 NULL, NULL, NULL, NULL);
+  /* Just to be safe... */
+  if (!err && cert_s.cert_der_len <= 16)
+    err = gpg_error (GPG_ERR_BAD_CERT);
+  if (err)
+    {
+      if (cert_s.cert_der)
+	free (cert_s.cert_der);
+      return err;
+    }
+
+  cert->cert_der = cert_s.cert_der;
+  cert->cert_der_len = cert_s.cert_der_len;
+
   return 0;
 }
 

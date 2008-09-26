@@ -438,6 +438,7 @@ scute_attr_cert (struct cert *cert,
   /* FIXME: Calculate check_value.  */
   one_attr (CKA_CHECK_VALUE, obj_check_value);
 
+#if 0
   if (time_to_ck_date (&cert->timestamp, &obj_start_date))
     {
       one_attr (CKA_START_DATE, obj_start_date);
@@ -455,9 +456,29 @@ scute_attr_cert (struct cert *cert,
     {
       empty_attr (CKA_END_DATE);
     }
+#else
+  /* For now, we disable these fields.  We can parse them from the
+     certificate just as the other data.  However, we would like to
+     avoid parsing the certificates at all, let's see how much
+     functionality we really need in the PKCS#11 token first.  */
+  empty_attr (CKA_START_DATE);
+  empty_attr (CKA_END_DATE);
+#endif
 
   one_attr_ext (CKA_SUBJECT, subject_start, subject_len);
+#if 0
+  /* If we get the info directly from the card, we don't have a
+     fingerprint, and parsing the subject key identifier is quite a
+     mouth full.  Let's try a different approach for now.  */
   one_attr_ext (CKA_ID, cert->fpr, 40);
+#else
+  {
+    char certptr[40];
+    snprintf (certptr, DIM (certptr), "%p", cert);
+    one_attr_ext (CKA_ID, certptr, strlen (certptr));
+  }
+#endif
+
   one_attr_ext (CKA_ISSUER, issuer_start, issuer_len);
   one_attr_ext (CKA_SERIAL_NUMBER, serial_start, serial_len);
   one_attr_ext (CKA_VALUE, cert->cert_der, cert->cert_der_len);
@@ -561,8 +582,20 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
   one_attr (CKA_LABEL, obj_label);
 
   one_attr (CKA_KEY_TYPE, obj_key_type);
+#if 0
+  /* If we get the info directly from the card, we don't have a
+     fingerprint, and parsing the subject key identifier is quite a
+     mouth full.  Let's try a different approach for now.  */
   one_attr_ext (CKA_ID, cert->fpr, 40);
+#else
+  {
+    char certptr[40];
+    snprintf (certptr, DIM (certptr), "%p", cert);
+    one_attr_ext (CKA_ID, certptr, strlen (certptr));
+  }
+#endif
 
+#if 0
   if (time_to_ck_date (&cert->timestamp, &obj_start_date))
     {
       one_attr (CKA_START_DATE, obj_start_date);
@@ -580,6 +613,14 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
     {
       empty_attr (CKA_END_DATE);
     }
+#else
+  /* For now, we disable these fields.  We can parse them from the
+     certificate just as the other data.  However, we would like to
+     avoid parsing the certificates at all, let's see how much
+     functionality we really need in the PKCS#11 token first.  */
+  empty_attr (CKA_START_DATE);
+  empty_attr (CKA_END_DATE);
+#endif
 
   one_attr (CKA_DERIVE, obj_derive);
   one_attr (CKA_LOCAL, obj_local);

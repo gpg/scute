@@ -1,5 +1,5 @@
 /* gpgsm.c - Talking to gpgsm.
-   Copyright (C) 2006 g10 Code GmbH
+   Copyright (C) 2006, 2008 g10 Code GmbH
 
    This file is part of Scute.
  
@@ -44,6 +44,7 @@
 #include "cryptoki.h"
 #include "support.h"
 #include "cert.h"
+#include "agent.h"
 #include "gpgsm.h"
 
 
@@ -110,7 +111,7 @@ search_cb (void *hook, struct cert *cert)
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
 gpg_error_t
-scute_gpgsm_get_cert (char *grip, cert_get_cb_t cert_get_cb, void *hook)
+scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search search;
@@ -119,7 +120,30 @@ scute_gpgsm_get_cert (char *grip, cert_get_cb_t cert_get_cb, void *hook)
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
 
+  /* If the key is from the card, we might get the certificate from
+     the card as well.  */
+  if (no >= 0)
+    {
+      struct cert cert;
+
+      memset (&cert, '\0', sizeof (cert));
+      err = scute_agent_get_cert (no, &cert);
+      if (! err)
+	{
+#if 0
+	  /* For now, we don't need no stinking chain.  */
+
+	  /* As we only have the DER certificate from the card, we need to
+	     parse that and fill out the missing info and try to get the
+	     certificate chain from gpgsm.  */
+	  err = scute_cert_from_der (&cert);
+	  if (! err)
+	    err = search_cb (hook, &cert);
+#endif
+	  return err;
+	}
+    }
+
   err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
-  
   return err;
 }
