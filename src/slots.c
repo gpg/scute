@@ -46,8 +46,6 @@
 
 #include "debug.h"
 
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-
 
 /* A session is just a slot identifier with a per-slot session
    identifier.  */
@@ -612,7 +610,9 @@ slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 {
   struct slot *slot = scute_table_data (slots, id);
 
-  *max = MIN (slot->info.chvmaxlen[0], slot->info.chvmaxlen[1]);
+  /* In version 2 of the OpenPGP card, the second counter is for the
+     reset operation, so we only take the first counter.  */
+  *max = slot->info.chvmaxlen[0];
 
   /* FIXME: This is true at least for the user pin (CHV1 and CHV2).  */
   *min = 6;
@@ -626,7 +626,9 @@ slot_token_pincount (slot_iterator_t id, int *max, int *len)
   struct slot *slot = scute_table_data (slots, id);
 
   *max = 3;
-  *len = MIN (slot->info.chvretry[0], slot->info.chvretry[1]);
+  /* In version 2 of the OpenPGP card, the second counter is for the
+     reset operation, so we only take the first counter.  */
+  *len = slot->info.chvretry[0];
 }
 
 
