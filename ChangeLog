@@ -1,5 +1,11 @@
 2008-09-29  Marcus Brinkmann  <marcus@g10code.com>
 
+	* src/gpgsm.c (struct search): New member WITH_CHAIN.
+	(search_cb): Only load chain if WITH_CHAIN is true.
+	(scute_gpgsm_get_cert): Call search_cb in the agent code path.
+
+2008-09-29  Marcus Brinkmann  <marcus@g10code.com>
+
 	* src/slots.c (MIN): Remove macro.
 	(slot_token_maxpinlen, slot_token_pincount): Do not consider
 	second pincount, which meaning depends on the card version.

@@ -46,6 +46,7 @@
 #include "cert.h"
 #include "agent.h"
 #include "gpgsm.h"
+#include "debug.h"
 
 
 struct search
@@ -53,7 +54,7 @@ struct search
   bool found;
   cert_get_cb_t cert_get_cb;
   void *hook;
-
+  bool with_chain;
 };
 
 
@@ -87,7 +88,7 @@ search_cb (void *hook, struct cert *cert)
      certificate.  But ignore errors.  If the chain is incomplete, we
      might still be able to proceed, for example with client
      authentication.  */
-  if (strcmp (cert->chain_id, cert->fpr))
+  if (ctx->with_chain && strcmp (cert->chain_id, cert->fpr))
     err = scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
@@ -119,6 +120,7 @@ scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
   search.found = false;
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
+  search.with_chain = false;
 
   /* If the key is from the card, we might get the certificate from
      the card as well.  */
@@ -137,13 +139,14 @@ scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
 	     parse that and fill out the missing info and try to get the
 	     certificate chain from gpgsm.  */
 	  err = scute_cert_from_der (&cert);
-	  if (! err)
-	    err = search_cb (hook, &cert);
 #endif
+	  if (! err)
+	    err = search_cb (&search, &cert);
 	  return err;
 	}
     }
-
+  
+  search.with_chain = true;
   err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
   return err;
 }
