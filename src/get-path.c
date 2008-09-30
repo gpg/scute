@@ -244,6 +244,39 @@ w32_shgetfolderpath (HWND a, int b, HANDLE c, DWORD d, LPSTR e)
     return -1;
 }
 
+
+static char *
+find_program_in_inst_dir (const char *name)
+{
+  char *result = NULL;
+  char *tmp;
+
+  tmp = read_w32_registry_string ("HKEY_LOCAL_MACHINE",
+				  "Software\\GNU\\GnuPG",
+				  "Install Directory");
+  if (!tmp)
+    return NULL;
+
+  result = malloc (strlen (tmp) + 1 + strlen (name) + 1);
+  if (!result)
+    {
+      free (tmp);
+      return NULL;
+    }
+
+  strcpy (stpcpy (stpcpy (result, tmp), "\\"), name);
+  free (tmp);
+  if (access (result, F_OK))
+    {
+      free (result);
+      return NULL;
+    }
+
+  return result;
+}
+
+
+
 static char *
 find_program_at_standard_place (const char *name)
 {
@@ -275,6 +308,8 @@ get_gpgsm_path (void)
 
 #ifdef HAVE_W32_SYSTEM
   if (!pgmname)
+    pgmname = find_program_in_inst_dir ("gpgsm.exe");
+  if (!pgmname)
     pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpgsm.exe");
 #endif
   if (!pgmname)
@@ -289,6 +324,8 @@ get_gpg_agent_path (void)
   static const char *pgmname;
 
 #ifdef HAVE_W32_SYSTEM
+  if (!pgmname)
+    pgmname = find_program_in_inst_dir ("gpg-agent.exe");
   if (!pgmname)
     pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpg-agent.exe");
 #endif
