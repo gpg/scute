@@ -1,3 +1,17 @@
+2008-09-30  Werner Koch  <wk@g10code.de>
+
+	* src/Makefile.am (scute_DEPENDENCIES): Use .libs/versioninfo.o
+
+	* AUTHORS (License): New.
+
+	* Makefile.am (AUTOMAKE_OPTIONS): Do not distribute a gzip tarball.
+	(EXTRA_DIST): Distibute autogen.sh and README.SVN.
+
+	* README.CVS: Replace by README.SVN.
+
+	* configure.ac: Update bug address and some comments.
+	* autogen.sh: Update.
+
 2008-09-29  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/gpgsm.c (struct search): New member WITH_CHAIN.

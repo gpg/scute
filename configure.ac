@@ -14,8 +14,7 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Scute; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
 #
 # In addition, as a special exception, g10 Code GmbH gives permission
 # to link this library: with the Mozilla Foundation's code for
@@ -36,24 +35,25 @@ min_automake_version="1.9.3"
 #                 Make sure to run  "svn up" before a "make dist".
 #                 See below for the LT versions.
 #
-# The CVS version is usually the next intended release version with
-# the string "-cvs" appended.  The reason for this is that tests for a
-# specific feature can already be done under the assumption that the
-# CVS version is the most recent one in a branch.  To disable the CVS
-# version for the real release, just comment out the my_iscvs macro.
-# Note, that we are now using Subversion instead of CVS and append the
-# SVN revision number to the "cvs" suffix.  To make this most useful
-# for snapshot releases please do an "svn up" right before recreating
-# the configure script, so that a proper revision number for all files
-# is available when running a "make distcheck".
-m4_define(my_version, [1.3.0])
-m4_define(my_issvn, yes)
+# The SVN version is usually the next intended release version with
+# the string "-svnNNNN" appended.  The reason for this is that tests
+# for a specific feature can already be done under the assumption that
+# the SVN version is the most recent one in a branch. 
+#
+# To disable the SVN version for the real release, set the my_issvn
+# macro to "no".  To make this most useful for snapshot releases
+# please do an "svn up" right before recreating the configure script,
+# so that a proper revision number for all files is available when
+# running a "make distcheck".
+
+m4_define([my_version], [1.3.0])
+m4_define([my_issvn], [yes])
+
 m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
-
-AC_INIT([scute],
+AC_INIT([scute], 
         [my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision])],
-        [marcus@g10code.com])
+        [bug-scute@gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)

@@ -1,7 +1,8 @@
 Package: scute
 Maintainer: Marcus Brinkmann <marcus@g10code.com>
-Bug reports: marcus@g10code.com
+Bug reports: bug-scute@g10code.com
 Security related bug reports: security@gnupg.org
+License: GPLv2+ with exception for Mozilla
 
 
 g10 Code GmbH <code@g10code.com>
@@ -13,7 +14,8 @@ Andreas Jellinghaus <aj@dungeon.inka.de>
 Alon Bar-Lev <alon.barlev@gmail.com>
  - Contributions to src/pkcs11.h.
 
- Copyright 2006 g10 Code GmbH
+
+ Copyright 2006, 2008 g10 Code GmbH
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

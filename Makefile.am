@@ -14,8 +14,7 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Scute; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
 #
 # In addition, as a special exception, g10 Code GmbH gives permission
 # to link this library: with the Mozilla Foundation's code for
@@ -30,9 +29,9 @@
 ## Process this file with automake to produce Makefile.in
 
 ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = dist-bzip2
+AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = 
+EXTRA_DIST = autogen.sh README.SVN
 
 if RUN_TESTS
 tests = tests

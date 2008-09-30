@@ -132,7 +132,7 @@ AM_CFLAGS = @LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@ -shared
 
 scute_SOURCES = dllmain.c $(sources) versioninfo.rc
 
-scute_DEPENDENCIES = @LTLIBOBJS@ versioninfo.o libgpg-error.a libassuan.a
+scute_DEPENDENCIES = @LTLIBOBJS@ .libs/versioninfo.o libgpg-error.a libassuan.a
 
 libgpg-error.a:
 	ln -s $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
