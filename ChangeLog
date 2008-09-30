@@ -1,5 +1,11 @@
 2008-09-30  Marcus Brinkmann  <marcus@g10code.com>
 
+	* src/cert-object.c [!CERT_PARSING]: Disable some certificate
+	parsing code.  Unfortunately, we can't get rid of all of it for
+	now.
+
+2008-09-30  Marcus Brinkmann  <marcus@g10code.com>
+
 	* src/get-path.c (find_program_in_inst_dir): New function.
 	(get_gpgsm_path, get_gpg_agent_path): Use it to check in install dir.
 

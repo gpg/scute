@@ -44,7 +44,16 @@
 #include "cert.h"
 
 
+/* Parsing certificates is problematic, as there is no reliable
+   standard.  However, we must parse at least the subject field (see
+   below).  So, disabling cert parsing does currently not disable it
+   completely.  The purpose of the symbol is to document which parts
+   of the code are mandatory, and which are optional.  */
+#define CERT_PARSING 1
+
 
+#if CERT_PARSING || 1
+
 #define atoi_1(p)   (*(p) - '0' )
 #define atoi_2(p)   ((atoi_1(p) * 10) + atoi_1((p)+1))
 #define atoi_4(p)   ((atoi_2(p) * 100) + atoi_2((p)+2))
@@ -330,6 +339,7 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
 
   return 0;
 }
+#endif
 
 
 static gpg_error_t
@@ -373,7 +383,7 @@ gpg_error_t
 scute_attr_cert (struct cert *cert,
 		 CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp)
 {
-  CK_RV err;
+  CK_RV err = 0;
   CK_ATTRIBUTE_PTR attr;
   CK_ULONG attr_count;
 
@@ -399,8 +409,12 @@ scute_attr_cert (struct cert *cert,
   CK_DATE obj_end_date;
   CK_ULONG obj_java_midp_sec_domain = 0;
 
+#if CERT_PARSING || 1
+  /* See below.  */
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
+#endif
+#if CERT_PARSING
   if (!err)
     err = asn1_get_issuer (cert->cert_der, cert->cert_der_len,
 			   &issuer_start, &issuer_len);
@@ -409,6 +423,8 @@ scute_attr_cert (struct cert *cert,
 			   &serial_start, &serial_len);
   if (err)
     return err;
+#endif
+
 
 #define NR_ATTR_CERT 20
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_CERT);
@@ -443,18 +459,10 @@ scute_attr_cert (struct cert *cert,
     {
       one_attr (CKA_START_DATE, obj_start_date);
     }
-  else
-    {
-      empty_attr (CKA_START_DATE);
-    }
 
   if (time_to_ck_date (&cert->expires, &obj_end_date))
     {
       one_attr (CKA_END_DATE, obj_end_date);
-    }
-  else
-    {
-      empty_attr (CKA_END_DATE);
     }
 #else
   /* For now, we disable these fields.  We can parse them from the
@@ -465,7 +473,12 @@ scute_attr_cert (struct cert *cert,
   empty_attr (CKA_END_DATE);
 #endif
 
+  /* Note: This attribute is mandatory.  Without it, Firefox client
+     authentication won't work.  */
+#if CERT_PARSING || 1
   one_attr_ext (CKA_SUBJECT, subject_start, subject_len);
+#endif
+
 #if 0
   /* If we get the info directly from the card, we don't have a
      fingerprint, and parsing the subject key identifier is quite a
@@ -479,8 +492,10 @@ scute_attr_cert (struct cert *cert,
   }
 #endif
 
+#if CERT_PARSING
   one_attr_ext (CKA_ISSUER, issuer_start, issuer_len);
   one_attr_ext (CKA_SERIAL_NUMBER, serial_start, serial_len);
+#endif
   one_attr_ext (CKA_VALUE, cert->cert_der, cert->cert_der_len);
   
   empty_attr (CKA_URL);
@@ -496,7 +511,7 @@ scute_attr_cert (struct cert *cert,
     }
 
   /* FIXME: Not completely safe.  */
-  assert (NR_ATTR_CERT == attr_count);
+  assert (NR_ATTR_CERT >= attr_count);
 
   *attrp = attr;
   *attr_countp = attr_count;
@@ -508,7 +523,7 @@ gpg_error_t
 scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 		CK_ULONG *attr_countp)
 {
-  CK_RV err;
+  CK_RV err = 0;
   CK_ATTRIBUTE_PTR attr;
   CK_ULONG attr_count;
 
@@ -545,6 +560,7 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
   CK_BBOOL obj_wrap_with_trusted = CK_FALSE;
   CK_BBOOL obj_always_authenticate = CK_FALSE;
 
+#if CERT_PARSING
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
   if (!err)
@@ -555,6 +571,7 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 			       &public_exp_start, &public_exp_len);
   if (err)
     return err;
+#endif
 
 #define NR_ATTR_PRV 27
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_PRV);
@@ -596,38 +613,33 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 #endif
 
 #if 0
+  /* For now, we disable these fields.  We can parse them from the
+     certificate just as the other data.  However, we would like to
+     avoid parsing the certificates at all, let's see how much
+     functionality we really need in the PKCS#11 token first.  */
+
+  /* This code currently only works for certificates retrieved through
+     gpgsm.  */
   if (time_to_ck_date (&cert->timestamp, &obj_start_date))
     {
       one_attr (CKA_START_DATE, obj_start_date);
-    }
-  else
-    {
-      empty_attr (CKA_START_DATE);
     }
 
   if (time_to_ck_date (&cert->expires, &obj_end_date))
     {
       one_attr (CKA_END_DATE, obj_end_date);
     }
-  else
-    {
-      empty_attr (CKA_END_DATE);
-    }
-#else
-  /* For now, we disable these fields.  We can parse them from the
-     certificate just as the other data.  However, we would like to
-     avoid parsing the certificates at all, let's see how much
-     functionality we really need in the PKCS#11 token first.  */
-  empty_attr (CKA_START_DATE);
-  empty_attr (CKA_END_DATE);
 #endif
 
   one_attr (CKA_DERIVE, obj_derive);
   one_attr (CKA_LOCAL, obj_local);
   one_attr (CKA_KEY_GEN_MECHANISM, obj_key_gen);
   one_attr (CKA_ALLOWED_MECHANISMS, obj_mechanisms);
-  
+
+#if CERT_PARSING
   one_attr_ext (CKA_SUBJECT, subject_start, subject_len);
+#endif
+
   one_attr (CKA_SENSITIVE, obj_sensitive);
   one_attr (CKA_DECRYPT, obj_decrypt);
   one_attr (CKA_SIGN, obj_sign);
@@ -640,8 +652,10 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
   empty_attr (CKA_UNWRAP_TEMPLATE);
   one_attr (CKA_ALWAYS_AUTHENTICATE, obj_always_authenticate);
 
+#if CERT_PARSING
   one_attr_ext (CKA_MODULUS, modulus_start, modulus_len);
   one_attr_ext (CKA_PUBLIC_EXPONENT, public_exp_start, public_exp_len);
+#endif
 
   if (err)
     {
@@ -650,7 +664,7 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
     }
 
   /* FIXME: Not completely safe.  */
-  assert (NR_ATTR_PRV == attr_count);
+  assert (NR_ATTR_PRV >= attr_count);
 
   *attrp = attr;
   *attr_countp = attr_count;
