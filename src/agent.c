@@ -67,7 +67,7 @@ gnupg_allow_set_foregound_window (pid_t pid)
     return;
 #ifdef HAVE_W32_SYSTEM
   else if (!AllowSetForegroundWindow (pid))
-    DEBUG ("AllowSetForegroundWindow(%lu) failed: %i\n",
+    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %i\n",
 	   (unsigned long)pid, GetLastError ());
 #endif
 }
@@ -190,7 +190,7 @@ spawn_process_detached (const char *pgmname, const char *argv[])
               | GetPriorityClass (GetCurrentProcess ())
               | CREATE_NEW_PROCESS_GROUP
               | DETACHED_PROCESS); 
-  DEBUG ("CreateProcess(detached), path=`%s' cmdline=`%s'\n",
+  DEBUG (DBG_INFO, "CreateProcess(detached), path=`%s' cmdline=`%s'\n",
 	 pgmname, cmdline);
   if (!CreateProcess (pgmname,       /* Program to start.  */
                       cmdline,       /* Command line arguments.  */
@@ -204,16 +204,16 @@ spawn_process_detached (const char *pgmname, const char *argv[])
                       &pi            /* Returns process information.  */
                       ))
     {
-      DEBUG ("CreateProcess(detached) failed: %i\n", GetLastError ());
+      DEBUG (DBG_CRIT, "CreateProcess(detached) failed: %i\n",
+	     GetLastError ());
       free (cmdline);
       return gpg_error (GPG_ERR_GENERAL);
     }
   free (cmdline);
   cmdline = NULL;
 
-  DEBUG ("CreateProcess(detached) ready: hProcess=%p hThread=%p"
-	 " dwProcessID=%d dwThreadId=%d\n",
-	 pi.hProcess, pi.hThread,
+  DEBUG (DBG_INFO, "CreateProcess(detached) ready: hProcess=%p hThread=%p"
+	 " dwProcessID=%d dwThreadId=%d\n", pi.hProcess, pi.hThread,
 	 (int) pi.dwProcessId, (int) pi.dwThreadId);
 
   CloseHandle (pi.hThread); 
@@ -255,8 +255,9 @@ agent_connect (assuan_context_t *ctx_r)
 	  const char *agent_program;
 
           /* With no success start a new server.  */
-	  DEBUG ("no running GPG agent at %s, starting one\n", sockname);
-          
+	  DEBUG (DBG_INFO, "no running GPG agent at %s, starting one\n",
+		 sockname);
+
           agent_program = get_gpg_agent_path ();
 
 #ifdef HAVE_W32_SYSTEM
@@ -275,7 +276,7 @@ agent_connect (assuan_context_t *ctx_r)
 
             err = spawn_process_detached (agent_program, argv);
             if (err)
-              DEBUG ("failed to start agent `%s': %s\n",
+              DEBUG (DBG_CRIT, "failed to start agent `%s': %s\n",
 		     agent_program, gpg_strerror (err));
             else
               {
@@ -324,7 +325,7 @@ agent_connect (assuan_context_t *ctx_r)
 
       if (!(ptr = strchr (infostr, PATHSEP_C)) || ptr == infostr)
 	{
-	  DEBUG ("malformed GPG_AGENT_INFO environment variable");
+	  DEBUG (DBG_CRIT, "malformed GPG_AGENT_INFO environment variable");
 	  free (infostr);
 	  force_pipe_server = 1;
 	  goto restart;
@@ -337,7 +338,7 @@ agent_connect (assuan_context_t *ctx_r)
       protocol_version = *ptr ? atoi (ptr + 1) : 0;
       if (protocol_version != 1)
 	{
-	  DEBUG ("GPG agent protocol version '%d' not supported",
+	  DEBUG (DBG_CRIT, "GPG agent protocol version '%d' not supported",
 		 protocol_version);
 	  free (infostr);
 	  force_pipe_server = 1;
@@ -348,7 +349,7 @@ agent_connect (assuan_context_t *ctx_r)
       free (infostr);
       if (err)
 	{
-	  DEBUG ("cannot connect to GPG agent: %s", gpg_strerror (err));
+	  DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
 	  force_pipe_server = 1;
 	  goto restart;
 	}
@@ -356,9 +357,12 @@ agent_connect (assuan_context_t *ctx_r)
 
   if (err)
     {
-      DEBUG ("cannot connect to GPG agent: %s", gpg_strerror (err));
+      DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
       return gpg_error (GPG_ERR_NO_AGENT);
     }
+
+  if (_scute_debug_flags & DBG_ASSUAN)
+    assuan_set_log_stream (*ctx_r, _scute_debug_stream);
 
   return 0;
 }
@@ -377,11 +381,10 @@ default_inq_cb (void *opaque, const char *line)
       /* We do not pass errors to avoid breaking other code.  */
     }
   else
-    DEBUG ("ignoring gpg-agent inquiry `%s'\n", line);
+    DEBUG (DBG_CRIT, "ignoring gpg-agent inquiry `%s'\n", line);
 
   return 0;
 }
-
 
 
 /* Send a simple command to the agent.  */
@@ -403,7 +406,8 @@ agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
   err = assuan_transact (ctx, optstr, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
   if (err)
-    DEBUG ("gpg-agent command '%s' failed: %s", optstr, gpg_strerror (err));
+    DEBUG (DBG_CRIT, "gpg-agent command '%s' failed: %s", optstr,
+	   gpg_strerror (err));
   free (optstr);
       
   return err;
@@ -526,10 +530,11 @@ scute_agent_initialize (void)
 
   if (agent_ctx)
     {
-      DEBUG ("GPG Agent connection already established");
+      DEBUG (DBG_CRIT, "GPG Agent connection already established");
       return 0;
     }
 
+  DEBUG (DBG_INFO, "Establishing connection to gpg-agent");
   err = agent_connect (&agent_ctx);
   if (err)
     return err;
@@ -863,7 +868,10 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
   struct signature *sig = opaque;
 
   if (sig->len + length > MAX_SIGNATURE_LEN)
-    return gpg_error (GPG_ERR_BAD_DATA);
+    {
+      DEBUG (DBG_INFO, "maximum signature length exceeded");
+      return gpg_error (GPG_ERR_BAD_DATA);
+    }
 
   memcpy (&sig->data[sig->len], buffer, length);
   sig->len += length;
@@ -1028,13 +1036,19 @@ scute_agent_get_cert (int no, struct cert *cert)
 			 NULL, NULL, NULL, NULL);
   /* Just to be safe... */
   if (!err && cert_s.cert_der_len <= 16)
-    err = gpg_error (GPG_ERR_BAD_CERT);
+    {
+      DEBUG (DBG_INFO, "bad card certificate rejected");
+      err = gpg_error (GPG_ERR_BAD_CERT);
+    }
   if (err)
     {
       if (cert_s.cert_der)
 	free (cert_s.cert_der);
       return err;
     }
+
+  DEBUG (DBG_INFO, "got certificate from card with length %i",
+	 cert_s.cert_der_len);
 
   cert->cert_der = cert_s.cert_der;
   cert->cert_der_len = cert_s.cert_der_len;
@@ -1048,10 +1062,11 @@ scute_agent_finalize (void)
 {
   if (!agent_ctx)
     {
-      DEBUG ("no GPG Agent connection established");
+      DEBUG (DBG_CRIT, "no GPG Agent connection established");
       return;
     }
 
+  DEBUG (DBG_INFO, "releasing agent context");
   assuan_disconnect (agent_ctx);
   agent_ctx = NULL;
 }

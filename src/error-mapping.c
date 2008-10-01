@@ -65,7 +65,7 @@ CK_RV
 scute_gpg_err_to_ck (gpg_error_t err)
 {
   if (err)
-    DEBUG ("Error occured: %s (%s)\n", gpg_strerror (err),
+    DEBUG (DBG_CRIT, "Error occured: %s (%s)\n", gpg_strerror (err),
 	   gpg_strsource (err));
 
   switch (gpg_err_code (err))

@@ -423,7 +423,7 @@ slots_update_slot (slot_iterator_t id)
 	       || strncmp (slot->info.serialno, "D27600012401", 12)
 	       || strlen (slot->info.serialno) != 32))
     {
-      DEBUG ("token not an OpenPGP card: %s", slot->info.serialno);
+      DEBUG (DBG_INFO, "token not an OpenPGP card: %s", slot->info.serialno);
       err = gpg_error (GPG_ERR_CARD_NOT_PRESENT);
       scute_agent_release_card_info (&slot->info);
     }

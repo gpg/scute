@@ -1,5 +1,5 @@
 /* debug.c - Debug interface.
-   Copyright (C) 2006 g10 Code GmbH
+   Copyright (C) 2006, 2008 g10 Code GmbH
 
    This file is part of Scute.
  
@@ -34,9 +34,23 @@
 
 #define DEBUG_PREFIX "scute: "
 
-/* FIXME: Eventually, we should control output with an environment
-   variable.  */
-#define DEBUG(format, ...) \
-  fprintf (stderr, DEBUG_PREFIX "%s: " format "\n", __func__, ##__VA_ARGS__)
+#define DBG_CRIT 0
+#define DBG_INFO (1 << 0)
+#define DBG_ASSUAN (1 << 1)
+
+extern FILE *_scute_debug_stream;
+extern unsigned int _scute_debug_flags;
+
+#define DEBUG(flag, format, ...)  \
+  do \
+    { \
+      if (_scute_debug_flags & (flag)) \
+        fprintf (_scute_debug_stream, \
+                 DEBUG_PREFIX "%s: " format "\n", __func__, ##__VA_ARGS__); \
+    } \
+  while (0)
+
+void _scute_debug_init (void);
+
 
 #endif /* !DEBUG_H */

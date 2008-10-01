@@ -43,8 +43,9 @@
 #include "agent.h"
 #include "error-mapping.h"
 #include "slots.h"
+#include "debug.h"
 
-
+
 CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
 {
   CK_RV err;
@@ -55,6 +56,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
   /* Set the assuan error source, so that gpg_error_t becomes a valid
      substitute for assuan_error_t.  */
   assuan_set_assuan_err_source (GPG_ERR_SOURCE_ANY);
+
+  _scute_debug_init ();
 
   /* Check the threading configuration.  */
   if (pInitArgs != NULL_PTR)

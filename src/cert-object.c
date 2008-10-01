@@ -42,6 +42,7 @@
 #include "cryptoki.h"
 #include "support.h"
 #include "cert.h"
+#include "debug.h"
 
 
 /* Parsing certificates is problematic, as there is no reliable
@@ -85,7 +86,11 @@ time_to_ck_date (time_t *atime, CK_DATE *ckdate)
   if (!(broken_time.tm_year >= 0 && broken_time.tm_year <= 8099
 	&& broken_time.tm_mon >= 0 && broken_time.tm_mon <= 11
 	&& broken_time.tm_mday >= 1 && broken_time.tm_mday <= 31))
-    return false;
+    { 
+      DEBUG (DBG_INFO, "unrepresentable time %i-%i-%i",
+	     broken_time.tm_year, broken_time.tm_mon, broken_time.tm_mday);
+      return false;
+    }
 
 #define LAST_DIGIT(d) (((d) % 10) + '0')
   nr = broken_time.tm_year + 1900;
@@ -120,7 +125,10 @@ asn1_get_len (unsigned char **asn1, int *asn1_len, int *rlen)
   int result = 0;
 
   if (len < 1)
-    return gpg_error (GPG_ERR_GENERAL);
+    {
+      DEBUG (DBG_INFO, "unexpected end of certificate");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
 
   if (*ptr & 0x80)
     {
@@ -132,8 +140,16 @@ asn1_get_len (unsigned char **asn1, int *asn1_len, int *rlen)
     cnt = 1;
 
   /* We only support a limited number of length bytes.  */
-  if (cnt > 2 || len < cnt)
-    return gpg_error (GPG_ERR_GENERAL);
+  if (cnt > 2)
+    {
+      DEBUG (DBG_INFO, "unsupported length field");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
+  if (len < cnt)
+    {
+      DEBUG (DBG_INFO, "unexpected end of certificate");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
 
   while (cnt--)
     {
@@ -175,8 +191,16 @@ asn1_get_element (unsigned char *cert, int cert_len,
   for (i = 0; i < path_size; i++)
     {
       prev_certp = certp;
-      if (cert_left < 1 || *certp != path[i].tag)
-	return gpg_error (GPG_ERR_GENERAL);
+      if (cert_left < 1)
+	{
+	  DEBUG (DBG_INFO, "unexpected end of certificate");
+	  return gpg_error (GPG_ERR_GENERAL);
+	}
+      if (*certp != path[i].tag)
+	{
+	  DEBUG (DBG_INFO, "wrong element in lookup path");
+	  return gpg_error (GPG_ERR_GENERAL);
+	}
       certp++;
       cert_left--;
       err = asn1_get_len (&certp, &cert_left, &len);
@@ -185,7 +209,10 @@ asn1_get_element (unsigned char *cert, int cert_len,
       if (!path[i].enter)
 	{
 	  if (cert_left < len)
-	    return gpg_error (GPG_ERR_GENERAL);
+	    {
+	      DEBUG (DBG_INFO, "unexpected end of certificate");
+	      return gpg_error (GPG_ERR_GENERAL);
+	    }
 	  certp += len;
 	  cert_left -= len;
 	}
@@ -195,8 +222,16 @@ asn1_get_element (unsigned char *cert, int cert_len,
 	     bit string.  */
 	  if (path[i].tag == '\x03')
 	    {
-	      if (cert_left < 1 || *certp != '\x00')
-		return gpg_error (GPG_ERR_GENERAL);
+	      if (cert_left < 1)
+		{
+		  DEBUG (DBG_INFO, "unexpected end of certificate");
+		  return gpg_error (GPG_ERR_GENERAL);
+		}
+	      if (*certp != '\x00')
+		{
+		  DEBUG (DBG_INFO, "expected binary encapsulation missing");
+		  return gpg_error (GPG_ERR_GENERAL);
+		}
 	      certp++;
 	      cert_left--;
 	    }
@@ -280,7 +315,10 @@ asn1_get_modulus (unsigned char *cert, int cert_len,
     return err;
 
   if (*sub_len < 1)
-    return gpg_error (GPG_ERR_GENERAL);
+    {
+      DEBUG (DBG_INFO, "modulus too short");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
 
   (*sub_start)++;
   (*sub_len)--;
@@ -322,7 +360,10 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
     return err;
 
   if (*sub_len < 1)
-    return gpg_error (GPG_ERR_GENERAL);
+    {
+      DEBUG (DBG_INFO, "public exponent too short");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
 
   (*sub_start)++;
   (*sub_len)--;
@@ -351,7 +392,10 @@ attr_one (CK_ATTRIBUTE_PTR attr, CK_ULONG *attr_count,
   attr[i].ulValueLen = size;
   attr[i].pValue = malloc (size);
   if (attr[i].pValue == NULL)
-    return gpg_error (GPG_ERR_ENOMEM);
+    {
+      DEBUG (DBG_CRIT, "out of memory");
+      return gpg_error (GPG_ERR_ENOMEM);
+    }
   memcpy (attr[i].pValue, val, size);
   (*attr_count)++;
   return 0;
@@ -413,16 +457,31 @@ scute_attr_cert (struct cert *cert,
   /* See below.  */
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
+  if (err)
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get subject: %s",
+	     gpg_strerror (err));
+      return err;
+    }
 #endif
 #if CERT_PARSING
-  if (!err)
-    err = asn1_get_issuer (cert->cert_der, cert->cert_der_len,
-			   &issuer_start, &issuer_len);
-  if (!err)
-    err = asn1_get_serial (cert->cert_der, cert->cert_der_len,
-			   &serial_start, &serial_len);
+  err = asn1_get_issuer (cert->cert_der, cert->cert_der_len,
+			 &issuer_start, &issuer_len);
   if (err)
-    return err;
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get issuer: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+
+  err = asn1_get_serial (cert->cert_der, cert->cert_der_len,
+			 &serial_start, &serial_len);
+  if (err)
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get serial: %s",
+	     gpg_strerror (err));
+      return err;
+    }
 #endif
 
 
@@ -430,7 +489,10 @@ scute_attr_cert (struct cert *cert,
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_CERT);
   attr_count = 0;
   if (!attr)
-    return gpg_error (GPG_ERR_ENOMEM);
+    {
+      DEBUG (DBG_INFO, "out of memory");
+      return gpg_error (GPG_ERR_ENOMEM);
+    }
 
 #define one_attr_ext(type, val, size)					\
   if (!err)								\
@@ -506,6 +568,8 @@ scute_attr_cert (struct cert *cert,
 
   if (err)
     {
+      DEBUG (DBG_INFO, "could not build certificate object: %s",
+	     gpg_strerror (err));
       scute_attr_free (attr, attr_count);
       return err;
     }
@@ -563,21 +627,38 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 #if CERT_PARSING
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
-  if (!err)
-    err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
-			    &modulus_start, &modulus_len);
-  if (!err)
-    err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
-			       &public_exp_start, &public_exp_len);
   if (err)
-    return err;
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get subject: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+  err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
+			  &modulus_start, &modulus_len);
+  if (err)
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get modulus: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+  err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
+			     &public_exp_start, &public_exp_len);
+  if (err)
+    {
+      DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
+	     gpg_strerror (err));
+      return err;
+    }
 #endif
 
 #define NR_ATTR_PRV 27
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_PRV);
   attr_count = 0;
   if (!attr)
-    return gpg_error (GPG_ERR_ENOMEM);
+    {
+      DEBUG (DBG_INFO, "out of core");
+      return gpg_error (GPG_ERR_ENOMEM);
+    }
 
 #undef one_attr_ext
 #define one_attr_ext(type, val, size)					\
@@ -659,6 +740,8 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 
   if (err)
     {
+      DEBUG (DBG_INFO, "could not build private certificate object: %s",
+	     gpg_strerror (err));
       scute_attr_free (attr, attr_count);
       return err;
     }

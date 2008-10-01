@@ -564,7 +564,7 @@ export_cert_compat (char *fpr, struct cert *cert)
   if (err)
     {
       close (output_fds[0]);
-      DEBUG ("failed to spawn %s\n", get_gpgsm_path ());
+      DEBUG (DBG_CRIT, "failed to spawn %s\n", get_gpgsm_path ());
       return err;
     }
 
@@ -653,7 +653,7 @@ export_cert (char *fpr, struct cert *cert)
 				 NULL, NULL, 128);
   if (err)
     {
-      DEBUG ("spawning %s\n", get_gpgsm_path ());
+      DEBUG (DBG_CRIT, "spawning %s\n", get_gpgsm_path ());
       return err;
     }
 
@@ -731,7 +731,7 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
 				 NULL, NULL, 128);
   if (err)
     {
-      DEBUG ("spawning %s\n", get_gpgsm_path ());
+      DEBUG (DBG_CRIT, "spawning %s\n", get_gpgsm_path ());
       return err;
     }
 
@@ -762,7 +762,7 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
 				 NULL, NULL, 128);
   if (err)
     {
-      DEBUG ("failed to spawn %s\n", get_gpgsm_path ());
+      DEBUG (DBG_CRIT, "failed to spawn %s\n", get_gpgsm_path ());
       return err;
     }
 

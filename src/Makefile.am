@@ -31,7 +31,7 @@
 
 EXTRA_DIST = libscute.vers scute.def versioninfo.rc.in stpcpy.h
 
-sources = cryptoki.h pkcs11.h debug.h settings.h support.h		\
+sources = cryptoki.h pkcs11.h debug.c debug.h settings.h support.h	\
 	locking.h locking.c error-mapping.h error-mapping.c		\
 	get-path.c agent.h agent.c					\
 	slots.h slots.c table.h table.c					\
