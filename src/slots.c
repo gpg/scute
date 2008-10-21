@@ -428,8 +428,12 @@ slots_update_slot (slot_iterator_t id)
       scute_agent_release_card_info (&slot->info);
     }
 
+  /* We also ignore card errors, because unusable cards should not
+     affect slots, and firefox is quite unhappy about returning errors
+     here.  */
   if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED
-      || gpg_err_code (err) == GPG_ERR_CARD_NOT_PRESENT)
+      || gpg_err_code (err) == GPG_ERR_CARD_NOT_PRESENT
+      || gpg_err_code (err) == GPG_ERR_CARD_ERR)
     /* Nothing to do.  */
     err = 0;
   else if (err == 0)
