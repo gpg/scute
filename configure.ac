@@ -126,6 +126,8 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(VERSION_MAJOR, $VERSION_MAJOR, [Major version number])
 AC_DEFINE_UNQUOTED(VERSION_MINOR, $VERSION_MINOR, [Minor version number])
 
+AC_DEFINE_UNQUOTED(_ASSUAN_ONLY_GPG_ERRORS, 1, [Disable backward compatibility])
+
 # Don't default to build static libs.
 AC_DISABLE_STATIC
 AC_LIBTOOL_WIN32_DLL

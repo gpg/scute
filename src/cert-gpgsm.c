@@ -436,9 +436,10 @@ search_certs_line (struct search_ctx *ctx)
    handles the EOF signal provided directly by
    scute_gpgsm_search_certs.  */
 static gpg_error_t
-search_certs (void *hook, char *line, size_t line_len)
+search_certs (void *hook, const void *line_data, size_t line_len)
 {
   struct search_ctx *ctx = hook;
+  const char *line = line_data;
   gpg_error_t err;
 
   if (!line)
@@ -615,9 +616,10 @@ struct export_hook
 #define EXP_DATA_START 4096
 
 static gpg_error_t
-export_cert_cb (void *hook, char *line, size_t line_len)
+export_cert_cb (void *hook, const void *line_data, size_t line_len)
 {
   struct export_hook *exp = hook;
+  const char *line = line_data;
 
   if (exp->buffer_size - exp->buffer_len < line_len)
     {

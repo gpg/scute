@@ -1,3 +1,23 @@
+2008-10-29  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac (_ASSUAN_ONLY_GPG_ERRORS): Define it.
+	* src/agent.c (default_inq_cb): Change return type to gpg_error_t
+	to silence gcc -W warning.
+	* src/cert-gpgsm.c (search_certs, export_cert_cb): Change type of
+	argument to silence gcc -W warning.
+	* src/p11-findobjects.c (CK_DEFINE_FUNCTION): Add explicit cast to
+	silence gcc -W warning.
+	* src/table.c (struct scute_table): Change signedness of
+	FIRST_FREE and LAST_USED members to silence gcc -W warning.
+	(scute_table_alloc): Change signedness of IDX for the same reason.
+	* tests/t-getslotinfo.c, tests/t-getsessioninfo.c,
+	tests/t-getmechanismlist.c, tests/t-auth.c,
+	tests/t-getattribute.c, tests/t-opensession.c,
+	tests/t-getslotlist.c, tests/t-getmechanisminfo.c,
+	tests/t-support.h, tests/t-closeallsessions.c,
+	tests/t-findobjects.c, tests/t-gettokeninfo.c: Change signedness
+	of some variables to silence gcc -W warnings.
+
 2008-10-21  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/slots.c (slots_update_slot): Ignore card errors.

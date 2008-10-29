@@ -66,10 +66,10 @@ struct scute_table
   int used;
 
   /* The index of the lowest entry that is unused.  */
-  unsigned int first_free;
+  int first_free;
 
   /* The index after the highest entry that is used.  */
-  unsigned int last_used;
+  int last_used;
 
   /* The allocator and deallocator callback.  */
   scute_table_alloc_cb_t alloc;
@@ -172,7 +172,7 @@ scute_table_alloc (scute_table_t table, int *index_r, void **data_r,
 		   void *hook)
 {
   gpg_error_t err;
-  unsigned int idx;
+  int idx;
   void *data;
 
   if (table->used == table->size)

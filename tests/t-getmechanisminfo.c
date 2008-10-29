@@ -39,7 +39,7 @@ main (int argc, char *argv[])
   CK_RV err;
   CK_SLOT_ID_PTR slots;
   CK_ULONG slots_count;
-  int i;
+  unsigned int i;
 
   init_cryptoki ();
 
@@ -64,7 +64,7 @@ main (int argc, char *argv[])
     {
       CK_MECHANISM_TYPE_PTR mechanisms;
       CK_ULONG mechanisms_count;
-      int j;
+      unsigned int j;
 
       printf ("%2i. Slot ID %lu\n", i, slots[i]);
 

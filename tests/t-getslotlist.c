@@ -39,7 +39,7 @@ main (int argc, char *argv[])
   bool token = false;
   CK_SLOT_ID_PTR slots;
   CK_ULONG slots_count;
-  int i;
+  unsigned int i;
 
   if (argc > 1)
     token = true;

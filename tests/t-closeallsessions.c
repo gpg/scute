@@ -40,7 +40,7 @@ main (int argc, char *argv[])
   CK_SLOT_ID_PTR slots;
   CK_SESSION_HANDLE_PTR sessions;
   CK_ULONG slots_count;
-  int i;
+  unsigned int i;
 
   init_cryptoki ();
 

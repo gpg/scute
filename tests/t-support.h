@@ -190,7 +190,7 @@ const char *msg[] =
     "Function rejected" };
 
 #define ERRMSG(nr) ((nr) == CKR_VENDOR_DEFINED ? "Vendor defined" :	\
-		    (((nr) < 0 || (nr) > sizeof (msg) / sizeof (msg[0])) ? \
+		    ((nr) > sizeof (msg) / sizeof (msg[0]) ?		\
 		     "(unknown error code)" : msg[(nr)]))
 
 

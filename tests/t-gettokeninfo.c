@@ -38,7 +38,7 @@ main (int argc, char *argv[])
   CK_RV err;
   CK_SLOT_ID_PTR slots;
   CK_ULONG slots_count;
-  int i;
+  unsigned int i;
 
   init_cryptoki ();
 

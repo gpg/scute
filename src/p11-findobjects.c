@@ -67,7 +67,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)
   err = session_get_search_result (slot, session, &oids, &oids_len);
   assert (!err);
 
-  count = MIN (ulMaxObjectCount, oids_len);
+  count = MIN ((int) ulMaxObjectCount, oids_len);
   memcpy (phObject, oids, sizeof (CK_OBJECT_HANDLE) * count);
 
   oids_len = oids_len - count;

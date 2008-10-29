@@ -37,12 +37,12 @@
 bool printable;
 
 CK_RV
-dump_one (CK_ATTRIBUTE_PTR attr, unsigned char *data, int max_size)
+dump_one (CK_ATTRIBUTE_PTR attr, unsigned char *data, unsigned int max_size)
 {
-  int i;
+  unsigned int i;
   int col;
 
-  if (attr->ulValueLen < 0 || attr->ulValueLen > max_size)
+  if (attr->ulValueLen > max_size)
     return CKR_GENERAL_ERROR;
 
   col = 0;
@@ -526,7 +526,7 @@ main (int argc, char *argv[])
   CK_RV err;
   CK_SLOT_ID_PTR slots;
   CK_ULONG slots_count;
-  int i;
+  unsigned int i;
 
   if (argc > 1 && !strcmp ("--printable", argv[1]))
     printable = true;

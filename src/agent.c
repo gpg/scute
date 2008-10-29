@@ -370,7 +370,7 @@ agent_connect (assuan_context_t *ctx_r)
 
 /* This is the default inquiry callback.  It mainly handles the
    Pinentry notifications.  */
-static int
+static gpg_error_t
 default_inq_cb (void *opaque, const char *line)
 {
   (void)opaque;
