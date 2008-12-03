@@ -1,3 +1,10 @@
+2008-12-03  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Enable AC_CONFIGU_MACRO_DIR.
+	* m4/ltsugar.m4, m4/libtool.m4, m4/ltversion.m4,
+	m4/lt~obsolete.m4, m4/ltoptions.m4: New files.
+	* config.guess, config.sub, ltmain.sh, configure.ac: Updated.
+
 2008-10-29  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac (_ASSUAN_ONLY_GPG_ERRORS): Define it.
