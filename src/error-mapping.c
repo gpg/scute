@@ -79,6 +79,12 @@ scute_gpg_err_to_ck (gpg_error_t err)
     case GPG_ERR_ENOMEM:
       return CKR_HOST_MEMORY;
 
+    case GPG_ERR_BAD_PIN:
+      return CKR_PIN_INCORRECT;
+
+    case GPG_ERR_PIN_BLOCKED:
+      return CKR_PIN_LOCKED;
+
     default:
       /* CKR_GENERAL_ERROR is too strong.  */
       return CKR_FUNCTION_FAILED;

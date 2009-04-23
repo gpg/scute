@@ -1,3 +1,8 @@
+2009-04-23  Werner Koch  <wk@g10code.com>
+
+	* src/error-mapping.c (scute_gpg_err_to_ck): Add mappings to
+	CKR_PIN_INCORRECT and CKR_PIN_LOCKED.
+
 2008-12-03  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: Enable AC_CONFIGU_MACRO_DIR.
