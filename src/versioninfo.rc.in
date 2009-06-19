@@ -34,7 +34,7 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", "Provided under the terms of the GNU Lesser General Public License.\0"
+            VALUE "Comments", "Provided under the terms of the GNU Lesser General Public License version 2 or later with a special exception for Mozilla based software.\0"
             VALUE "CompanyName", "g10 Code GmbH\0"
             VALUE "FileDescription", "SCUTE - The GnuPG PKCS#11 interface\0"
             VALUE "FileVersion", "@LIBSCUTE_LT_CURRENT@.@LIBSCUTE_LT_AGE@.@LIBSCUTE_LT_REVISION@.@BUILD_REVISION@\0"

@@ -66,7 +66,7 @@ sign_with_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
   CK_RV err;
   CK_MECHANISM mechanism = { CKM_RSA_PKCS, NULL_PTR, 0 };
   CK_BYTE data[36] = "01234567890123456789012345678901234";
-  CK_BYTE sig[128];
+  CK_BYTE sig[256];
   CK_ULONG sig_len = sizeof (sig);
 
   err = C_SignInit (session, &mechanism, object);

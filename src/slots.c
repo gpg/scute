@@ -992,7 +992,8 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 }
 
 
-/* Set the signing key for session SID in slot ID to KEY.  */
+/* FIXME: The dscription is wrong:
+   Set the signing key for session SID in slot ID to KEY.  */
 CK_RV
 session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pData, CK_ULONG ulDataLen,

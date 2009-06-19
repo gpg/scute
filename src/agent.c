@@ -854,7 +854,8 @@ scute_agent_check_status (void)
 }
 
 
-#define MAX_SIGNATURE_LEN 256
+/* Enough space to hold a 2048 bit RSA signature in an S-expression.  */
+#define MAX_SIGNATURE_LEN 350
 
 struct signature
 {
@@ -880,11 +881,13 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 }
 
 
-#define SIG_PREFIX "(7:sig-val(3:rsa(1:s128:"
+#define SIG_PREFIX   "(7:sig-val(3:rsa(1:s128:"
+#define SIG_PREFIX_2 "(7:sig-val(3:rsa(1:s256:"
 #define SIG_PREFIX_LEN (sizeof (SIG_PREFIX) - 1)
 #define SIG_POSTFIX ")))"
 #define SIG_POSTFIX_LEN (sizeof (SIG_POSTFIX) - 1)
 #define SIG_LEN 128
+#define SIG_LEN_2 128
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
@@ -905,7 +908,8 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
 
   if (sig_result == NULL)
     {
-      *sig_len = SIG_LEN;
+      /* FIXME:  We return the largest supported size - is that correct?  */
+      *sig_len = SIG_LEN_2;
       return 0;
     }
 
@@ -925,7 +929,7 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
     snprintf (&pretty_data[2 * i], 3, "%02X", data[i]);
   pretty_data[2 * len] = '\0';
 
-  snprintf (cmd, sizeof (cmd), "sethash --hash=tls-md5sha1 %s", pretty_data);
+  snprintf (cmd, sizeof (cmd), "SETHASH --hash=tls-md5sha1 %s", pretty_data);
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
   if (err)
@@ -936,16 +940,30 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (err)
     return err;
 
-  if (sig.len != SIG_PREFIX_LEN + SIG_LEN + SIG_POSTFIX_LEN)
-    return gpg_error (GPG_ERR_BAD_SIGNATURE);
-  if (memcmp (sig.data, SIG_PREFIX, SIG_PREFIX_LEN))
-    return gpg_error (GPG_ERR_BAD_SIGNATURE);
-  if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
-	      SIG_POSTFIX, SIG_POSTFIX_LEN))
-    return gpg_error (GPG_ERR_BAD_SIGNATURE);
-
-  memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN);
-  *sig_len = SIG_LEN;
+  /* FIXME: we need a real parser to cope with all kind of S-expressions.  */
+  if (sig.len == SIG_PREFIX_LEN + SIG_LEN_2 + SIG_POSTFIX_LEN)
+    {
+      if (memcmp (sig.data, SIG_PREFIX_2, SIG_PREFIX_LEN))
+        return gpg_error (GPG_ERR_BAD_SIGNATURE);
+      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
+                  SIG_POSTFIX, SIG_POSTFIX_LEN))
+        return gpg_error (GPG_ERR_BAD_SIGNATURE);
+      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN_2);
+      *sig_len = SIG_LEN_2;
+    }
+  else
+    {
+      if (sig.len != SIG_PREFIX_LEN + SIG_LEN + SIG_POSTFIX_LEN)
+        return gpg_error (GPG_ERR_BAD_SIGNATURE);
+      if (memcmp (sig.data, SIG_PREFIX, SIG_PREFIX_LEN))
+        return gpg_error (GPG_ERR_BAD_SIGNATURE);
+      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
+                  SIG_POSTFIX, SIG_POSTFIX_LEN))
+        return gpg_error (GPG_ERR_BAD_SIGNATURE);
+      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN);
+      *sig_len = SIG_LEN;
+    }
+  
   
   return 0;
 }

@@ -3,6 +3,7 @@ Noteworthy changes in version 1.3.0 (unreleased)
 
  * Scute can read certificates directly from the OpenPGP 2.0 cards.
 
+
 Noteworthy changes in version 1.2.0 (2008-09-02)
 ------------------------------------------------
 
@@ -33,7 +34,7 @@ Noteworthy changes in version 1.0.0 (2006-11-11)
  * Initial release.
 
 
- Copyright 2006 g10 Code GmbH
+ Copyright 2006, 2009 g10 Code GmbH
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without
