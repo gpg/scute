@@ -72,14 +72,14 @@ lib_LTLIBRARIES = libscute.la
 
 if HAVE_W32_SYSTEM
 
-LTRCCOMPILE = $(LIBTOOL) --mode=compile $(RC) \
-     `echo $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) | \
-     sed -e 's/-I/--include-dir /g;s/-D/--define /g'`
+RCCOMPILE = $(RC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS)
+LTRCCOMPILE = $(LIBTOOL) --mode=compile --tag=RC $(RCCOMPILE)
 
 SUFFIXES: .rc .lo
 
 .rc.lo:
-	$(LTRCCOMPILE) -i $< -o $@
+	$(LTRCCOMPILE) -i "$<" -o "$@"
 
 scute_res = versioninfo.lo
 scute_res_ldflag = -Wl,.libs/versioninfo.o
@@ -117,36 +117,3 @@ libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
 libscute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
 libscute_la_SOURCES = $(sources)
-
-# The above rules only build a static library on W32.  We build the
-# DLL below, such that it is autonomous (does not link to any other
-# non-standard DLL).
-
-EXEEXT = .dll
-
-if HAVE_W32_SYSTEM
-
-bin_PROGRAMS = scute
-
-AM_CFLAGS = @LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@ -shared
-
-scute_SOURCES = dllmain.c $(sources) versioninfo.rc
-
-scute_DEPENDENCIES = @LTLIBOBJS@ .libs/versioninfo.o libgpg-error.a libassuan.a
-
-libgpg-error.a:
-	ln -s $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
-
-libassuan.a:
-	ln -s $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
-
-clean-local:
-	rm -f libgpg-error.a libassuan.a
-
-
-scute_LDADD = @LTLIBOBJS@ $(srcdir)/scute.def -L. -lassuan -lgpg-error -lws2_32
-
-.rc.o:
-	$(RC) -I $(srcdir) -I . `test -f '$<' || echo '$(srcdir)/'`$< $@
-
-endif

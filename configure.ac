@@ -128,10 +128,15 @@ AC_DEFINE_UNQUOTED(VERSION_MINOR, $VERSION_MINOR, [Minor version number])
 AC_DEFINE_UNQUOTED(_ASSUAN_ONLY_GPG_ERRORS, 1, [Disable backward compatibility])
 
 # Don't default to build static libs.
-AC_DISABLE_STATIC
-AC_LIBTOOL_WIN32_DLL
-AC_LIBTOOL_RC
-AC_PROG_LIBTOOL
+# FIXME: Caution: Evil hack ahead.  Libtool does not support linking a
+# static library to a shared library.  But for libassuan, we need this.
+# Instead adding a lot of junk to Makefile.am to get this, we just override
+# all safety checks here.  We are driving without seat belts now!
+# http://lists.cairographics.org/archives/cairo/2009-April/016962.html
+lt_cv_deplibs_check_method=pass_all
+LT_PREREQ([2.2.6])
+LT_INIT([win32-dll disable-static])
+LT_LANG([Windows Resource])
 
 # For now we hardcode the use of version scripts.  It would be better
 # to write a test for this or even implement this within libtool.

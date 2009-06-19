@@ -1,3 +1,19 @@
+2009-06-19  Marcus Brinkmann  <marcus@g10code.de>
+
+	* libtool.m4: Removed.
+	* m4/libtool.m4, m4/ltoptions.m4, m4/ltsugar.m4, m4/ltversion.m4,
+	m4/lt~obsolete.m4: New files from libtool 2.2.6.
+	* configure.ac: Update to libtool 2.2.6.
+	(lt_cv_deplibs_check_method): Slightly evil hack to get libtool to
+	our thing.
+	(AC_DISABLE_STATIC, AC_LIBTOOL_WIN32_DLL, AC_LIBTOOL_RC)
+	(AC_PROG_LIBTOOL): Obsolete, replaced by ...
+	(LT_PREREQ, LT_INIT, LT_LANG): ... these new macro invocations.
+	* src/Makefile.am: Remove a bunch of rules for shared library.
+	(RCCOMPILE): New.
+	(LTRCCOMPILE): Use it here.
+	(.rc.lo): Add quoting.
+
 2009-04-23  Werner Koch  <wk@g10code.com>
 
 	* src/error-mapping.c (scute_gpg_err_to_ck): Add mappings to
