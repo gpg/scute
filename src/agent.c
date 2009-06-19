@@ -937,7 +937,7 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 #define SIG_POSTFIX ")))"
 #define SIG_POSTFIX_LEN (sizeof (SIG_POSTFIX) - 1)
 #define SIG_LEN 128
-#define SIG_LEN_2 128
+#define SIG_LEN_2 256
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
