@@ -31,6 +31,8 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "cryptoki.h"
 
 #include "locking.h"
@@ -44,6 +46,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSlotInfo)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
+  const char *s;
+  int minor;
 
   err = scute_global_lock ();
   if (err)
@@ -64,10 +68,16 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSlotInfo)
   pInfo->flags = CKF_REMOVABLE_DEVICE | CKF_HW_SLOT;
   if (slot_token_present (slot))
     pInfo->flags |= CKF_TOKEN_PRESENT;
-  pInfo->hardwareVersion.major = SLOT_HARDWARE_VERSION_MAJOR;
-  pInfo->hardwareVersion.minor = SLOT_HARDWARE_VERSION_MINOR;
-  pInfo->firmwareVersion.major = SLOT_FIRMWARE_VERSION_MAJOR;
-  pInfo->firmwareVersion.minor = SLOT_FIRMWARE_VERSION_MINOR;
+
+  /* Use the gpg-agent version for the hardware version.. */
+  pInfo->hardwareVersion.major = scute_agent_get_agent_version (&minor);
+  pInfo->hardwareVersion.minor = minor;
+
+  /* Use Scute version as Firmware version.  */
+  s = PACKAGE_VERSION;
+  pInfo->firmwareVersion.major = atoi (s);
+  s = strchr (s, '.');
+  pInfo->firmwareVersion.minor = s? atoi (s+1): 0;
 
  out:
   scute_global_unlock ();

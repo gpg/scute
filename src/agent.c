@@ -58,6 +58,11 @@
 /* The global agent context.  */
 static assuan_context_t agent_ctx = NULL;
 
+/* The version number of the agent.  */
+static int agent_version_major;
+static int agent_version_minor;
+
+
 
 /* Hack required for Windows.  */
 void 
@@ -412,6 +417,26 @@ agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
       
   return err;
 }
+
+
+/* Read and stroe the agent's version number.  */
+static gpg_error_t
+read_version_cb (void *opaque, const void *buffer, size_t length)
+{
+  char version[20];
+  const char *s;
+  
+  if (length > sizeof (version) -1)
+    length = sizeof (version) - 1;
+  strncpy (version, buffer, length);
+  version[length] = 0;
+
+  agent_version_major = atoi (version);
+  s = strchr (version, '.');
+  agent_version_minor = s? atoi (s+1) : 0;
+
+  return 0;
+}
   
 
 /* Configure the GPG agent at connection CTX.  */
@@ -517,6 +542,15 @@ agent_configure (assuan_context_t ctx)
   else if (err)
     return err;
 
+  err = assuan_transact (ctx, "GETINFO version",
+                         read_version_cb, NULL,
+                         NULL, NULL, NULL, NULL);
+  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
+    err = 0;
+  else if (err)
+    return err;
+
+
   return err;
 }
 
@@ -545,6 +579,15 @@ scute_agent_initialize (void)
 
   return err;
 }
+
+
+int
+scute_agent_get_agent_version (int *minor)
+{
+  *minor = agent_version_minor;
+  return agent_version_major;
+}
+
 
 
 /* Return a new malloced string by unescaping the string S.  Escaping

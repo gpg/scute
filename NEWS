@@ -1,7 +1,9 @@
-Noteworthy changes in version 1.3.0 (unreleased)
+Noteworthy changes in version 1.3.0 (2009-06-19)
 ------------------------------------------------
 
  * Scute can read certificates directly from the OpenPGP 2.0 cards.
+
+ * Support for 2048 bit keys.
 
 
 Noteworthy changes in version 1.2.0 (2008-09-02)
