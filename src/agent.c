@@ -922,7 +922,7 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
     return err;
 
   for (i = 0; i < len; i++)
-    sprintf (&pretty_data[2 * i], "%02X", data[i]);
+    snprintf (&pretty_data[2 * i], 3, "%02X", data[i]);
   pretty_data[2 * len] = '\0';
 
   snprintf (cmd, sizeof (cmd), "sethash --hash=tls-md5sha1 %s", pretty_data);

@@ -14,6 +14,32 @@
 	(LTRCCOMPILE): Use it here.
 	(.rc.lo): Add quoting.
 
+2009-06-19  Werner Koch  <wk@g10code.com>
+
+	* src/estream-printf.c, src/estream-printf.h: New.
+	* src/Makefile.am (sources): Add them.
+	* Makefile.am (SUBDIRS): Add m4/.
+	* m4/Makefile.am: New.
+	* m4/estream.m4: New.
+	* configure.ac (AC_REPLACE_FUNCS): Remove.
+	(estream_PRINTF_INIT): Add.
+	(AH_BOTTOM):  Prefix estream fucntions.
+	(AC_FUNC_REALLOC) Remove because it uses AC_LIBOBJ which as
+	problems with the current libtool.  The GNU guarantees for realloc
+	don't seem to be needed.
+
+	* src/realloc.c:  Remove
+	* src/vasprintf.c, src/stpcpy.c, src/stpcpy.h: Remove.
+	* src/support.h: Do not include stpcpy.h but define it inline.
+	Include estream-printf.h.
+	(vasprintf, asprintf, snprintf): Redefine to estream functions
+	
+	* src/agent.c (scute_agent_sign): s/sprintf/vsnprintf/.
+
+2009-06-18  Werner Koch  <wk@g10code.com>
+
+	* src/slots.c (slot_token_manufacturer): Update list.
+
 2009-04-23  Werner Koch  <wk@g10code.com>
 
 	* src/error-mapping.c (scute_gpg_err_to_ck): Add mappings to

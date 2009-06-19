@@ -58,8 +58,9 @@ visiting the preferences dialog in the "advanced" category, under
 installed path, e.g. "/usr/lib/libscute.so".
 
 Note that for the module load to complete successfully, the GPG Agent
-must be running and available.  This means that Mozilla needs to have
-the GPG_AGENT_INFO variable set correctly in its environment.
+must be running and available.  On Unix systems this means that
+Mozilla needs to have the GPG_AGENT_INFO variable set correctly in its
+environment.
 
 
 Client Authentication

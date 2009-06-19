@@ -82,8 +82,7 @@ VERSION=$PACKAGE_VERSION
 
 AC_CONFIG_SRCDIR([src/cryptoki.h])
 AC_CONFIG_HEADER([config.h])
-
-AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_MACRO_DIR(m4)
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 AM_MAINTAINER_MODE
 AC_CANONICAL_HOST
@@ -184,8 +183,10 @@ AC_SUBST(BUILD_FILEVERSION)
 
 # Checks for libraries.
 
-AC_CHECK_FUNCS([ttyname localtime_r timegm])
-AC_REPLACE_FUNCS([vasprintf stpcpy])
+AC_CHECK_FUNCS([ttyname localtime_r timegm stpcpy])
+
+# Run the checks needed for estream-printf.c
+estream_PRINTF_INIT
 
 # The error code library.  Error codes are sent over the IPC layer and
 # have to be interpreted.
@@ -334,7 +335,6 @@ AC_HEADER_STDBOOL
 AC_C_INLINE
 
 # Checks for library functions.
-AC_FUNC_REALLOC
 
 # Check for programs needed for the manual.
 AC_CHECK_PROG(CONVERT, convert, convert)
@@ -343,6 +343,12 @@ AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 # Test if tests can be run
 ok=yes
 AM_CONDITIONAL(RUN_TESTS, test "$ok" = "yes")
+
+
+AH_BOTTOM([
+/* Prefix all estream functions.  */
+#define _ESTREAM_EXT_SYM_PREFIX _scute_
+])
 
 
 # Print errors here so that they are visible all
@@ -379,6 +385,7 @@ if test "$die" = "yes"; then
 fi
 
 AC_CONFIG_FILES([Makefile
+                 m4/Makefile
                  src/Makefile
                  tests/Makefile
 		 doc/manual/Makefile

@@ -546,11 +546,6 @@ slot_token_manufacturer (slot_iterator_t id)
   /* Note:  Make sure that there is no colon or linefeed in the string. */
   switch (uval)
     {
-    case 0:
-      /* Fall-through.  */
-    case 0xffff:
-      return "test card";
-
     case 0x0001:
       return "PPC Card Systems";
 
@@ -560,8 +555,20 @@ slot_token_manufacturer (slot_iterator_t id)
     case 0x0003:
       return "OpenFortress";
 
-    default:
-      return "unknown";
+    case 0x0004:
+      return "Wewid AB";
+
+    case 0x0005:
+      return "ZeitControl";
+
+    case 0x002A:
+      return "Magrathea";
+
+    case 0x0000:
+    case 0xffff:
+      return "test card";
+
+    default: return (uval & 0xff00) == 0xff00? "unmanaged S/N range":"unknown";
     }
 
   /* Not reached.  */

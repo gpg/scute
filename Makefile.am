@@ -39,4 +39,4 @@ else
 tests = 
 endif
 
-SUBDIRS = src ${tests} doc
+SUBDIRS = m4 src ${tests} doc
