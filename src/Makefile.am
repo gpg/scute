@@ -94,7 +94,19 @@ install-def-file:
 uninstall-def-file:
 	-rm $(DESTDIR)$(libdir)/scute.def
 
-scute_deps = $(scute_res) scute.def
+# On Windows targets, link statically to libgpg-error and libassuan.
+scute_deps = $(scute_res) scute.def libgpg-error.a libassuan.a
+
+scute_libadd = -L.
+
+libgpg-error.a:
+	ln -s $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
+
+libassuan.a:
+	ln -s $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
+
+clean-local:
+	rm -f libgpg-error.a libassuan.a
 
 else
 
@@ -106,6 +118,7 @@ install-def-file:
 uninstall-def-file:
 
 scute_deps =
+scute_libadd =
 
 endif
 
@@ -113,7 +126,10 @@ libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) $(export_symbols) \
 	$(scute_version_script_cmd) -version-info \
 	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
 libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
-libscute_la_LIBADD = @LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+# scute_libadd must come BEFORE libassuan and gpg-error, because we
+# override it on Windows targets.
+libscute_la_LIBADD = $(scute_libadd) \
+	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
 
 libscute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
