@@ -227,15 +227,18 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 	printf ("     Certificate Check Value: %02x%02x%02x\n",
 		cert_check[0], cert_check[1], cert_check[2]);
 
-	fail_if_err ((cert_attr[8].ulValueLen != sizeof (cert_sdate)) ?
-		     CKR_GENERAL_ERROR : 0);
-	printf ("     Certificate Start Date: %.4s/%.2s/%.2s\n",
-		cert_sdate.year, cert_sdate.month, cert_sdate.day);
+	if (cert_attr[8].ulValueLen && cert_attr[9].ulValueLen)
+	  {
+	    fail_if_err ((cert_attr[8].ulValueLen != sizeof (cert_sdate)) ?
+			 CKR_GENERAL_ERROR : 0);
+	    printf ("     Certificate Start Date: %.4s/%.2s/%.2s\n",
+		    cert_sdate.year, cert_sdate.month, cert_sdate.day);
 
-	fail_if_err ((cert_attr[9].ulValueLen != sizeof (cert_edate)) ?
-		     CKR_GENERAL_ERROR : 0);
-	printf ("     Certificate End Date: %.4s/%.2s/%.2s\n",
-		cert_edate.year, cert_edate.month, cert_edate.day);
+	    fail_if_err ((cert_attr[9].ulValueLen != sizeof (cert_edate)) ?
+			 CKR_GENERAL_ERROR : 0);
+	    printf ("     Certificate End Date: %.4s/%.2s/%.2s\n",
+		    cert_edate.year, cert_edate.month, cert_edate.day);
+	  }
 
 	printf ("     Certificate Subject: Length %lu\n",
 		cert_attr[10].ulValueLen);
@@ -411,15 +414,18 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 	err = dump_one (&key_attr[5], key_id, sizeof (key_id));
 	fail_if_err (err);
 
-	fail_if_err ((key_attr[6].ulValueLen != sizeof (key_sdate)) ?
-		     CKR_GENERAL_ERROR : 0);
-	printf ("     Key Start Date: %.4s/%.2s/%.2s\n",
-		key_sdate.year, key_sdate.month, key_sdate.day);
-
-	fail_if_err ((key_attr[7].ulValueLen != sizeof (key_edate)) ?
-		     CKR_GENERAL_ERROR : 0);
-	printf ("     Key End Date: %.4s/%.2s/%.2s\n",
-		key_edate.year, key_edate.month, key_edate.day);
+	if (key_attr[6].ulValueLen && key_attr[7].ulValueLen)
+	  {
+	    fail_if_err ((key_attr[6].ulValueLen != sizeof (key_sdate)) ?
+			 CKR_GENERAL_ERROR : 0);
+	    printf ("     Key Start Date: %.4s/%.2s/%.2s\n",
+		    key_sdate.year, key_sdate.month, key_sdate.day);
+	    
+	    fail_if_err ((key_attr[7].ulValueLen != sizeof (key_edate)) ?
+			 CKR_GENERAL_ERROR : 0);
+	    printf ("     Key End Date: %.4s/%.2s/%.2s\n",
+		    key_edate.year, key_edate.month, key_edate.day);
+	  }
 
 	fail_if_err ((key_attr[8].ulValueLen != sizeof (key_derive)) ?
 		     CKR_GENERAL_ERROR : 0);

@@ -1,5 +1,8 @@
 2009-06-19  Marcus Brinkmann  <marcus@g10code.de>
 
+	* tests/t-getattribute.c (dump_object): Allow empty CKA_START_DATE
+	and CKA_END_DATE.
+
 	* src/cert-object.c (scute_attr_prv): Always set CKA_START_DATE
 	and CKA_END_DATE.
 
