@@ -817,6 +817,38 @@ scute_agent_learn (struct agent_card_info_s *info)
 }
 
 
+
+static gpg_error_t
+geteventcounter_status_cb (void *opaque, const char *line)
+{
+  int *result = opaque;
+  const char *keyword = line;
+  int keywordlen;
+
+  for (keywordlen=0; *line && !spacep (line); line++, keywordlen++)
+    ;
+  while (spacep (line))
+    line++;
+
+  if (keywordlen == 12 && !memcmp (keyword, "EVENTCOUNTER", keywordlen))
+    {
+      static int any_count;
+      static unsigned int last_count;
+      unsigned int count;
+
+      if (sscanf (line, "%*u %*u %u ", &count) == 1)
+        {
+          if (any_count && last_count != count)
+            *result = 1;
+          any_count = 1;
+          last_count = count;
+        }
+    }
+  
+  return 0;
+}
+
+
 static gpg_error_t
 read_status_cb (void *opaque, const void *buffer, size_t length)
 {
@@ -837,15 +869,33 @@ read_status_cb (void *opaque, const void *buffer, size_t length)
 gpg_error_t
 scute_agent_check_status (void)
 {
+  static char last_flag;
   gpg_error_t err;
+  int any = 0;
   char flag = '-';
 
-  err = assuan_transact (agent_ctx, "SCD GETINFO status",
-			 read_status_cb, &flag, default_inq_cb,
-			 NULL, NULL, NULL);
+  /* First we look at the eventcounter to see if anything happened at
+     all.  This is a low overhead function which won't even clutter a
+     gpg-agent log file.  There is no need for error checking here. */
+  if (last_flag)
+    assuan_transact (agent_ctx, "GETEVENTCOUNTER",
+                     NULL, NULL,
+                     NULL, NULL,
+                     geteventcounter_status_cb, &any);
 
-  if (err)
-    return err;
+  if (any || !last_flag)
+    {
+      err = assuan_transact (agent_ctx, "SCD GETINFO status",
+                             read_status_cb, &flag,
+                             default_inq_cb, NULL,
+                             NULL, NULL);
+      if (err)
+        return err;
+      last_flag = flag;
+    }
+  else
+    flag = last_flag;
+
 
   if (flag == 'r')
     return gpg_error (GPG_ERR_CARD_REMOVED);
