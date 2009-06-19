@@ -710,6 +710,13 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
     {
       one_attr (CKA_END_DATE, obj_end_date);
     }
+#else
+  /* For now, we disable these fields.  We can parse them from the
+     certificate just as the other data.  However, we would like to
+     avoid parsing the certificates at all, let's see how much
+     functionality we really need in the PKCS#11 token first.  */
+  empty_attr (CKA_START_DATE);
+  empty_attr (CKA_END_DATE);
 #endif
 
   one_attr (CKA_DERIVE, obj_derive);
