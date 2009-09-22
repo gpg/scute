@@ -137,7 +137,5 @@ _scute_debug_init (void)
 
       assuan_set_assuan_log_prefix ("scute-assuan");
       _scute_debug_stream = stream;
-      if (_scute_debug_flags & DBG_ASSUAN)
-	assuan_set_assuan_log_stream (stream);
     }
 }

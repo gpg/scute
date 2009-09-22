@@ -1,3 +1,16 @@
+2009-09-23  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac (NEED_LIBASSUAN_VERSION): Update to 1.1.0.
+	(_ASSUAN_ONLY_GPG_ERROR): Remove.
+	* src/p11-initialize.c: Update to new Assuan interface.
+	* src/debug.c (_scute_debug_init): Remove call to
+	assuan_set_assuan_log_stream.
+	* src/agent.c (agent_connect): Allocate assuan context before
+	connecting to server.  Release it on error.
+	* src/cert-gpgsm.c (export_cert_compat, export_cert)
+	(scute_gpgsm_search_certs_by_grip)
+	(scute_gpgsm_search_certs_by_fpr): Likewise.
+
 2009-07-22  Stef Walter  <stef@memberwebs.com>
 
 	* src/pkcs11.h: Make all constants UL that should be.

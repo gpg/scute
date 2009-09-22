@@ -53,9 +53,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
   /* This is one of the few functions which do not need to take the
      global lock.  */
 
-  /* Set the assuan error source, so that gpg_error_t becomes a valid
-     substitute for assuan_error_t.  */
-  assuan_set_assuan_err_source (GPG_ERR_SOURCE_ANY);
+  assuan_set_gpg_err_source (GPG_ERR_SOURCE_ANY);
 
   _scute_debug_init ();
 

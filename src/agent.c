@@ -239,6 +239,11 @@ agent_connect (assuan_context_t *ctx_r)
   gpg_error_t err = 0;
   char *infostr;
   char *ptr;
+  assuan_context_t ctx = NULL;
+
+  err = assuan_new (&ctx);
+  if (err)
+    return err;
 
  restart:
 
@@ -253,8 +258,7 @@ agent_connect (assuan_context_t *ctx_r)
       if (! sockname)
 	return gpg_error_from_errno (errno);
 
-      err = assuan_socket_connect (ctx_r, sockname, 0);
-
+      err = assuan_socket_connect (ctx, sockname, 0);
       if (err)
         {
 	  const char *agent_program;
@@ -312,7 +316,7 @@ agent_connect (assuan_context_t *ctx_r)
             no_close_list[i] = -1;
             
             /* Connect to the agent and perform initial handshaking. */
-            err = assuan_pipe_connect (ctx_r, agent_program, argv,
+            err = assuan_pipe_connect (ctx, agent_program, argv,
 				       no_close_list);
           }
 #endif /*!HAVE_W32_SYSTEM*/
@@ -350,7 +354,7 @@ agent_connect (assuan_context_t *ctx_r)
 	  goto restart;
 	}
       
-      err = assuan_socket_connect (ctx_r, infostr, pid);
+      err = assuan_socket_connect (ctx, infostr, pid);
       free (infostr);
       if (err)
 	{
@@ -362,12 +366,15 @@ agent_connect (assuan_context_t *ctx_r)
 
   if (err)
     {
+      assuan_release (ctx);
       DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
       return gpg_error (GPG_ERR_NO_AGENT);
     }
 
   if (_scute_debug_flags & DBG_ASSUAN)
     assuan_set_log_stream (*ctx_r, _scute_debug_stream);
+
+  *ctx_r = ctx;
 
   return 0;
 }
@@ -1178,6 +1185,6 @@ scute_agent_finalize (void)
     }
 
   DEBUG (DBG_INFO, "releasing agent context");
-  assuan_disconnect (agent_ctx);
+  assuan_release (agent_ctx);
   agent_ctx = NULL;
 }

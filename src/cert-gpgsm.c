@@ -559,12 +559,23 @@ export_cert_compat (char *fpr, struct cert *cert)
   child_fds[0] = output_fds[1];
   child_fds[1] = -1;
 
-  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, child_fds,
+  err = assuan_new (&ctx);
+  if (err)
+    {
+      close (output_fds[0]);
+      close (output_fds[1]);
+      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s\n",
+	     gpg_strerror (err));
+      return err;
+    }
+
+  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, child_fds,
 				 NULL, NULL, 128);
   close (output_fds[1]);
   if (err)
     {
       close (output_fds[0]);
+      assuan_release (ctx);
       DEBUG (DBG_CRIT, "failed to spawn %s\n", get_gpgsm_path ());
       return err;
     }
@@ -594,7 +605,7 @@ export_cert_compat (char *fpr, struct cert *cert)
     err = gpg_error (GPG_ERR_GENERAL);
 
  export_out:
-  assuan_disconnect (ctx);
+  assuan_release (ctx);
   close (output_fds[0]);
   return err;
 }
@@ -651,10 +662,19 @@ export_cert (char *fpr, struct cert *cert)
   char cmd[COMMANDLINELEN];
   struct export_hook exp;
 
-  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+  err = assuan_new (&ctx);
+  if (err)
+    {
+      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+
+  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
 				 NULL, NULL, 128);
   if (err)
     {
+      assuan_release (ctx);
       DEBUG (DBG_CRIT, "spawning %s\n", get_gpgsm_path ());
       return err;
     }
@@ -666,7 +686,7 @@ export_cert (char *fpr, struct cert *cert)
   snprintf (cmd, sizeof (cmd), "EXPORT --data -- %s\n", cert->fpr);
   err = assuan_transact (ctx, cmd, export_cert_cb, &exp,
 			 NULL, NULL, NULL, NULL);
-  assuan_disconnect (ctx);
+  assuan_release (ctx);
 
   if (!err)
     {
@@ -729,10 +749,19 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
   const char *argv[] = { "gpgsm", "--server", NULL };
   struct search_ctx_by_field search;
 
-  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+  err = assuan_new (&ctx);
+  if (err)
+    {
+      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+
+  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
 				 NULL, NULL, 128);
   if (err)
     {
+      assuan_release (ctx);
       DEBUG (DBG_CRIT, "spawning %s\n", get_gpgsm_path ());
       return err;
     }
@@ -743,7 +772,7 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
   search.search_cb_hook = search_cb_hook;
 
   err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
-  assuan_disconnect (ctx);
+  assuan_release (ctx);
   return err;
 }
 
@@ -760,10 +789,19 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
   const char *argv[] = { "gpgsm", "--server", NULL };
   struct search_ctx_by_field search;
 
-  err = assuan_pipe_connect_ext (&ctx, get_gpgsm_path (), argv, NULL,
+  err = assuan_new (&ctx);
+  if (err)
+    {
+      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s",
+	     gpg_strerror (err));
+      return err;
+    }
+
+  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
 				 NULL, NULL, 128);
   if (err)
     {
+      assuan_release (ctx);
       DEBUG (DBG_CRIT, "failed to spawn %s\n", get_gpgsm_path ());
       return err;
     }
@@ -774,6 +812,6 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
   search.search_cb_hook = search_cb_hook;
 
   err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
-  assuan_disconnect (ctx);
+  assuan_release (ctx);
   return err;
 }

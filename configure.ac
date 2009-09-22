@@ -70,7 +70,7 @@ VERSION_MAJOR=1
 VERSION_MINOR=0
 
 NEED_GPG_ERROR_VERSION=1.4
-NEED_LIBASSUAN_VERSION=0.6.10
+NEED_LIBASSUAN_VERSION=1.1.0
 NEED_GPGSM_VERSION=1.9.6
 # Some status variables to give feedback at the end of a configure run.
 have_gpg_error=no
@@ -123,8 +123,6 @@ AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(VERSION_MAJOR, $VERSION_MAJOR, [Major version number])
 AC_DEFINE_UNQUOTED(VERSION_MINOR, $VERSION_MINOR, [Minor version number])
-
-AC_DEFINE_UNQUOTED(_ASSUAN_ONLY_GPG_ERRORS, 1, [Disable backward compatibility])
 
 # Don't default to build static libs.
 # FIXME: Caution: Evil hack ahead.  Libtool does not support linking a
