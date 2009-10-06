@@ -1,3 +1,7 @@
+2009-10-06  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/pkcs11.h: Add support for GOST.  By Andreas Jellinghaus.
+
 2009-09-23  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac (NEED_LIBASSUAN_VERSION): Update to 1.1.0.
