@@ -33,6 +33,11 @@
 
 #include <stdbool.h>
 
+#ifdef HAVE_W32_SYSTEM
+#define __USE_W32_SOCKETS 1
+#include <windows.h>
+#endif
+
 #include <assuan.h>
 #include <gpg-error.h>
 
@@ -49,6 +54,11 @@
 CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
 {
   CK_RV err;
+  WSADATA wsadat;
+	
+#ifdef HAVE_W32_SYSTEM
+  WSAStartup (0x202, &wsadat);
+#endif
 
   /* This is one of the few functions which do not need to take the
      global lock.  */

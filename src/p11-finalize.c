@@ -30,6 +30,10 @@
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
+#ifdef HAVE_W32_SYSTEM
+#define __USE_W32_SOCKETS 1
+#include <windows.h>
+#endif
 
 #include "cryptoki.h"
 
@@ -49,6 +53,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Finalize)(CK_VOID_PTR pReserved)
   scute_slots_finalize ();
   scute_agent_finalize ();
   scute_locking_finalize ();
+
+#ifdef HAVE_W32_SYSTEM
+  WSACleanup ();
+#endif
 
   return CKR_OK;
 }

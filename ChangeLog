@@ -1,3 +1,8 @@
+2009-10-08  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/p11-initialize.c (C_Initialize): Call WSAStartup.
+	* src/p11-finalize.c (CK_DEFINE_FUNCTION): Call WSACleanup.
+
 2009-10-06  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/pkcs11.h: Add support for GOST.  By Andreas Jellinghaus.
