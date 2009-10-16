@@ -54,9 +54,10 @@
 CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (CK_VOID_PTR pInitArgs)
 {
   CK_RV err;
-  WSADATA wsadat;
 	
 #ifdef HAVE_W32_SYSTEM
+  WSADATA wsadat;
+
   WSAStartup (0x202, &wsadat);
 #endif
 

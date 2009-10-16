@@ -1,3 +1,8 @@
+2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
+
+	* src/p11-initialize.c (CK_DEFINE_FUNCTION): Fix code on
+	non-Windows.
+
 2009-10-08  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/p11-initialize.c (C_Initialize): Call WSAStartup.
