@@ -258,7 +258,7 @@ agent_connect (assuan_context_t *ctx_r)
       if (! sockname)
 	return gpg_error_from_errno (errno);
 
-      err = assuan_socket_connect (ctx, sockname, 0);
+      err = assuan_socket_connect (ctx, sockname, 0, 0);
       if (err)
         {
 	  const char *agent_program;
@@ -292,7 +292,7 @@ agent_connect (assuan_context_t *ctx_r)
                 /* Give the agent some time to prepare itself. */
                 Sleep (3 * 1000);
                 /* Now try again to connect the agent.  */
-                err = assuan_socket_connect (ctx_r, sockname, 0);
+                err = assuan_socket_connect (ctx_r, sockname, 0, 0);
               }
           }
 #else /*!HAVE_W32_SYSTEM*/
@@ -317,7 +317,7 @@ agent_connect (assuan_context_t *ctx_r)
             
             /* Connect to the agent and perform initial handshaking. */
             err = assuan_pipe_connect (ctx, agent_program, argv,
-				       no_close_list);
+				       no_close_list, NULL, NULL, 0);
           }
 #endif /*!HAVE_W32_SYSTEM*/
         }
@@ -354,7 +354,7 @@ agent_connect (assuan_context_t *ctx_r)
 	  goto restart;
 	}
       
-      err = assuan_socket_connect (ctx, infostr, pid);
+      err = assuan_socket_connect (ctx, infostr, pid, 0);
       free (infostr);
       if (err)
 	{

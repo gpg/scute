@@ -1,3 +1,12 @@
+2009-11-06  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/cert-gpgsm.c (export_cert_compat, export_cert)
+	(scute_gpgsm_search_certs_by_grip)
+	(scute_gpgsm_search_certs_by_fpr): Call assuan_pipe_connect
+	instead of assuan_pipe_connect_ext.
+	* src/agent.c (agent_connect): Update use of assuan_socket_connect
+	and assuan_pipe_connect.
+
 2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
 
 	* src/p11-initialize.c (CK_DEFINE_FUNCTION): Fix code on

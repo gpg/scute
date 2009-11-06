@@ -569,8 +569,8 @@ export_cert_compat (char *fpr, struct cert *cert)
       return err;
     }
 
-  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, child_fds,
-				 NULL, NULL, 128);
+  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, child_fds,
+			     NULL, NULL, 128);
   close (output_fds[1]);
   if (err)
     {
@@ -670,8 +670,8 @@ export_cert (char *fpr, struct cert *cert)
       return err;
     }
 
-  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
-				 NULL, NULL, 128);
+  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, NULL,
+			     NULL, NULL, 128);
   if (err)
     {
       assuan_release (ctx);
@@ -757,8 +757,8 @@ scute_gpgsm_search_certs_by_grip (const char *grip,
       return err;
     }
 
-  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
-				 NULL, NULL, 128);
+  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, NULL,
+			     NULL, NULL, 128);
   if (err)
     {
       assuan_release (ctx);
@@ -797,8 +797,8 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
       return err;
     }
 
-  err = assuan_pipe_connect_ext (ctx, get_gpgsm_path (), argv, NULL,
-				 NULL, NULL, 128);
+  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, NULL,
+			     NULL, NULL, 128);
   if (err)
     {
       assuan_release (ctx);
