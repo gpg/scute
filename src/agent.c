@@ -312,7 +312,7 @@ agent_connect (assuan_context_t *ctx_r)
             argv[2] = NULL;
             
             i=0;
-            no_close_list[i++] = fileno (stderr);
+            no_close_list[i++] = assuan_fd_from_posix_fd (fileno (stderr));
             no_close_list[i] = -1;
             
             /* Connect to the agent and perform initial handshaking. */
