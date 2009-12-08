@@ -556,7 +556,7 @@ export_cert_compat (char *fpr, struct cert *cert)
   if(pipe (output_fds) < 0)
     return gpg_error_from_syserror ();
 
-  child_fds[0] = output_fds[1];
+  child_fds[0] = assuan_fd_from_posix_fd (output_fds[1]);
   child_fds[1] = -1;
 
   err = assuan_new (&ctx);

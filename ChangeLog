@@ -1,6 +1,7 @@
 2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* src/agent.c (agent_connect): Convert posix fd to assuan fd.
+	* src/cert-gpgsm.c (export_cert_compat): Likewise.
 
 	* src/Makefile.am (libgpg-error.a, libassuan.a): Force symlink.
 
