@@ -100,10 +100,10 @@ scute_deps = $(scute_res) scute.def libgpg-error.a libassuan.a
 scute_libadd = -L.
 
 libgpg-error.a:
-	ln -s $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
+	ln -sf $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
 
 libassuan.a:
-	ln -s $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
+	ln -sf $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
 
 clean-local:
 	rm -f libgpg-error.a libassuan.a
