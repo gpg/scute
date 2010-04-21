@@ -34,8 +34,8 @@ Prerequisites
 =============
 
 For the compilation:
-* libgpg-error 0.7
-* libassuan 0.6.10
+* libgpg-error 1.4
+* libassuan 2.0.0
 
 At runtime:
 * Mozilla (or any other supported application using PKCS #11).

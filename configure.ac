@@ -1,5 +1,5 @@
 # configure.ac: Configure script for Scute.
-# Copyright (C) 2006, 2007, 2008 g10 Code GmbH
+# Copyright (C) 2006, 2007, 2008, 2009, 2010 g10 Code GmbH
 # 
 # This file is part of Scute.
 #
@@ -46,7 +46,7 @@ min_automake_version="1.9.3"
 # so that a proper revision number for all files is available when
 # running a "make distcheck".
 
-m4_define([my_version], [1.3.0])
+m4_define([my_version], [1.4.0])
 m4_define([my_issvn], [no])
 
 m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
@@ -63,14 +63,14 @@ AC_INIT([scute],
 #
 LIBSCUTE_LT_CURRENT=0
 LIBSCUTE_LT_AGE=0
-LIBSCUTE_LT_REVISION=1
+LIBSCUTE_LT_REVISION=2
 
 # Version numbers reported by the PKCS #11 module to its users.
 VERSION_MAJOR=1
 VERSION_MINOR=0
 
 NEED_GPG_ERROR_VERSION=1.4
-NEED_LIBASSUAN_VERSION=1.1.0
+NEED_LIBASSUAN_VERSION=2.0.0
 NEED_GPGSM_VERSION=1.9.6
 # Some status variables to give feedback at the end of a configure run.
 have_gpg_error=no
