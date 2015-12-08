@@ -150,7 +150,7 @@ build_w32_commandline (const char *pgmname, const char * const *argv,
 }
 
 
-/* Spawn a new process and immediatley detach from it.  The name of
+/* Spawn a new process and immediately detach from it.  The name of
    the program to exec is PGMNAME and its arguments are in ARGV (the
    programname is automatically passed as first argument).  An error
    is returned if pgmname is not executable; to make this work it is
