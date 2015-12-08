@@ -631,7 +631,6 @@ polling.
 Not supported.
 
 @item C_InitToken
-@itemx
 
 @itemx C_InitPIN
 @itemx C_SetPIN
