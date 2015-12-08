@@ -1,0 +1,14 @@
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.h.in
+configure
+doc/Makefile.in
+doc/manual/Makefile.in
+doc/manual/scute.info
+doc/manual/stamp-vti
+doc/manual/version.texi
+m4/Makefile.in
+obj/
+src/Makefile.in
+tests/Makefile.in
