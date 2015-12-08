@@ -1,0 +1,4 @@
+# autogen.sh configuration for Scute                           -*- sh -*-
+
+extra_aclocal_flags=""
+final_info="./configure --enable-maintainer-mode  && make"
