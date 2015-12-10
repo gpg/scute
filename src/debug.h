@@ -44,7 +44,7 @@ extern unsigned int _scute_debug_flags;
 #define DEBUG(flag, format, ...)  \
   do \
     { \
-      if (_scute_debug_flags & (flag)) \
+      if (_scute_debug_flags & (flag) || flag == DBG_CRIT) \
         fprintf (_scute_debug_stream, \
                  DEBUG_PREFIX "%s: " format "\n", __func__, ##__VA_ARGS__); \
     } \
