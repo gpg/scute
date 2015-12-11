@@ -52,13 +52,12 @@ scute_copy_string (char *dest, char *src, int max_len)
     *(dest++) = ' ';
 }
 
-/* Include our own asprintf functions for better portability.  We also
+/* Use gpg-errors printf functions for better portability.  We also
    replace the standard snprintf with our implementation due to a bug
    in some mingw32 versions related to the 'l' format modifier.  */
-#include "estream-printf.h"
-#define asprintf  estream_asprintf
-#define vasprintf estream_vasprintf
-#define snprintf  estream_snprintf
+#define asprintf  gpgrt_asprintf
+#define vasprintf gpgrt_vasprintf
+#define snprintf  gpgrt_snprintf
 
 /*-- Simple replacement functions. */
 #ifndef HAVE_TTYNAME

@@ -34,7 +34,6 @@ EXTRA_DIST = libscute.vers scute.def versioninfo.rc.in
 sources = cryptoki.h pkcs11.h debug.c debug.h settings.h support.h	\
 	locking.h locking.c error-mapping.h error-mapping.c		\
 	get-path.c agent.h agent.c					\
-	estream-printf.c estream-printf.h                               \
 	slots.h slots.c table.h table.c					\
 	cert.h cert-gpgsm.c cert-object.c gpgsm.h gpgsm.c		\
 	p11-cancelfunction.c p11-closeallsessions.c p11-closesession.c	\
