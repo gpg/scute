@@ -92,51 +92,52 @@ http://www.gnupg.org/(en)/howtos/card-howto/en/smartcard-howto.html
 Once the card is initialised, we have to generate a certificate
 signing request (CSR) to get the authentication key of the card
 (OPENPGP.3, the third key on the card) certified by the CA.  This can
-be done with the script "gpgsm-gencert.sh".  For the CSR, a
-distinguished name (DN) is required.  Your CA will have more
-information about what this DN should contain.  Below we use an
-example for a test-employee "Floppy Head" of the test-CA that ships
-with OpenSSL ("Snake Oil, Ltd.").
+be done using "gpgsm --gen-key".  For the CSR, a distinguished name
+(DN) is required.  Your CA will have more information about what this
+DN should contain.  Below we use an example for a test-employee
+"Floppy Head" of the test-CA that ships with OpenSSL ("Snake Oil,
+Ltd.").
 
 Generating the CSR is then just a matter of answering a few questions:
 
-$ gpgsm-gencert.sh > /tmp/floppy.csr
-Key type
- [1] RSA
- [2] existing key
- [3] OPENPGP.1
- [4] OPENPGP.3
-Your selection: 4
-You selected: OPENPGP.3
-Key usage
- [1] sign, encrypt
- [2] sign
- [3] encrypt
-Your selection: 2
-You selected: sign
-Name (DN)
-> CN=Floppy Head,OU=Webserver Team,O="Snake Oil, Ltd",L=Snake Town,ST=Snake Desert,C=XY
-E-Mail addresses (end with an empty line)
-> floppy@head.com
-E-Mail addresses (end with an empty line)
+$ gpgsm --gen-key > client.csr
+Please select what kind of key you want:
+   (1) RSA
+   (2) Existing key
+   (3) Existing key from card
+Your selection? 3
+Serial number of the card: 355F9746499F0D4B4ECEE4928B007D16
+Available keys:
+   (1) D53137B94C38D9BF6A199706EA6D5253 OPENPGP.1
+   (2) B0CD1A9DFC3539A1D6A8B851A11C8665 OPENPGP.2
+   (3) 53DB41052CC590A40B403F3E6350E5DC OPENPGP.3
+Your selection? 3
+Possible actions for a RSA key:
+   (1) sign, encrypt
+   (2) sign
+   (3) encrypt
+Your selection? 2
+Enter the X.509 subject name: CN=Floppy Head,OU="Webserver Team",O="Snake Oil, Ltd",L="Snake Town",ST="Snake Desert",C=XY
+Enter email addresses (end with an empty line):
+> floppy.head@example.org
 >
-DNS Names (optional; end with an empty line)
+Enter DNS names (optional; end with an empty line):
 >
-URIs (optional; end with an empty line)
+Enter URIs (optional; end with an empty line):
 >
-Parameters for certificate request to create:
-     1  Key-Type: card:OPENPGP.3
-     2  Key-Length: 
-     3  Key-Usage: sign
-     4  Name-DN: CN=Floppy Head,OU=Webserver Team,O="Snake Oil, Ltd",L=Snake Town,ST=Snake Desert,C=XY
-     5  Name-Email: floppy@head.com
+Create self-signed certificate? (y/N) n
+These parameters are used:
+    Key-Type: card:OPENPGP.3
+    Key-Length: 1024
+    Key-Usage: sign
+    Name-DN: CN=Floppy Head,OU="Webserver Team",O="Snake Oil, Ltd",L="Snake Town",ST="Snake Desert",C=XY
+    Name-Email: floppy.head@example.org
 
-Really create such a CSR?
- [1] yes
- [2] no
-Your selection: 1
-You selected: yes
+Proceed with creation? (y/N) y
+Now creating certificate request.  This may take a while ...
+gpgsm: about to sign the CSR for key: &53DB41052CC590A40B403F3E6350E5DC
 gpgsm: certificate request created
+Ready.  You should now send this request to your CA.
 
 It is required to enter the signing PIN of the card to complete this
 step.  The certificate can then be found in the file "/tmp/floppy.csr".
