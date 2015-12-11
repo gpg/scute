@@ -45,6 +45,12 @@ CLEANFILES = $(images_pdf) $(images_eps)
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = gpl.texi
 
+scute.html: scute.texi $(foreach i,$(images),scute.html/$(i))
+	$(MAKEINFO) --html --output "$@" "$<"
+scute.html/%.png: %.png
+	@mkdir -p scute.html
+	cp -v "$<" "$@"
+
 scute.dvi: $(images_eps)
 scute.pdf: $(images_pdf)
 
