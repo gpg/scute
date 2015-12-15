@@ -1,6 +1,6 @@
 # configure.ac: Configure script for Scute.
-# Copyright (C) 2006, 2007, 2008, 2009, 2010 g10 Code GmbH
-# 
+# Copyright (C) 2006, 2007, 2008, 2009, 2010, 2015 g10 Code GmbH
+#
 # This file is part of Scute.
 #
 # Scute is free software; you can redistribute it and/or modify it
@@ -31,29 +31,33 @@
 AC_PREREQ(2.59)
 min_automake_version="1.9.3"
 
-# Version number: Remember to change it immediately *after* a release.
-#                 Make sure to run  "svn up" before a "make dist".
-#                 See below for the LT versions.
-#
-# The SVN version is usually the next intended release version with
-# the string "-svnNNNN" appended.  The reason for this is that tests
-# for a specific feature can already be done under the assumption that
-# the SVN version is the most recent one in a branch. 
-#
-# To disable the SVN version for the real release, set the my_issvn
-# macro to "no".  To make this most useful for snapshot releases
-# please do an "svn up" right before recreating the configure script,
-# so that a proper revision number for all files is available when
-# running a "make distcheck".
+# To build a release you need to create a tag with the version number
+# (git tag -s scute-1.n.m) and run "./autogen.sh --force".  Please
+# bump the version number immediately *after* the release and do
+# another commit and push so that the git magic is able to work.
+m4_define([mym4_package],[scute])
+m4_define([mym4_major], [1])
+m4_define([mym4_minor], [5])
+m4_define([mym4_micro], [0])
 
-m4_define([my_version], [1.5.0])
-m4_define([my_issvn], [yes])
+# To start a new development series, i.e a new major or minor number
+# you need to mark an arbitrary commit before the first beta release
+# with an annotated tag.  For example the 1.5 branch starts off with
+# the tag "scute-1.5-base".  This is used as the base for counting
+# beta numbers before the first release of a series.
 
-m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
-            || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
-AC_INIT([scute], 
-        [my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision])],
-        [bug-scute@gnupg.org])
+# Below is m4 magic to extract and compute the git revision number,
+# the decimalized short revision number, a beta version string and a
+# flag indicating a development version (mym4_isbeta).  Note that the
+# m4 processing is done by autoconf and not during the configure run.
+m4_define([mym4_verslist], m4_split(m4_esyscmd([./autogen.sh --find-version] \
+                           mym4_package mym4_major mym4_minor mym4_micro),[:]))
+m4_define([mym4_isbeta],       m4_argn(2, mym4_verslist))
+m4_define([mym4_version],      m4_argn(4, mym4_verslist))
+m4_define([mym4_revision],     m4_argn(7, mym4_verslist))
+m4_define([mym4_revision_dec], m4_argn(8, mym4_verslist))
+m4_esyscmd([echo ]mym4_version[>VERSION])
+AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
