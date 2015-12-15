@@ -31,7 +31,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = autogen.sh README.SVN
+EXTRA_DIST = autogen.sh README.GIT
 
 if RUN_TESTS
 tests = tests
