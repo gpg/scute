@@ -67,7 +67,6 @@
   However, as long as the assumption is made, we have to comply.
 
 * Website:
-** Border picture does not tile vertically.
 ** Border picture width constant hard-coded in CSS.
 * Copyright notice
 Copyright 2006 g10 Code GmbH
