@@ -27,94 +27,26 @@
    may extend this exception to your version of the file, but you are
    not obligated to do so.  If you do not wish to do so, delete this
    exception statement from your version.  -->
+
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="310"
    height="110"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.43"
+   inkscape:version="0.48.5 r10040"
    version="1.0"
-   sodipodi:docbase="/home/marcus/g10/projects/pkcs11-for-scdaemon"
    sodipodi:docname="scute-logo.svg">
   <defs
-     id="defs4">
-    <linearGradient
-       id="linearGradient12777">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop12779" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop12781" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient10996">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop10998" />
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="1"
-         id="stop11000" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient10996"
-       id="linearGradient11002"
-       x1="200"
-       y1="202.36137"
-       x2="450"
-       y2="202.36137"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient12777"
-       id="linearGradient12783"
-       x1="200"
-       y1="202.36137"
-       x2="450"
-       y2="202.36137"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient10996"
-       id="linearGradient12803"
-       x1="207.22214"
-       y1="203.29942"
-       x2="444.12137"
-       y2="203.29942"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient12777"
-       id="linearGradient12825"
-       gradientUnits="userSpaceOnUse"
-       x1="200"
-       y1="202.36137"
-       x2="450"
-       y2="202.36137" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient10996"
-       id="linearGradient12827"
-       gradientUnits="userSpaceOnUse"
-       x1="207.22214"
-       y1="203.29942"
-       x2="444.12137"
-       y2="203.29942" />
-  </defs>
+     id="defs4" />
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -122,20 +54,32 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.0685606"
-     inkscape:cx="428.26482"
-     inkscape:cy="828.53554"
+     inkscape:zoom="3.9478766"
+     inkscape:cx="157.76212"
+     inkscape:cy="56.43874"
      inkscape:document-units="px"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="svg2"
      showgrid="false"
      showguides="true"
      inkscape:grid-points="false"
-     gridspacingx="5px"
-     gridspacingy="5px"
-     inkscape:window-width="1024"
-     inkscape:window-height="693"
-     inkscape:window-x="0"
-     inkscape:window-y="25" />
+     inkscape:window-width="1280"
+     inkscape:window-height="1005"
+     inkscape:window-x="1280"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       id="GridFromPre046Settings"
+       type="xygrid"
+       originx="0px"
+       originy="0px"
+       spacingx="5px"
+       spacingy="5px"
+       color="#3f3fff"
+       empcolor="#3f3fff"
+       opacity="0.15"
+       empopacity="0.38"
+       empspacing="5" />
+  </sodipodi:namedview>
   <metadata
      id="metadata7">
     <rdf:RDF>
