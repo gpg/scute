@@ -69,9 +69,7 @@
 * Website:
 ** Border picture does not tile vertically.
 ** Border picture width constant hard-coded in CSS.
-** Nimbus font in logo SVG may not be available on all clients.
-
-
+* Copyright notice
 Copyright 2006 g10 Code GmbH
 
 This file is free software; as a special exception the author gives
