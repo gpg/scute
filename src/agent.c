@@ -952,11 +952,11 @@ scute_agent_check_status (void)
 }
 
 
-/* We only support RSA signatures up to 2048 bits.  */
-#define MAX_SIGNATURE_BITS 2048
+/* We only support RSA signatures up to 4096 bits.  */
+#define MAX_SIGNATURE_BITS 4096
 
-/* Enough space to hold a 2048 bit RSA signature in an S-expression.  */
-#define MAX_SIGNATURE_LEN 350
+/* Enough space to hold a 4096 bit RSA signature in an S-expression.  */
+#define MAX_SIGNATURE_LEN 640	/* FIXME: magic value */
 
 struct signature
 {
