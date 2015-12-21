@@ -31,10 +31,12 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "cryptoki.h"
 
+#include "agent.h"
 #include "locking.h"
 #include "support.h"
 #include "settings.h"

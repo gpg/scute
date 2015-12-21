@@ -33,6 +33,8 @@
 #include <gpg-error.h>
 #include <stdbool.h>
 
+#include "cert.h"
+
 
 /* The information structure for a smart card.  */
 struct agent_card_info_s 
@@ -107,5 +109,8 @@ gpg_error_t scute_agent_sign (char *grip, unsigned char *data, int len,
 
 /* Determine if FPR is trusted.  */
 gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted);
+
+/* Try to get certificate for key numer NO.  */
+gpg_error_t scute_agent_get_cert (int no, struct cert *cert);
 
 #endif	/* AGENT_H */

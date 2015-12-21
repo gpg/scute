@@ -40,6 +40,7 @@
 #include <gpg-error.h>
 #include <assuan.h>
 
+#include "agent.h"
 #include "cert.h"
 #include "support.h"
 #include "debug.h"
