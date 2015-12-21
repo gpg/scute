@@ -89,7 +89,7 @@ _scute_debug_init (void)
   if (!initialized)
     {
       char *e;
-      const char *s1, *s2;;
+      const char *s1, *s2;
       FILE *stream;
 
       e = getenv ("SCUTE_DEBUG");
