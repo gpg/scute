@@ -108,6 +108,78 @@ AH_VERBATIM([_REENTRANT],
 # Checks for programs.
 AC_PROG_CC
 
+#
+# Setup gcc specific options
+#
+AC_MSG_NOTICE([checking for cc features])
+if test "$GCC" = yes; then
+    mycflags=
+    mycflags_save=$CFLAGS
+
+    # Check whether gcc does not emit a diagnositc for unknow -Wno-*
+    # options.  This is the case for gcc >= 4.6
+    AC_MSG_CHECKING([if gcc ignores unknown -Wno-* options])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 6 )
+#kickerror
+#endif]],[])],[_gcc_silent_wno=yes],[_gcc_silent_wno=no])
+    AC_MSG_RESULT($_gcc_silent_wno)
+
+    # Note that it is okay to use CFLAGS here because these are just
+    # warning options and the user should have a chance of overriding
+    # them.
+    if test "$USE_MAINTAINER_MODE" = "yes"; then
+        mycflags="$mycflags -O3 -Wall -Wcast-align -Wshadow -Wstrict-prototypes"
+        mycflags="$mycflags -Wformat -Wno-format-y2k -Wformat-security"
+        if test x"$_gcc_silent_wno" = xyes ; then
+          _gcc_wopt=yes
+        else
+          AC_MSG_CHECKING([if gcc supports -Wno-missing-field-initializers])
+          CFLAGS="-Wno-missing-field-initializers"
+          AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])],
+                            [_gcc_wopt=yes],[_gcc_wopt=no])
+          AC_MSG_RESULT($_gcc_wopt)
+        fi
+        if test x"$_gcc_wopt" = xyes ; then
+          mycflags="$mycflags -W -Wno-sign-compare"
+          mycflags="$mycflags -Wno-missing-field-initializers"
+        fi
+
+        AC_MSG_CHECKING([if gcc supports -Wdeclaration-after-statement])
+        CFLAGS="-Wdeclaration-after-statement"
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])],_gcc_wopt=yes,_gcc_wopt=no)
+        AC_MSG_RESULT($_gcc_wopt)
+        if test x"$_gcc_wopt" = xyes ; then
+          mycflags="$mycflags -Wdeclaration-after-statement"
+        fi
+    else
+        mycflags="$mycflags -Wall"
+    fi
+
+    if test x"$_gcc_silent_wno" = xyes ; then
+      _gcc_psign=yes
+    else
+      AC_MSG_CHECKING([if gcc supports -Wno-pointer-sign])
+      CFLAGS="-Wno-pointer-sign"
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])],
+                        [_gcc_psign=yes],[_gcc_psign=no])
+      AC_MSG_RESULT($_gcc_psign)
+    fi
+    if test x"$_gcc_psign" = xyes ; then
+       mycflags="$mycflags -Wno-pointer-sign"
+    fi
+
+    AC_MSG_CHECKING([if gcc supports -Wpointer-arith])
+    CFLAGS="-Wpointer-arith"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])],_gcc_psign=yes,_gcc_psign=no)
+    AC_MSG_RESULT($_gcc_psign)
+    if test x"$_gcc_psign" = xyes ; then
+       mycflags="$mycflags -Wpointer-arith"
+    fi
+
+    CFLAGS="$mycflags $mycflags_save"
+fi
+
 AC_ARG_ENABLE(optimization,
    AC_HELP_STRING([--disable-optimization],
                   [disable compiler optimization]),
