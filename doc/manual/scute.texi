@@ -247,6 +247,10 @@ the GPG error library.  The minimum version required is 1.4.
 Scute uses the GnuPG 2.0 framework for communication with the GPG Agent,
 so it depends on the Assuan library.  The minimum version required is
 2.0.0.
+
+@item libgcrypt
+Scute uses the GnuPG 2.0 framework for communication, so it depends on
+the Libgcrypt library.  The minimum version required is 1.6.0.
 @end table
 
 At run-time, in addition to the run-time versions of the above

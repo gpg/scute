@@ -47,6 +47,7 @@
 #endif
 
 #include <assuan.h>
+#include <gcrypt.h>
 #include <gpg-error.h>
 
 #include "debug.h"
@@ -949,6 +950,9 @@ scute_agent_check_status (void)
 }
 
 
+/* We only support RSA signatures up to 2048 bits.  */
+#define MAX_SIGNATURE_BITS 2048
+
 /* Enough space to hold a 2048 bit RSA signature in an S-expression.  */
 #define MAX_SIGNATURE_LEN 350
 
@@ -976,14 +980,6 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 }
 
 
-#define SIG_PREFIX   "(7:sig-val(3:rsa(1:s128:"
-#define SIG_PREFIX_2 "(7:sig-val(3:rsa(1:s256:"
-#define SIG_PREFIX_LEN (sizeof (SIG_PREFIX) - 1)
-#define SIG_POSTFIX ")))"
-#define SIG_POSTFIX_LEN (sizeof (SIG_POSTFIX) - 1)
-#define SIG_LEN 128
-#define SIG_LEN_2 256
-
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
 scute_agent_sign (char *grip, unsigned char *data, int len,
@@ -995,6 +991,9 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
   struct signature sig;
+  gcry_sexp_t s_sigval = NULL, p;
+  const char *sig_raw;
+  size_t sig_raw_size;
 
   sig.len = 0;
 
@@ -1004,14 +1003,14 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (sig_result == NULL)
     {
       /* FIXME:  We return the largest supported size - is that correct?  */
-      *sig_len = SIG_LEN_2;
+      *sig_len = MAX_SIGNATURE_BITS / 8;
       return 0;
     }
 
   if (len > MAX_DATA_LEN)
     return gpg_error (GPG_ERR_INV_ARG);
 
-  if (grip == NULL || sig_result == NULL || *sig_len < SIG_LEN)
+  if (grip == NULL || sig_result == NULL)
     return gpg_error (GPG_ERR_INV_ARG);
 
   snprintf (cmd, sizeof (cmd), "SIGKEY %s", grip);
@@ -1035,32 +1034,38 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (err)
     return err;
 
-  /* FIXME: we need a real parser to cope with all kind of S-expressions.  */
-  if (sig.len == SIG_PREFIX_LEN + SIG_LEN_2 + SIG_POSTFIX_LEN)
+  err = gcry_sexp_new (&s_sigval, sig.data, sig.len, 0);
+  if (err)
+    return err;
+
+  p = gcry_sexp_find_token (s_sigval, "sig-val", 0);
+  if (! p)
     {
-      if (memcmp (sig.data, SIG_PREFIX_2, SIG_PREFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
-                  SIG_POSTFIX, SIG_POSTFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN_2);
-      *sig_len = SIG_LEN_2;
+      err = gpg_error (GPG_ERR_BAD_DATA);	/* XXX */
+      goto leave;
     }
-  else
+
+  p = gcry_sexp_find_token (p, "rsa", 0);
+  if (! p)
     {
-      if (sig.len != SIG_PREFIX_LEN + SIG_LEN + SIG_POSTFIX_LEN)
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data, SIG_PREFIX, SIG_PREFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
-                  SIG_POSTFIX, SIG_POSTFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN);
-      *sig_len = SIG_LEN;
+      err = gpg_error (GPG_ERR_BAD_DATA);	/* XXX */
+      goto leave;
     }
-  
-  
-  return 0;
+
+  p = gcry_sexp_find_token (p, "s", 0);
+  if (! p)
+    {
+      err = gpg_error (GPG_ERR_BAD_DATA);	/* XXX */
+      goto leave;
+    }
+
+  sig_raw = gcry_sexp_nth_data (p, 1, &sig_raw_size);
+  *sig_len = (unsigned int) sig_raw_size;
+  memcpy (sig_result, sig_raw, *sig_len);
+
+ leave:
+  gcry_sexp_release (s_sigval);
+  return err;
 }
 
 

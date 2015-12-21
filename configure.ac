@@ -75,10 +75,13 @@ VERSION_MINOR=0
 
 NEED_GPG_ERROR_VERSION=1.4
 NEED_LIBASSUAN_VERSION=2.0.0
+NEED_LIBGCRYPT_API=1
+NEED_LIBGCRYPT_VERSION=1.6.0
 NEED_GPGSM_VERSION=1.9.6
 # Some status variables to give feedback at the end of a configure run.
 have_gpg_error=no
 have_libassuan=no
+have_libgcrypt=no
 
 BUILD_REVISION=svn_revision
 PACKAGE=$PACKAGE_NAME
@@ -272,6 +275,10 @@ AM_PATH_GPG_ERROR("$NEED_GPG_ERROR_VERSION",
 AM_PATH_LIBASSUAN("$NEED_LIBASSUAN_VERSION",
                   have_libassuan=yes, have_libassuan=no)
 
+# Libgcrypt is our generic crypto library
+AM_PATH_LIBGCRYPT("$NEED_LIBGCRYPT_API:$NEED_LIBGCRYPT_VERSION",
+        have_libgcrypt=yes,have_libgcrypt=no)
+
 # GPGSM
 NO_OVERRIDE=no
 AC_ARG_WITH(gpgsm,
@@ -448,6 +455,16 @@ if test "$have_libassuan" = "no"; then
 *** This library is for example available at
 ***   ftp://ftp.gnupg.org/pub/gcrypt/alpha/libassuan/
 *** (at least version $NEED_LIBASSUAN_VERSION is required).
+***]])
+fi
+if test "$have_libgcrypt" = "no"; then
+   die=yes
+   AC_MSG_NOTICE([[
+***
+*** You need libgcrypt to build this program.
+**  This library is for example available at
+***   ftp://ftp.gnupg.org/gcrypt/libgcrypt/
+*** (at least version $NEED_LIBGCRYPT_VERSION (API $NEED_LIBGCRYPT_API) is required.)
 ***]])
 fi
 

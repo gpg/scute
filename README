@@ -36,6 +36,7 @@ Prerequisites
 For the compilation:
 * libgpg-error 1.4
 * libassuan 2.0.0
+* libgcrypt 1.6.0
 
 At runtime:
 * Mozilla (or any other supported application using PKCS #11).

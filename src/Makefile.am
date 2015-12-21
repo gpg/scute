@@ -93,8 +93,9 @@ install-def-file:
 uninstall-def-file:
 	-rm $(DESTDIR)$(libdir)/scute.def
 
-# On Windows targets, link statically to libgpg-error and libassuan.
-scute_deps = $(scute_res) scute.def libgpg-error.a libassuan.a
+# On Windows targets, link statically to libgpg-error, libassuan,
+# and libgcrypt.
+scute_deps = $(scute_res) scute.def libgpg-error.a libassuan.a libgcrypt.a
 
 scute_libadd = -L.
 
@@ -104,8 +105,11 @@ libgpg-error.a:
 libassuan.a:
 	ln -sf $$($(LIBASSUAN_CONFIG) --prefix)/lib/libassuan.a .
 
+libgcrypt.a:
+	ln -sf $$($(LIBCRYPT_CONFIG) --prefix)/lib/libgcrypt.a .
+
 clean-local:
-	rm -f libgpg-error.a libassuan.a
+	rm -f libgpg-error.a libassuan.a libgcrypt.a
 
 else
 
@@ -128,8 +132,8 @@ scute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
 # scute_libadd must come BEFORE libassuan and gpg-error, because we
 # override it on Windows targets.
 scute_la_LIBADD = $(scute_libadd) \
-	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @LIBGCRYPT_LIBS@ @GPG_ERROR_LIBS@
 
 scute_la_CPPFLAGS = -I$(srcdir)/../include \
-	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
+	@LIBASSUAN_CFLAGS@ @LIBGCRYPT_CFLAGS@ @GPG_ERROR_CFLAGS@
 scute_la_SOURCES = $(sources)
