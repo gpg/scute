@@ -68,7 +68,7 @@ scute_version_script_cmd =
 endif
 
 
-lib_LTLIBRARIES = libscute.la
+lib_LTLIBRARIES = scute.la
 
 if HAVE_W32_SYSTEM
 
@@ -121,15 +121,15 @@ scute_libadd =
 
 endif
 
-libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) $(export_symbols) \
+scute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) -module -avoid-version $(export_symbols) \
 	$(scute_version_script_cmd) -version-info \
 	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
-libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+scute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
 # scute_libadd must come BEFORE libassuan and gpg-error, because we
 # override it on Windows targets.
-libscute_la_LIBADD = $(scute_libadd) \
+scute_la_LIBADD = $(scute_libadd) \
 	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
 
-libscute_la_CPPFLAGS = -I$(srcdir)/../include \
+scute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
-libscute_la_SOURCES = $(sources)
+scute_la_SOURCES = $(sources)
