@@ -286,7 +286,7 @@ and installed according to the generic installation instructions found
 in the source package in the file @code{INSTALL}.  There are no Scute
 specific options to the configure script.
 
-After installation, the @code{libscute.so} module file can be found in
+After installation, the @code{scute.so} module file can be found in
 the library directory of the installation path.
 
 
@@ -491,9 +491,9 @@ PKCS #11 device.
 In the pop-up dialog that follows, you can give a module name
 (e.g. ``@code{Scute}'') and a module filename.  The latter should
 correspond to the full file name of the installed Scute module file
-@file{libscute.so}.  The default installation path is
+@file{scute.so}.  The default installation path is
 @file{/usr/local/lib}, which would mean that you have to provide the
-file name @file{/usr/local/lib/libscute.so}.  If you or your system
+file name @file{/usr/local/lib/scute.so}.  If you or your system
 administrator installed Scute in a different location, you have to
 adjust the file name correspondingly.
 
