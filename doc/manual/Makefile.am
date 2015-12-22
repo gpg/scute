@@ -36,11 +36,10 @@ images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
 	firefox-dm-load.png firefox-dm-token-present.png firefox-pref.png \
 	firefox-pref-view.png
 
-images_pdf = $(images:.png=.pdf)
 images_eps = $(images:.png=.eps)
 
 EXTRA_DIST = $(images)
-CLEANFILES = $(images_pdf) $(images_eps)
+CLEANFILES = $(images_eps)
 
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = gpl.texi
@@ -52,10 +51,7 @@ scute.html/%.png: %.png
 	cp -v "$<" "$@"
 
 scute.dvi: $(images_eps)
-scute.pdf: $(images_pdf)
+scute.pdf: $(images)
 
 %.eps : %.png
-	$(CONVERT) -resize 50% `test -f '$<' || echo '$(srcdir)/'`$< $@
-
-%.pdf : %.eps
-	$(EPSTOPDF) `test -f '$<' || echo '$(srcdir)/'`$< --outfile=$@
+	$(CONVERT) `test -f '$<' || echo '$(srcdir)/'`$< $@

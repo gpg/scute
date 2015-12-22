@@ -481,12 +481,12 @@ the preferences configuration dialog, you should select the
 @code{Advanced} configuration section, then the @code{Security} tab, and
 then select @code{Security Devices} in the category @code{Certificates}.
 
-@image{firefox-pref}
+@center @image{firefox-pref,13cm}
 
 In the devices manager dialog, you can select @code{Load} to load a new
 PKCS #11 device.
 
-@image{firefox-dm-load-before}
+@center @image{firefox-dm-load-before,13cm}
 
 In the pop-up dialog that follows, you can give a module name
 (e.g. ``@code{Scute}'') and a module filename.  The latter should
@@ -497,14 +497,14 @@ file name @file{/usr/local/lib/scute.so}.  If you or your system
 administrator installed Scute in a different location, you have to
 adjust the file name correspondingly.
 
-@image{firefox-dm-load}
+@center @image{firefox-dm-load,8cm}
 
 After confirming installation of the security device, a pop-up window
 should confirm that the module was successfully loaded, and an entry for
 the security device should appear in the device manager list of
 @code{Security Modules and Devices}.
 
-@image{firefox-dm-load-after}
+@center @image{firefox-dm-load-after,15cm}
 
 When you insert the OpenPGP card for which you generated and imported a
 certificate earlier (see @ref{Certificate Preparation}), the device
@@ -512,7 +512,7 @@ manager should detect this security token and display some information
 about it in the @code{Details} list when you select it from the module
 list.
 
-@image{firefox-dm-token-present}
+@center @image{firefox-dm-token-present,15cm}
 
 FIXME: Add some documentation and screenshots for the certificate
 manager.
