@@ -64,6 +64,7 @@ main (int argc, char *argv[])
       CK_TOKEN_INFO info;
 
       err = C_GetTokenInfo (slots[i], &info);
+      fail_if_err (err);
 
       printf ("%2i. Slot ID %lu\n", i, slots[i]);
 

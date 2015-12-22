@@ -538,15 +538,11 @@ agent_configure (assuan_context_t ctx)
   if (dft_pinentry_user_data)
     err = agent_simple_cmd (ctx, "OPTION pinentry_user_data=%s",
 	                    dft_pinentry_user_data);
-  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
-    err = 0;
-  else if (err)
+  if (err && gpg_err_code (err) != GPG_ERR_UNKNOWN_OPTION)
     return err;
 
   err = agent_simple_cmd (ctx, "OPTION allow-pinentry-notify");
-  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
-    err = 0;
-  else if (err)
+  if (err && gpg_err_code (err) != GPG_ERR_UNKNOWN_OPTION)
     return err;
 
   err = assuan_transact (ctx, "GETINFO version",
@@ -652,7 +648,6 @@ unhexify_fpr (const char *hexstr, unsigned char *fpr)
   if ((*src && !spacep (src)) || (cnt != 40))
     return 0;
 
-  cnt /= 2;
   for (src = hexstr, cnt = 0; *src && !spacep (src); src += 2, cnt++)
     fpr[cnt] = xtoi_2 (src);
 
@@ -1104,7 +1099,6 @@ gpg_error_t
 get_cert_data_cb (void *opaque, const void *data, size_t data_len)
 {
   struct get_cert_s *cert_s = opaque;
-  gpg_error_t err;
   int needed_size;
 
   needed_size = cert_s->cert_der_len + data_len;

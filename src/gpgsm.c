@@ -89,7 +89,7 @@ search_cb (void *hook, struct cert *cert)
      might still be able to proceed, for example with client
      authentication.  */
   if (ctx->with_chain && strcmp (cert->chain_id, cert->fpr))
-    err = scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
+    scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
   err = scute_attr_cert (cert, &attrp, &attr_countp);
