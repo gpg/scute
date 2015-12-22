@@ -514,8 +514,10 @@ list.
 
 @center @image{firefox-dm-token-present,15cm}
 
-FIXME: Add some documentation and screenshots for the certificate
-manager.
+The client certificate will show up in the @code{Certificate Manager}
+under @code{Your Certificates}:
+
+@center @image{firefox-cm,13cm}
 
 @node Authentication With Service
 @section Authentication With Service
