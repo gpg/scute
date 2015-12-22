@@ -410,10 +410,10 @@ then create a certificate and send it back to you.
 
 If, for example, you use the CA @uref{http://www.cacert.org, CAcert},
 then you can log into your account at the CAcert website, choose
-``FIXME'', check ``FIXME'', paste the above request block into the text
-field and click on ``Submit''.  If everything works correctly, a
-certificate will be shown, which you can cut and paste into a new file
-@file{floppy-head.crt}.
+``Client Certificates -> New'', check ``Show advanced options'', paste
+the above request block into the text field and click on ``Submit''.
+If everything works correctly, a certificate will be shown, which you
+can cut and paste into a new file @file{floppy-head.crt}.
 
 Alternatively if, for example, you set up your own CA with OpenSSL, then
 you can create your own certificate by issueing a command similar
@@ -550,7 +550,7 @@ the @code{Try Again} button does not work as expected:
 
 @center @image{firefox-bad-pin,11cm}
 
-FIXME: Document possible error codes.
+@comment FIXME: Document possible error codes.
 
 
 @node Troubleshooting
@@ -583,7 +583,7 @@ displayed in the certificate manager of Firefox.
 @strong{Solution:} Make sure that the corresponding certificate is
 imported in GPGSM.
 
-FIXME: Can this really happen???
+@comment FIXME: Can this really happen???
 
 
 @node Internals
