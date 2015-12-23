@@ -1042,6 +1042,75 @@ pksign_parse_result (const struct signature *sig,
   return 0;
 }
 
+/* Decodes the hash DATA of size LEN (if necessary).  Returns a
+   pointer to the raw hash data in R_DATA, the size in R_LEN, and the
+   name of the hash function in R_HASH.
+
+   Prior to TLSv1.2, the hash function was the concatenation of MD5
+   and SHA1 applied to the data respectively, and no encoding was
+   applied.  From TLSv1.2 on, the hash value is prefixed with an hash
+   identifier and encoded using ASN1.
+
+   FIXME: Reference.  */
+static gpg_error_t
+decode_hash (const unsigned char *data, int len,
+             const unsigned char **r_data, size_t *r_len,
+             const char **r_hash)
+{
+  static unsigned char rmd160_prefix[15] = /* Object ID is 1.3.36.3.2.1 */
+    { 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x24, 0x03,
+      0x02, 0x01, 0x05, 0x00, 0x04, 0x14  };
+  static unsigned char sha1_prefix[15] =   /* (1.3.14.3.2.26) */
+    { 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03,
+      0x02, 0x1a, 0x05, 0x00, 0x04, 0x14  };
+  static unsigned char sha224_prefix[19] = /* (2.16.840.1.101.3.4.2.4) */
+    { 0x30, 0x2D, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48,
+      0x01, 0x65, 0x03, 0x04, 0x02, 0x04, 0x05, 0x00, 0x04,
+      0x1C  };
+  static unsigned char sha256_prefix[19] = /* (2.16.840.1.101.3.4.2.1) */
+    { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+      0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05,
+      0x00, 0x04, 0x20  };
+  static unsigned char sha384_prefix[19] = /* (2.16.840.1.101.3.4.2.2) */
+    { 0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+      0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05,
+      0x00, 0x04, 0x30  };
+  static unsigned char sha512_prefix[19] = /* (2.16.840.1.101.3.4.2.3) */
+    { 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+      0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05,
+      0x00, 0x04, 0x40  };
+
+#define HANDLE(hash,hashlen)                                            \
+  if (len == sizeof hash ## _prefix + (hashlen)                         \
+      && !memcmp (data, hash ## _prefix, sizeof hash ## _prefix))       \
+    {                                                                   \
+      *r_data = data + sizeof hash ## _prefix;                          \
+      *r_len = hashlen;                                                 \
+      *r_hash = #hash;                                                  \
+    }
+
+  if (len == 36)
+    {
+      /* Prior to TLSv1.2, a combination of MD5 and SHA1 was used.  */
+      *r_data = data;
+      *r_len = 36;
+      *r_hash = "tls-md5sha1";
+    }
+      /* TLSv1.2 encodes the hash value using ASN1.  */
+  else HANDLE (sha1,   20)
+  else HANDLE (rmd160, 20)
+  else HANDLE (sha224, 28)
+  else HANDLE (sha256, 32)
+  else HANDLE (sha384, 48)
+  else HANDLE (sha512, 64)
+    else
+      return gpg_error (GPG_ERR_INV_ARG);
+
+#undef HANDLE
+
+  return 0;
+}
+
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
 scute_agent_sign (char *grip, unsigned char *data, int len,
@@ -1049,7 +1118,10 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
 {
   char cmd[150];
   gpg_error_t err;
-#define MAX_DATA_LEN 36
+  const char *hash;
+  const unsigned char *raw_data;
+  size_t raw_len;
+#define MAX_DATA_LEN	64	/* Size of an SHA512 sum.  */
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
   struct signature sig;
@@ -1059,15 +1131,15 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (sig_len == NULL)
     return gpg_error (GPG_ERR_INV_ARG);
 
+  err = decode_hash (data, len, &raw_data, &raw_len, &hash);
+  if (err)
+    return err;
+
   if (sig_result == NULL)
     {
-      /* FIXME:  We return the largest supported size - is that correct?  */
-      *sig_len = MAX_SIGNATURE_BITS / 8;
+      *sig_len = raw_len;
       return 0;
     }
-
-  if (len > MAX_DATA_LEN)
-    return gpg_error (GPG_ERR_INV_ARG);
 
   if (grip == NULL || sig_result == NULL)
     return gpg_error (GPG_ERR_INV_ARG);
@@ -1078,11 +1150,11 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (err)
     return err;
 
-  for (i = 0; i < len; i++)
-    snprintf (&pretty_data[2 * i], 3, "%02X", data[i]);
-  pretty_data[2 * len] = '\0';
+  for (i = 0; i < raw_len; i++)
+    snprintf (&pretty_data[2 * i], 3, "%02X", raw_data[i]);
+  pretty_data[2 * raw_len] = '\0';
 
-  snprintf (cmd, sizeof (cmd), "SETHASH --hash=tls-md5sha1 %s", pretty_data);
+  snprintf (cmd, sizeof (cmd), "SETHASH --hash=%s %s", hash, pretty_data);
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
   if (err)
