@@ -105,7 +105,7 @@ main (int argc, char *argv[])
   if (slots_count == 0)
     {
       printf ("Skipping test because no token is present.\n");
-      return 0;
+      return 77;
     }
 
   printf ("Number of slots with tokens: %lu\n", slots_count);

@@ -37,5 +37,5 @@ TESTS = t-link t-getfunctionlist t-initialize t-getinfo t-getslotlist \
 
 noinst_PROGRAMS = $(TESTS)
 
-INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
 LDADD = ../src/scute.la
