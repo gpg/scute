@@ -41,5 +41,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateKeyPair)
       CK_ULONG ulPrivateKeyAttributeCount,
       CK_OBJECT_HANDLE_PTR phPublicKey, CK_OBJECT_HANDLE_PTR phPrivateKey)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) pPublicKeyTemplate;
+  (void) ulPublicKeyAttributeCount;
+  (void) pPrivateKeyTemplate;
+  (void) ulPrivateKeyAttributeCount;
+  (void) phPublicKey;
+  (void) phPrivateKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

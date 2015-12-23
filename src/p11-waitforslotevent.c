@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_WaitForSlotEvent)
      (CK_FLAGS flags, CK_SLOT_ID_PTR pSlot, CK_VOID_PTR pReserved)
 {
   /* See the TODO file why this is not implemented.  */
+  (void) flags;
+  (void) pSlot;
+  (void) pReserved;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

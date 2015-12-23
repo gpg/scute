@@ -40,5 +40,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_UnwrapKey)
       CK_ULONG ulWrappedKeyLen, CK_ATTRIBUTE_PTR pTemplate,
       CK_ULONG ulAttributeCount, CK_OBJECT_HANDLE_PTR phKey)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) hUnwrappingKey;
+  (void) pWrappedKey;
+  (void) ulWrappedKeyLen;
+  (void) pTemplate;
+  (void) ulAttributeCount;
+  (void) phKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

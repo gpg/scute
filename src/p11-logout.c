@@ -37,5 +37,6 @@
 CK_DEFINE_FUNCTION(CK_RV, C_Logout)
      (CK_SESSION_HANDLE hSession)
 {
+  (void) hSession;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

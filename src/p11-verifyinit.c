@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_VerifyInit)
      (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
       CK_OBJECT_HANDLE hKey)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) hKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

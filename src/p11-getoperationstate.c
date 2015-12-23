@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetOperationState)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState,
       CK_ULONG_PTR pulOperationStateLen)
 {
+  (void) hSession;
+  (void) pOperationState;
+  (void) pulOperationStateLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

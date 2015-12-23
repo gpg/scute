@@ -39,5 +39,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_DeriveKey)
       CK_OBJECT_HANDLE hBaseKey, CK_ATTRIBUTE_PTR pTemplate,
       CK_ULONG ulAttributeCount, CK_OBJECT_HANDLE_PTR phKey)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) hBaseKey;
+  (void) pTemplate;
+  (void) ulAttributeCount;
+  (void) phKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

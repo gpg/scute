@@ -38,5 +38,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)
      (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject)
 {
   /* FIXME: Implement this.  */
+  (void) hSession;
+  (void) hObject;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

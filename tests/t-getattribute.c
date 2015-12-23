@@ -535,6 +535,9 @@ main (int argc, char *argv[])
   CK_ULONG slots_count;
   unsigned int i;
 
+  (void) argc;
+  (void) argv;
+
   if (argc > 1 && !strcmp ("--printable", argv[1]))
     printable = true;
     

@@ -39,5 +39,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)
       CK_ULONG ulRandomLen)
 {
   /* FIXME: Implement me.  */
+  (void) hSession;
+  (void) pRandomData;
+  (void) ulRandomLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

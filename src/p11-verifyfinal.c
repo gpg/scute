@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_VerifyFinal)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature,
       CK_ULONG ulSignatureLen)
 {
+  (void) hSession;
+  (void) pSignature;
+  (void) ulSignatureLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

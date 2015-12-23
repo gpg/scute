@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_EncryptFinal)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pLastEncryptedPart,
       CK_ULONG_PTR pulLastEncryptedPartLen)
 {
+  (void) hSession;
+  (void) pLastEncryptedPart;
+  (void) pulLastEncryptedPartLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

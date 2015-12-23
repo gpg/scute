@@ -39,5 +39,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_DecryptFinal)
       CK_ULONG_PTR pulLastPartLen)
 {
   /* FIXME: Implement this.  */
+  (void) hSession;
+  (void) pLastPart;
+  (void) pulLastPartLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

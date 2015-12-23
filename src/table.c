@@ -292,6 +292,7 @@ scute_table_next (scute_table_t table, int index)
 bool
 scute_table_last (scute_table_t table, int index)
 {
+  (void) table;
   return INDEX_COPY_IN (index) == INDEX_EOT;
 }
 

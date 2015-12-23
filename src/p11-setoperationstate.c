@@ -39,5 +39,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_SetOperationState)
       CK_ULONG ulOperationStateLen, CK_OBJECT_HANDLE hEncryptionKey,
       CK_OBJECT_HANDLE hAuthenticationKey)
 {
+  (void) hSession;
+  (void) pOperationState;
+  (void) ulOperationStateLen;
+  (void) hEncryptionKey;
+  (void) hAuthenticationKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

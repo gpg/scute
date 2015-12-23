@@ -39,5 +39,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_WrapKey)
       CK_OBJECT_HANDLE hWrappingKey, CK_OBJECT_HANDLE hKey,
       CK_BYTE_PTR pWrappedKey, CK_ULONG_PTR pulWrappedKeyLen)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) hWrappingKey;
+  (void) hKey;
+  (void) pWrappedKey;
+  (void) pulWrappedKeyLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

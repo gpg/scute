@@ -194,6 +194,8 @@ object_alloc (void **data_r, void *hook)
 {
   struct object *object;
 
+  (void) hook;
+
   object = calloc (1, sizeof (*object));
   if (object == NULL)
     return gpg_error_from_syserror ();
@@ -220,6 +222,8 @@ static gpg_error_t
 session_alloc (void **data_r, void *hook)
 {
   struct session *session;
+
+  (void) hook;
 
   session = calloc (1, sizeof (*session));
   if (session == NULL)
@@ -254,6 +258,8 @@ slot_alloc (void **data_r, void *hook)
   struct slot *slot;
   int idx;
   CK_FLAGS flags;
+
+  (void) hook;
 
   slot = calloc (1, sizeof (*slot));
   if (slot == NULL)
@@ -579,6 +585,7 @@ slot_token_manufacturer (slot_iterator_t id)
 char *
 slot_token_application (slot_iterator_t id)
 {
+  (void) id;
   /* slots_update() makes sure this is correct.  */
   return "OpenPGP";
 }

@@ -38,5 +38,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Digest)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
       CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen)
 {
+  (void) hSession;
+  (void) pData;
+  (void) ulDataLen;
+  (void) pDigest;
+  (void) pulDigestLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

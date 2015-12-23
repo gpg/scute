@@ -38,5 +38,9 @@ CK_DEFINE_FUNCTION(CK_RV, C_InitToken)
      (CK_SLOT_ID slotID, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen,
       CK_UTF8CHAR_PTR pLabel)
 {
+  (void) slotID;
+  (void) pPin;
+  (void) ulPinLen;
+  (void) pLabel;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

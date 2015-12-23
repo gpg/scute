@@ -38,5 +38,9 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)
      (CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate,
       CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR phObject)
 {
+  (void) hSession;
+  (void) pTemplate;
+  (void) ulCount;
+  (void) phObject;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

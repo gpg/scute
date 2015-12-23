@@ -42,6 +42,9 @@ main (int argc, char *argv[])
   CK_ULONG slots_count;
   unsigned int i;
 
+  (void) argc;
+  (void) argv;
+
   init_cryptoki ();
 
   err = C_GetSlotList (true, NULL, &slots_count);

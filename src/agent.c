@@ -432,7 +432,9 @@ read_version_cb (void *opaque, const void *buffer, size_t length)
 {
   char version[20];
   const char *s;
-  
+
+  (void) opaque;
+
   if (length > sizeof (version) -1)
     length = sizeof (version) - 1;
   strncpy (version, buffer, length);

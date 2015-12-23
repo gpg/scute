@@ -36,6 +36,9 @@
 int
 main (int argc, char *argv[])
 {
+  (void) argc;
+  (void) argv;
+
   /* We don't do anything useful.  We just print a list of function
      pointers to avoid elimination of dead code.  */
   DO_ONE (C_CancelFunction);

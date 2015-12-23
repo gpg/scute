@@ -37,5 +37,7 @@
 CK_DEFINE_FUNCTION(CK_RV, C_DigestInit)
      (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism)
 {
+  (void) hSession;
+  (void) pMechanism;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

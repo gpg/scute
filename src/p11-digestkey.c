@@ -37,5 +37,7 @@
 CK_DEFINE_FUNCTION(CK_RV, C_DigestKey)
      (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)
 {
+  (void) hSession;
+  (void) hKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

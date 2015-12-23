@@ -39,5 +39,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)
       CK_ULONG ulEncryptedDataLen, CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
 {
   /* FIXME: Implement this.  */
+  (void) hSession;
+  (void) pEncryptedData;
+  (void) ulEncryptedDataLen;
+  (void) pData;
+  (void) pulDataLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

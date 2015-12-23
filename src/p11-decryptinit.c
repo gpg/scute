@@ -39,5 +39,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_DecryptInit)
       CK_OBJECT_HANDLE hKey)
 {
   /* FIXME: Implement this.  */
+  (void) hSession;
+  (void) pMechanism;
+  (void) hKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

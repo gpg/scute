@@ -38,5 +38,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_VerifyRecover)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature,
       CK_ULONG ulSignatureLen, CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
 {
+  (void) hSession;
+  (void) pSignature;
+  (void) ulSignatureLen;
+  (void) pData;
+  (void) pulDataLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

@@ -38,5 +38,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
       CK_BYTE_PTR pEncryptedData, CK_ULONG_PTR pulEncryptedDataLen)
 {
+  (void) hSession;
+  (void) pData;
+  (void) ulDataLen;
+  (void) pEncryptedData;
+  (void) pulEncryptedDataLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

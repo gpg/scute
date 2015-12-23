@@ -37,6 +37,9 @@ main (int argc, char *argv[])
 {
   CK_RV err;
 
+  (void) argc;
+  (void) argv;
+
   init_cryptoki ();
 
   err = C_Finalize (NULL);

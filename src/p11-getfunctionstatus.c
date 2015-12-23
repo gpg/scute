@@ -36,5 +36,6 @@
 
 CK_DEFINE_FUNCTION(CK_RV, C_GetFunctionStatus) (CK_SESSION_HANDLE hSession)
 {
+  (void) hSession;
   return CKR_FUNCTION_NOT_PARALLEL;
 }

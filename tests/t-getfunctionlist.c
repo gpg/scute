@@ -43,6 +43,9 @@ main (int argc, char *argv[])
 {
   CK_RV err;
 
+  (void) argc;
+  (void) argv;
+
   /* This is the only function that can be called without
      initialization.  */
   err = C_GetFunctionList (&fl);

@@ -39,5 +39,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateKey)
       CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount,
       CK_OBJECT_HANDLE_PTR phKey)
 {
+  (void) hSession;
+  (void) pMechanism;
+  (void) pTemplate;
+  (void) ulCount;
+  (void) phKey;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

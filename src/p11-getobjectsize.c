@@ -38,5 +38,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetObjectSize)
      (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,
       CK_ULONG_PTR pulSize)
 {
+  (void) hSession;
+  (void) hObject;
+  (void) pulSize;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

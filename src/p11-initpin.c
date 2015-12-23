@@ -37,5 +37,8 @@
 CK_DEFINE_FUNCTION(CK_RV, C_InitPIN)
      (CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
 {
+  (void) hSession;
+  (void) pPin;
+  (void) ulPinLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

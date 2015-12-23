@@ -38,6 +38,9 @@ main (int argc, char *argv[])
   CK_RV err;
   CK_INFO info;
 
+  (void) argc;
+  (void) argv;
+
   init_cryptoki ();
 
   err = C_GetInfo (&info);

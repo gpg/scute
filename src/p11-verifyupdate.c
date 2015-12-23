@@ -37,5 +37,8 @@
 CK_DEFINE_FUNCTION(CK_RV, C_VerifyUpdate)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
 {
+  (void) hSession;
+  (void) pPart;
+  (void) ulPartLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

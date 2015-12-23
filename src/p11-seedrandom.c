@@ -37,5 +37,8 @@
 CK_DEFINE_FUNCTION(CK_RV, C_SeedRandom)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSeed, CK_ULONG ulSeedLen)
 {
+  (void) hSession;
+  (void) pSeed;
+  (void) ulSeedLen;
   return CKR_FUNCTION_NOT_SUPPORTED;
 }
