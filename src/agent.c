@@ -951,6 +951,9 @@ scute_agent_check_status (void)
 }
 
 
+/* We only support RSA signatures up to 2048 bits.  */
+#define MAX_SIGNATURE_BITS 2048
+
 /* Enough space to hold a 2048 bit RSA signature in an S-expression.  */
 #define MAX_SIGNATURE_LEN 350
 
@@ -1006,7 +1009,7 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (sig_result == NULL)
     {
       /* FIXME:  We return the largest supported size - is that correct?  */
-      *sig_len = SIG_LEN_2;
+      *sig_len = MAX_SIGNATURE_BITS / 8;
       return 0;
     }
 
