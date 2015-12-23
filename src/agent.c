@@ -1,5 +1,5 @@
 /* agent.c - Talking to gpg-agent.
-   Copyright (C) 2006, 2007, 2008 g10 Code GmbH
+   Copyright (C) 2006, 2007, 2008, 2015 g10 Code GmbH
 
    This file is part of Scute.
  
@@ -51,6 +51,7 @@
 
 #include "debug.h"
 #include "support.h"
+#include "sexp-parse.h"
 #include "cert.h"
 #include "agent.h"
 
@@ -980,14 +981,66 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
   return 0;
 }
 
+/* Parse the result of an pksign operation which is a s-expression in
+   normal form that looks like (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>))).
+   The raw result is stored in RESULT of size *LEN, and *LEN is
+   adjusted to the actual size.  */
+static gpg_error_t
+pksign_parse_result (const struct signature *sig,
+                     unsigned char *result, unsigned int *len)
+{
+  gpg_error_t err;
+  const unsigned char *s = sig->data;
+  size_t n;
+  int depth;
 
-#define SIG_PREFIX   "(7:sig-val(3:rsa(1:s128:"
-#define SIG_PREFIX_2 "(7:sig-val(3:rsa(1:s256:"
-#define SIG_PREFIX_LEN (sizeof (SIG_PREFIX) - 1)
-#define SIG_POSTFIX ")))"
-#define SIG_POSTFIX_LEN (sizeof (SIG_POSTFIX) - 1)
-#define SIG_LEN 128
-#define SIG_LEN_2 256
+  if (*s++ != '(')
+    gpg_error (GPG_ERR_INV_SEXP);
+
+  n = snext (&s);
+  if (! n)
+    return gpg_error (GPG_ERR_INV_SEXP);
+  if (! smatch (&s, n, "sig-val"))
+    return gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+  if (*s++ != '(')
+    gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+  n = snext (&s);
+  if (! n)
+    return gpg_error (GPG_ERR_INV_SEXP);
+  if (! smatch (&s, n, "rsa"))
+    return gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+  if (*s++ != '(')
+    gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+  n = snext (&s);
+  if (! n)
+    return gpg_error (GPG_ERR_INV_SEXP);
+  if (! smatch (&s, n, "s"))
+    return gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+  n = snext (&s);
+  if (! n)
+    return gpg_error (GPG_ERR_INV_SEXP);
+
+  if (*len < (unsigned int) n)
+    return gpg_error (GPG_ERR_INV_LENGTH);
+
+  *len = (unsigned int) n;
+  memcpy (result, s, n);
+  s += n;
+
+  depth = 3;
+  err = sskip (&s, &depth);
+  if (err)
+    return err;
+  if (s - sig->data != sig->len || depth != 0)
+    return gpg_error (GPG_ERR_INV_SEXP);
+
+  return 0;
+}
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
@@ -1016,7 +1069,7 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (len > MAX_DATA_LEN)
     return gpg_error (GPG_ERR_INV_ARG);
 
-  if (grip == NULL || sig_result == NULL || *sig_len < SIG_LEN)
+  if (grip == NULL || sig_result == NULL)
     return gpg_error (GPG_ERR_INV_ARG);
 
   snprintf (cmd, sizeof (cmd), "SIGKEY %s", grip);
@@ -1040,32 +1093,8 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
   if (err)
     return err;
 
-  /* FIXME: we need a real parser to cope with all kind of S-expressions.  */
-  if (sig.len == SIG_PREFIX_LEN + SIG_LEN_2 + SIG_POSTFIX_LEN)
-    {
-      if (memcmp (sig.data, SIG_PREFIX_2, SIG_PREFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
-                  SIG_POSTFIX, SIG_POSTFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN_2);
-      *sig_len = SIG_LEN_2;
-    }
-  else
-    {
-      if (sig.len != SIG_PREFIX_LEN + SIG_LEN + SIG_POSTFIX_LEN)
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data, SIG_PREFIX, SIG_PREFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      if (memcmp (sig.data + sig.len - SIG_POSTFIX_LEN,
-                  SIG_POSTFIX, SIG_POSTFIX_LEN))
-        return gpg_error (GPG_ERR_BAD_SIGNATURE);
-      memcpy (sig_result, sig.data + SIG_PREFIX_LEN, SIG_LEN);
-      *sig_len = SIG_LEN;
-    }
-  
-  
-  return 0;
+  err = pksign_parse_result (&sig, sig_result, sig_len);
+  return err;
 }
 
 
