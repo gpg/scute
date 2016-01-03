@@ -58,7 +58,7 @@ sources = cryptoki.h pkcs11.h debug.c debug.h settings.h support.h	\
 	p11-signrecover.c p11-signrecoverinit.c	p11-signupdate.c	\
 	p11-unwrapkey.c p11-verify.c p11-verifyfinal.c p11-verifyinit.c	\
 	p11-verifyrecover.c p11-verifyrecoverinit.c p11-verifyupdate.c	\
-	p11-waitforslotevent.c p11-wrapkey.c
+	p11-waitforslotevent.c p11-wrapkey.c sexp-parse.h
 
 
 if HAVE_LD_VERSION_SCRIPT
