@@ -27,6 +27,8 @@
 ; not obligated to do so.  If you do not wish to do so, delete this
 ; exception statement from your version.
 
+LIBRARY scute.dll
+
 EXPORTS
     C_CancelFunction			@1
     C_CloseAllSessions			@2

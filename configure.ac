@@ -28,8 +28,8 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
-min_automake_version="1.9.3"
+AC_PREREQ(2.61)
+min_automake_version="1.14"
 
 # To build a release you need to create a tag with the version number
 # (git tag -s scute-1.n.m) and run "./autogen.sh --force".  Please
@@ -80,7 +80,12 @@ NEED_GPGSM_VERSION=1.9.6
 have_gpg_error=no
 have_libassuan=no
 
-BUILD_REVISION=svn_revision
+#
+# Provide information about the build.
+#
+BUILD_REVISION="mym4_revision"
+BUILD_REVISION_DEC="mym4_revision_dec"
+
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
@@ -250,9 +255,10 @@ if test "$have_w32_system" = yes; then
     changequote(,)dnl 
     BUILD_FILEVERSION=`echo "$VERSION" | sed 's/\([0-9.]*\).*/\1./;s/\./,/g'`
     changequote([,])dnl
-    BUILD_FILEVERSION="${BUILD_FILEVERSION}${BUILD_REVISION}"
+    BUILD_FILEVERSION="${BUILD_FILEVERSION}${BUILD_REVISION_DEC}"
 fi
 AC_SUBST(BUILD_REVISION)
+AC_SUBST(BUILD_REVISION_DEC)
 AC_SUBST(BUILD_TIMESTAMP)
 AC_SUBST(BUILD_FILEVERSION)
 
@@ -467,3 +473,10 @@ AC_CONFIG_FILES([Makefile
 		 doc/Makefile
                  src/versioninfo.rc])
 AC_OUTPUT
+
+echo "
+        Scute v${VERSION} has been configured as follows:
+
+        Revision: mym4_revision  (mym4_revision_dec)
+        Platform: $host
+"
