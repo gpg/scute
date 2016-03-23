@@ -1026,7 +1026,7 @@ pksign_parse_result (const struct signature *sig,
     return gpg_error (GPG_ERR_INV_SEXP);
 
   /* Remove nul byte prepended by gpg-agent. */
-  if (*s == 0)
+  if (!*s && n > 1)
     {
       n -= 1;
       s += 1;
