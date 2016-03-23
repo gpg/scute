@@ -1007,7 +1007,6 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
   struct slot *slot = scute_table_data (slots, id);
-  struct session *session = scute_table_data (slot->sessions, sid);
   gpg_error_t err;
   unsigned int sig_len;
 
