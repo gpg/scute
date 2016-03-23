@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2007, 2008, 2015 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -66,7 +66,7 @@ static int agent_version_minor;
 
 
 /* Hack required for Windows.  */
-void 
+void
 gnupg_allow_set_foregound_window (pid_t pid)
 {
   if (!pid || pid == (pid_t)(-1))
@@ -112,7 +112,7 @@ build_w32_commandline_copy (char *buffer, const char *string)
 /* Build a command line for use with W32's CreateProcess.  On success
    CMDLINE gets the address of a newly allocated string.  */
 static gpg_error_t
-build_w32_commandline (const char *pgmname, const char * const *argv, 
+build_w32_commandline (const char *pgmname, const char * const *argv,
                        char **cmdline)
 {
   int i, n;
@@ -140,7 +140,7 @@ build_w32_commandline (const char *pgmname, const char * const *argv,
     return gpg_error_from_syserror ();
 
   p = build_w32_commandline_copy (p, pgmname);
-  for (i=0; argv[i]; i++) 
+  for (i=0; argv[i]; i++)
     {
       *p++ = ' ';
       p = build_w32_commandline_copy (p, argv[i]);
@@ -162,7 +162,7 @@ spawn_process_detached (const char *pgmname, const char *argv[])
 {
   gpg_error_t err;
   SECURITY_ATTRIBUTES sec_attr;
-  PROCESS_INFORMATION pi = 
+  PROCESS_INFORMATION pi =
     {
       NULL,      /* Returns process handle.  */
       0,         /* Returns primary thread handle.  */
@@ -180,11 +180,11 @@ spawn_process_detached (const char *pgmname, const char *argv[])
   memset (&sec_attr, 0, sizeof sec_attr );
   sec_attr.nLength = sizeof sec_attr;
   sec_attr.bInheritHandle = FALSE;
-  
+
   /* Build the command line.  */
   err = build_w32_commandline (pgmname, argv, &cmdline);
   if (err)
-    return err; 
+    return err;
 
   /* Start the process.  */
   memset (&si, 0, sizeof si);
@@ -195,7 +195,7 @@ spawn_process_detached (const char *pgmname, const char *argv[])
   cr_flags = (CREATE_DEFAULT_ERROR_MODE
               | GetPriorityClass (GetCurrentProcess ())
               | CREATE_NEW_PROCESS_GROUP
-              | DETACHED_PROCESS); 
+              | DETACHED_PROCESS);
   DEBUG (DBG_INFO, "CreateProcess(detached), path=`%s' cmdline=`%s'\n",
 	 pgmname, cmdline);
   if (!CreateProcess (pgmname,       /* Program to start.  */
@@ -222,7 +222,7 @@ spawn_process_detached (const char *pgmname, const char *argv[])
 	 " dwProcessID=%d dwThreadId=%d\n", pi.hProcess, pi.hThread,
 	 (int) pi.dwProcessId, (int) pi.dwThreadId);
 
-  CloseHandle (pi.hThread); 
+  CloseHandle (pi.hThread);
 
   return 0;
 }
@@ -281,8 +281,8 @@ agent_connect (assuan_context_t *ctx_r)
             const char *argv[3];
 
             argv[0] = "--daemon";
-            argv[1] = "--use-standard-socket"; 
-            argv[2] = NULL;  
+            argv[1] = "--use-standard-socket";
+            argv[2] = NULL;
 
             err = spawn_process_detached (agent_program, argv);
             if (err)
@@ -307,15 +307,15 @@ agent_connect (assuan_context_t *ctx_r)
               pgmname = agent_program;
             else
               pgmname++;
-            
+
             argv[0] = pgmname;
             argv[1] = "--server";
             argv[2] = NULL;
-            
+
             i=0;
             no_close_list[i++] = assuan_fd_from_posix_fd (fileno (stderr));
             no_close_list[i] = -1;
-            
+
             /* Connect to the agent and perform initial handshaking. */
             err = assuan_pipe_connect (ctx, agent_program, argv,
 				       no_close_list, NULL, NULL, 0);
@@ -354,7 +354,7 @@ agent_connect (assuan_context_t *ctx_r)
 	  force_pipe_server = 1;
 	  goto restart;
 	}
-      
+
       err = assuan_socket_connect (ctx, infostr, pid, 0);
       free (infostr);
       if (err)
@@ -401,7 +401,7 @@ default_inq_cb (void *opaque, const char *line)
 
 
 /* Send a simple command to the agent.  */
-static gpg_error_t 
+static gpg_error_t
 agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
 {
   gpg_error_t err;
@@ -422,7 +422,7 @@ agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
     DEBUG (DBG_CRIT, "gpg-agent command '%s' failed: %s", optstr,
 	   gpg_strerror (err));
   free (optstr);
-      
+
   return err;
 }
 
@@ -447,7 +447,7 @@ read_version_cb (void *opaque, const void *buffer, size_t length)
 
   return 0;
 }
-  
+
 
 /* Configure the GPG agent at connection CTX.  */
 static gpg_error_t
@@ -614,7 +614,7 @@ unescape_status_string (const unsigned char *src)
   while (*src)
     {
       if (*src == '%' && src[1] && src[2])
-        { 
+        {
           src++;
           *dst = xtoi_2 (src);
           if (*dst == '\0')
@@ -630,7 +630,7 @@ unescape_status_string (const unsigned char *src)
       else
         *(dst++) = *(src++);
     }
-  *dst = 0; 
+  *dst = 0;
 
   return buffer;
 }
@@ -892,7 +892,7 @@ geteventcounter_status_cb (void *opaque, const char *line)
           last_count = count;
         }
     }
-  
+
   return 0;
 }
 

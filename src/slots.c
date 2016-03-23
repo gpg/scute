@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -464,7 +464,7 @@ slots_update (void)
 
       err = slots_update_slot (id);
       if (err)
-	return err;    
+	return err;
 
       id = scute_table_next (slots, id);
     }
@@ -1029,6 +1029,6 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   /* FIXME: Oh well.  */
   if (gpg_err_code (err) == GPG_ERR_INV_ARG)
     return CKR_BUFFER_TOO_SMALL;
-  
+
   return scute_gpg_err_to_ck (err);
 }
