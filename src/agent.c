@@ -1025,6 +1025,13 @@ pksign_parse_result (const struct signature *sig,
   if (! n)
     return gpg_error (GPG_ERR_INV_SEXP);
 
+  /* Remove nul byte prepended by gpg-agent. */
+  if (*s == 0)
+    {
+      n -= 1;
+      s += 1;
+    }
+
   if (*len < (unsigned int) n)
     return gpg_error (GPG_ERR_INV_LENGTH);
 
