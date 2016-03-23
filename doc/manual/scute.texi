@@ -241,7 +241,7 @@ following packages at build time:
 @table @code
 @item libgpg-error
 Scute uses the GnuPG 2.0 framework for error handling, so it depends on
-the GPG error library.  The minimum version required is 1.4.
+the GPG error library.  The minimum version required is 1.14.
 
 @item libassuan
 Scute uses the GnuPG 2.0 framework for communication with the GPG Agent,
