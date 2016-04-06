@@ -113,4 +113,7 @@ gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted);
 /* Try to get certificate for key numer NO.  */
 gpg_error_t scute_agent_get_cert (int no, struct cert *cert);
 
+/* Get random bytes from the card. */
+gpg_error_t scute_agent_get_random (unsigned char *data, size_t len);
+
 #endif	/* AGENT_H */

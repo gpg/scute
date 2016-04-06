@@ -33,14 +33,32 @@
 
 #include "cryptoki.h"
 
+#include "locking.h"
+#include "slots.h"
+#include "agent.h"
+#include "error-mapping.h"
+
 
 CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)
      (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pRandomData,
       CK_ULONG ulRandomLen)
 {
-  /* FIXME: Implement me.  */
-  (void) hSession;
-  (void) pRandomData;
-  (void) ulRandomLen;
-  return CKR_FUNCTION_NOT_SUPPORTED;
+  CK_RV err;
+  slot_iterator_t slot;
+  session_iterator_t session;
+
+  if (pRandomData == NULL_PTR)
+    return CKR_ARGUMENTS_BAD;
+
+  err = scute_global_lock ();
+  if (err)
+    return err;
+
+  err = slots_lookup_session (hSession, &slot, &session);
+  if (!err)
+    err = scute_gpg_err_to_ck (scute_agent_get_random (pRandomData,
+                                                       ulRandomLen));
+
+  scute_global_unlock ();
+  return err;
 }

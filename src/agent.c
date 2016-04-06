@@ -1281,6 +1281,42 @@ scute_agent_get_cert (int no, struct cert *cert)
   return 0;
 }
 
+struct random_request
+{
+    unsigned char *buffer;
+    size_t len;
+};
+
+gpg_error_t
+get_challenge_data_cb (void *opaque, const void *line, size_t len)
+{
+  struct random_request *request = opaque;
+
+  if (len != request->len)
+    return gpg_error (GPG_ERR_INV_LENGTH);
+
+  memcpy (request->buffer, line, len);
+
+  return 0;
+}
+
+gpg_error_t
+scute_agent_get_random (unsigned char *data, size_t len)
+{
+    char command[16];
+    gpg_error_t err;
+    struct random_request request;
+
+    snprintf (command, sizeof(command), "SCD RANDOM %lu", len);
+
+    request.buffer = data;
+    request.len = len;
+    err = assuan_transact (agent_ctx, command, get_challenge_data_cb,
+                           &request, NULL, NULL, NULL, NULL);
+
+    return err;
+}
+
 
 void
 scute_agent_finalize (void)
