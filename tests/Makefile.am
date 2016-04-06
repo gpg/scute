@@ -33,7 +33,7 @@ noinst_HEADERS = t-support.h
 TESTS = t-link t-getfunctionlist t-initialize t-getinfo t-getslotlist \
 	t-getslotinfo t-gettokeninfo t-getmechanismlist t-getmechanisminfo \
 	t-opensession t-closeallsessions t-getsessioninfo \
-	t-findobjects t-getattribute t-auth
+	t-findobjects t-getattribute t-auth t-generaterandom
 
 noinst_PROGRAMS = $(TESTS)
 
