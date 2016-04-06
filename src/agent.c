@@ -846,6 +846,30 @@ learn_status_cb (void *opaque, const char *line)
 	    }
 	}
     }
+  else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
+    {
+      char *p, *p2, *buf;
+      int abool;
+
+      buf = p = unescape_status_string (line);
+      if (buf)
+        {
+          for (p = strtok (buf, " "); p; p = strtok (NULL, " "))
+            {
+              p2 = strchr (p, '=');
+              if (p2)
+                {
+                  *p2++ = 0;
+                  abool = (*p2 == '1');
+                  if (!strcmp (p, "gc"))
+                    parm->rng_available = abool;
+                  /* We're currently not interested in the
+                   * other capabilities. */
+                }
+            }
+          free (buf);
+        }
+    }
   return 0;
 }
 

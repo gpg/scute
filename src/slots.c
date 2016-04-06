@@ -657,6 +657,15 @@ slot_get_id (slot_iterator_t slot)
   return slot;
 }
 
+/* Return true if the token supports the GET CHALLENGE operation. */
+bool
+slot_token_has_rng (slot_iterator_t id)
+{
+  struct slot *slot = scute_table_data (slots, id);
+
+  return slot->info.rng_available;
+}
+
 
 /* Mechanism management.  */
 

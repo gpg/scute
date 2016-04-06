@@ -116,6 +116,9 @@ void slot_token_pincount (slot_iterator_t id, int *max, int *len);
 /* Return the ID of slot SLOT.  */
 CK_SLOT_ID slot_get_id (slot_iterator_t slot);
 
+/* Return true if the token supports the GET CHALLENGE operation. */
+bool slot_token_has_rng (slot_iterator_t id);
+
 
 /* Begin iterating over the list of mechanisms.  If succeeds, will be
    followed up by a slot_iterate_end.  */

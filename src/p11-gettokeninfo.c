@@ -72,8 +72,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetTokenInfo)
   pInfo->flags = CKF_TOKEN_INITIALIZED
     | CKF_PROTECTED_AUTHENTICATION_PATH | CKF_WRITE_PROTECTED
     | CKF_USER_PIN_INITIALIZED;
-  /* FIXME: Support this later: CKF_RNG.
-     FIXME: CKF_USER_PIN_INITIALIZED only if PIN is not default pin?
+
+  if (slot_token_has_rng (slot))
+    pInfo->flags |= CKF_RNG;
+
+  /* FIXME: CKF_USER_PIN_INITIALIZED only if PIN is not default pin?
      FIXME: CKF_LOGIN_REQUIRED needed?  We could implement login via
      the "SCD CHECKPIN" command.  I am not sure how this mixes with
      CKF_PROTECTED_AUTHENTICATION_PATH.

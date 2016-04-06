@@ -73,6 +73,8 @@ struct agent_card_info_s
   char grip1[41];
   char grip2[41];
   char grip3[41];
+  int rng_available;    /* True if the GET CHALLENGE operation
+                           is supported. */
 };
 
 
