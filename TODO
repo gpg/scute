@@ -13,7 +13,6 @@
 ** Windows: Find thread-safe replacement for localtime_r and timegm.
 
 * Missing features:
-** Implement random number generation function C_GenerateRandom.
 ** Add canonical gnupg logging module.
 ** Mozilla ignores the CKA_TRUSTED attribute to certificates, so
    exporting the information from GPGSM (ISTRUSTED) will not be

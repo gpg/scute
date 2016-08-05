@@ -710,11 +710,6 @@ Passphrase queries are implemented by the use of GPG Agent and Pinentry.
 @itemx C_VerifyRec
 Not supported.  Only secret key operations are supported.
 
-@item C_SignInit
-@itemx C_Sign
-Currently, only signing 36 bytes (MD5+SHA1) hashes is supported (used
-for client authentication).
-
 @item C_DecryptInit
 @itemx C_Decrypt
 Not yet supported, but will be in the future.
@@ -745,9 +740,7 @@ accompanying the GnuPG software suite to generate and import keys for
 use with the token.
 
 @item C_SeedRandom
-@itemx C_GenerateRandom
-Not supported at this point.  @code{C_GenerateRandom} may be supported
-in the future, though.
+Not supported.
 
 @item C_CreateObject
 @itemx C_CopyObject

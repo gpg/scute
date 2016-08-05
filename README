@@ -317,9 +317,6 @@ The following functions are not supported:
   C_VerifyRecoverInit, C_VerifyRec: Not supported.  Only secret key
   operations are supported.
 
-* C_SignInit, C_Sign: Currently, only signing 36 bytes
-  (MD5+SHA1) hashes is supported (used for client authentication).
-
 * C_DecryptInit, C_Decrypt: Not yet supported, but will be in the
   future.
 
@@ -337,8 +334,7 @@ The following functions are not supported:
   the tools accompanying the GnuPG software suite to generate and
   import keys for use with the token.
 
-* C_SeedRandom, C_GenerateRandom: Not supported at this point.
-  C_GenerateRandom may be supported in the future, though.
+* C_SeedRandom: Not supported.
 
 * C_CreateObject, C_CopyObject, C_DestroyObject, C_SetAttributeValue:
   Only read-only operations are supported on objects.
