@@ -258,14 +258,6 @@ configured:
 Scute uses the GnuPG 2.0 framework to access the OpenPGP card and for
 certificate management.  The minimum version required is 2.0.0.
 
-@strong{Caution:} A functional installation of GnuPG 2.0 requires a
-running GPG Agent process, which must be advertised to the applications
-via the @code{GPG_AGENT_INFO} environment variable.  Please make sure
-that you fulfill this requirement before using Scute in an application,
-running the Scute test suite, or preparing certificates as described in
-@ref{Certificate Preparation}.  @xref{Invoking GPG-AGENT, , , gnupg,
-Using the GNU Privacy Guard}, for details on how to run the GPG Agent.
-
 @item Pinentry
 Pinentry is a dependency of GnuPG 2.0, so it also needs to be installed
 with it.
