@@ -26,7 +26,8 @@ authentication with SSL in Mozilla.  See below for more details on how
 to get this working.
 
 Scute also allows you to sign emails with Thunderbird, using the
-S/MIME protocol.
+S/MIME protocol, and to sign OpenDocument and PDF files with
+LibreOffice.
 
 
 Prerequisites

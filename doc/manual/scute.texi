@@ -83,6 +83,7 @@ module.
 * Preparation::                   What you should do before using Scute.
 * Client Authentication::         How to use Scute for client authentication.
 * Email Signing::                 How to use Scute for S/MIME email signing.
+* Document Signing::              How to use Scute with LibreOffice.
 * Troubleshooting::               What to do when things go wrong.
 * Internals::                     Technical details about Scute.
 
@@ -117,6 +118,8 @@ Client Authentication
 * Authentication With Service::   Using Scute for client authentication.
 
 Email Signing
+
+Document Signing
 
 Troubleshooting
 
@@ -210,8 +213,8 @@ application and GnuPG 2.0.
 
 Currently supported usages are client authentication over HTTPS with
 Firefox (allowing users to authenticate themselves to a remote web
-service without entering their log-in information), and email signing
-with Thunderbird.
+service without entering their log-in information), email signing
+with Thunderbird, and document signing with LibreOffice.
 
 
 @node Preparation
@@ -572,6 +575,37 @@ and select @code{Digitally sign this message} in the popup menu.  You
 will be prompted for your User PIN before the message is sent.
 
 @center @image{thunderbird-smime-button,13cm}
+
+
+@node Document Signing
+@chapter Document Signing
+
+Scute can also be used with LibreOffice to sign OpenDocument files.
+
+First, you must load the Scute module into Mozilla Firefox according to
+the above procedure.  Then, configure LibreOffice to use Firefox's
+certificate store by defining the @code{MOZILLA_CERTIFICATE_FOLDER}
+environment variable to your Firefox profile directory.
+
+Then, to sign the document you are editing, select the
+@code{File->Digital Signatures...} menu option to open the
+@code{Digital Signatures} dialog.
+
+@center @image{libreoffice-digital-signatures,13cm}
+
+Click the @code{Sign Document} button to open the certificate selection
+dialog.  Select your card-based certificate, then validate.  Enter your
+User PIN when prompted by GPG Agent.
+
+@center @image{libreoffice-certificate-selection,13cm}
+
+You may also sign a PDF export of your document.  Select the
+@code{File->Export as PDF...} menu option to open the @code{PDF Options}
+dialog.  In the @code{Digital Signatures} tab, use the @code{Select}
+button to open the certificate selection dialog as above.  You will be
+prompted for your User PIN when you will click the @code{Export} button.
+
+@center @image{libreoffice-pdf-signature,13cm}
 
 
 @node Troubleshooting
