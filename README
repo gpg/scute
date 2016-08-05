@@ -25,9 +25,8 @@ Scute enables you to use your OpenPGP smart card for client
 authentication with SSL in Mozilla.  See below for more details on how
 to get this working.
 
-In the future, Scute will enable you to use your OpenPGP smart card
-for email decryption and signing with Thunderbird, using the X.509
-protocol.
+Scute also allows you to sign emails with Thunderbird, using the
+S/MIME protocol.
 
 
 Prerequisites

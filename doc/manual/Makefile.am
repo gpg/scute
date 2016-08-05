@@ -34,7 +34,8 @@ DISTCLEANFILES = scute.tmp
 images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
 	firefox-dm-load-after.png firefox-dm-load-before.png \
 	firefox-dm-load.png firefox-dm-token-present.png firefox-pref.png \
-	firefox-pref-view.png firefox-bad-pin.png
+	firefox-pref-view.png firefox-bad-pin.png \
+	thunderbird-account-settings.png thunderbird-smime-button.png
 
 images_eps = $(images:.png=.eps)
 

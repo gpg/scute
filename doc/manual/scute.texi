@@ -82,6 +82,7 @@ module.
 * Introduction::                  How to use this manual.
 * Preparation::                   What you should do before using Scute.
 * Client Authentication::         How to use Scute for client authentication.
+* Email Signing::                 How to use Scute for S/MIME email signing.
 * Troubleshooting::               What to do when things go wrong.
 * Internals::                     Technical details about Scute.
 
@@ -114,6 +115,8 @@ Client Authentication
 
 * Application Configuration::     Preparing the application for use with Scute.
 * Authentication With Service::   Using Scute for client authentication.
+
+Email Signing
 
 Troubleshooting
 
@@ -178,7 +181,7 @@ Anybody can use, modify, and redistribute it under the terms of the GNU
 General Public License (@pxref{Copying}).
 
 @item it's built to grow
-Although Scute currently only provides a single function, client
+Although Scute initially provided a single function, client
 authentication using OpenPGP smart cards in Mozilla-based web browsers,
 it was built with the intention of supporting other applications as well
 in the future.
@@ -205,10 +208,10 @@ Instead, it uses the GnuPG 2.0 framework to access the smart cards and
 associated data like certificates.  Scute acts as the glue between the
 application and GnuPG 2.0.
 
-Currently, only client authentication over HTTPS with Firefox using the
-OpenPGP card is supported.  In this configuration, Scute allows users to
-authenticate themselves to a remote web service without entering their
-log-in information.
+Currently supported usages are client authentication over HTTPS with
+Firefox (allowing users to authenticate themselves to a remote web
+service without entering their log-in information), and email signing
+with Thunderbird.
 
 
 @node Preparation
@@ -543,6 +546,32 @@ the @code{Try Again} button does not work as expected:
 @center @image{firefox-bad-pin,11cm}
 
 @comment FIXME: Document possible error codes.
+
+
+@node Email Signing
+@chapter Email Signing
+
+Scute also allows you to use your card-based X.509 certificate to sign
+your emails with the S/MIME signature format.  This has been tested
+with Mozilla Thunderbird only, but should work with any mail client
+with support for PKCS #11 (notably GNOME Evolution).
+
+You must first load the Scute module into your mail client.  With
+Mozilla Thunderbird, the procedure is the same as the one described
+above for Mozilla Firefox.
+
+Then, open your accent configuration dialog (@code{Edit->Account
+Settings}), and in the @code{Security} tab, under the section
+@code{Digital Signing}, use the @code{Select...} button to associate
+your card-based certificate with your account.
+
+@center @image{thunderbird-account-settings,13cm}
+
+When writing a new message, you may then use the @code{S/MIME} button
+and select @code{Digitally sign this message} in the popup menu.  You
+will be prompted for your User PIN before the message is sent.
+
+@center @image{thunderbird-smime-button,13cm}
 
 
 @node Troubleshooting
