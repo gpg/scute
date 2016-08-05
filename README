@@ -47,10 +47,7 @@ Installation
 ============
 
 To install the PKCS #11 Module, follow the generic installation
-instructions in the file INSTALL that accompanies this software.  You
-also need to install the Mozilla Personal Security Manager (PSM),
-which may come with your GNU/Linux distribution in a package named
-mozilla-psm or similar.
+instructions in the file INSTALL that accompanies this software.
 
 After installation, you can configure Mozilla to use Scute by
 visiting the preferences dialog in the "advanced" category, under
