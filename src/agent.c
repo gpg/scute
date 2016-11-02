@@ -1331,7 +1331,7 @@ scute_agent_get_random (unsigned char *data, size_t len)
     gpg_error_t err;
     struct random_request request;
 
-    snprintf (command, sizeof(command), "SCD RANDOM %lu", len);
+    snprintf (command, sizeof(command), "SCD RANDOM %zu", len);
 
     request.buffer = data;
     request.len = len;
