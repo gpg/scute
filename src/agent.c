@@ -233,151 +233,59 @@ spawn_process_detached (const char *pgmname, const char *argv[])
 static gpg_error_t
 agent_connect (assuan_context_t *ctx_r)
 {
-  /* If we ever failed to connect via a socket we will force the use
-     of the pipe based server for the lifetime of the process.  */
-  static int force_pipe_server = 0;
-
   gpg_error_t err = 0;
-  char *infostr;
-  char *ptr;
   assuan_context_t ctx = NULL;
+  char buffer[255];
+  FILE *p;
 
-  err = assuan_new (&ctx);
-  if (err)
-    return err;
-
- restart:
-
-  infostr = force_pipe_server ? NULL : getenv ("GPG_AGENT_INFO");
-  if (!infostr || !*infostr)
-    {
-      char *sockname;
-
-      /* First check whether we can connect at the standard
-         socket.  */
-      sockname = make_filename (default_homedir (), "S.gpg-agent", NULL);
-      if (! sockname)
-	return gpg_error_from_errno (errno);
-
-      err = assuan_socket_connect (ctx, sockname, 0, 0);
-      if (err)
-        {
-	  const char *agent_program;
-
-          /* With no success start a new server.  */
-	  DEBUG (DBG_INFO, "no running GPG agent at %s, starting one\n",
-		 sockname);
-
-          agent_program = get_gpg_agent_path ();
-
+  /* Use gpg-connect-agent to obtain the socket name
+   * directly from the agent itself. */
+  snprintf (buffer, sizeof buffer, "%s 'GETINFO socket_name' /bye",
+            get_gpg_connect_agent_path ());
 #ifdef HAVE_W32_SYSTEM
-          {
-            /* Under Windows we start the server in daemon mode.  This
-               is because the default is to use the standard socket
-               and thus there is no need for the GPG_AGENT_INFO
-               envvar.  This is possible as we don't have a real unix
-               domain socket but use a plain file and thus there is no
-               need to care about non-local file systems. */
-            const char *argv[3];
+  p = _popen (buffer, "r");
+#else
+  p = popen (buffer, "r");
+#endif
+  if (p)
+    {
+      int ret;
 
-            argv[0] = "--daemon";
-            argv[1] = "--use-standard-socket";
-            argv[2] = NULL;
+      ret = fscanf (p, "D %254s\nOK\n", buffer);
+      if (ret == EOF)       /* I/O error? */
+        err = gpg_error_from_errno (errno);
+      else if (ret != 1)    /* Unexpected reply */
+        err = gpg_error (GPG_ERR_NO_AGENT);
 
-            err = spawn_process_detached (agent_program, argv);
-            if (err)
-              DEBUG (DBG_CRIT, "failed to start agent `%s': %s\n",
-		     agent_program, gpg_strerror (err));
-            else
-              {
-                /* Give the agent some time to prepare itself. */
-                Sleep (3 * 1000);
-                /* Now try again to connect the agent.  */
-                err = assuan_socket_connect (ctx_r, sockname, 0, 0);
-              }
-          }
-#else /*!HAVE_W32_SYSTEM*/
-          {
-            const char *pgmname;
-            const char *argv[3];
-            int no_close_list[3];
-            int i;
-
-            if ( !(pgmname = strrchr (agent_program, '/')))
-              pgmname = agent_program;
-            else
-              pgmname++;
-
-            argv[0] = pgmname;
-            argv[1] = "--server";
-            argv[2] = NULL;
-
-            i=0;
-            no_close_list[i++] = assuan_fd_from_posix_fd (fileno (stderr));
-            no_close_list[i] = -1;
-
-            /* Connect to the agent and perform initial handshaking. */
-            err = assuan_pipe_connect (ctx, agent_program, argv,
-				       no_close_list, NULL, NULL, 0);
-          }
-#endif /*!HAVE_W32_SYSTEM*/
-        }
-      free (sockname);
+      pclose (p);
     }
   else
+    err = gpg_error_from_errno (errno);
+
+  /* Then connect to the socket we got. */
+  if (!err)
     {
-      int pid;
-      int protocol_version;
-
-      infostr = strdup (infostr);
-      if (!infostr)
-	return gpg_error_from_errno (errno);
-
-      if (!(ptr = strchr (infostr, PATHSEP_C)) || ptr == infostr)
-	{
-	  DEBUG (DBG_CRIT, "malformed GPG_AGENT_INFO environment variable");
-	  free (infostr);
-	  force_pipe_server = 1;
-	  goto restart;
-	}
-
-      *(ptr++) = 0;
-      pid = atoi (ptr);
-      while (*ptr && *ptr != PATHSEP_C)
-	ptr++;
-      protocol_version = *ptr ? atoi (ptr + 1) : 0;
-      if (protocol_version != 1)
-	{
-	  DEBUG (DBG_CRIT, "GPG agent protocol version '%d' not supported",
-		 protocol_version);
-	  free (infostr);
-	  force_pipe_server = 1;
-	  goto restart;
-	}
-
-      err = assuan_socket_connect (ctx, infostr, pid, 0);
-      free (infostr);
-      if (err)
-	{
-	  DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
-	  force_pipe_server = 1;
-	  goto restart;
-	}
+      err = assuan_new (&ctx);
+      if (!err)
+        {
+          err = assuan_socket_connect (ctx, buffer, 0, 0);
+          if (!err)
+            {
+              *ctx_r = ctx;
+              if (_scute_debug_flags & DBG_ASSUAN)
+                assuan_set_log_stream (*ctx_r, _scute_debug_stream);
+            }
+          else
+            assuan_release (ctx);
+        }
     }
 
+  /* We do not try any harder. If gpg-connect-agent somehow failed
+   * to give us a suitable socket, we probably cannot do better. */
   if (err)
-    {
-      assuan_release (ctx);
-      DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
-      return gpg_error (GPG_ERR_NO_AGENT);
-    }
+    DEBUG (DBG_CRIT, "cannot connect to GPG agent: %s", gpg_strerror (err));
 
-  if (_scute_debug_flags & DBG_ASSUAN)
-    assuan_set_log_stream (*ctx_r, _scute_debug_stream);
-
-  *ctx_r = ctx;
-
-  return 0;
+  return err;
 }
 
 

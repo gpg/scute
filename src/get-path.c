@@ -335,6 +335,23 @@ get_gpg_agent_path (void)
 }
 
 
+const char *
+get_gpg_connect_agent_path (void)
+{
+  static const char *pgmname;
+
+#ifdef HAVE_W32_SYSTEM
+  if (!pgmname)
+    pgmname = find_program_in_inst_dir ("gpg-connect-agent.exe");
+  if (!pgmname)
+    pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpg-connect-agent.exe");
+#endif
+  if (!pgmname)
+    pgmname = GPG_CONNECT_AGENT_PATH;
+  return pgmname;
+}
+
+
 
 /* Home directory.  */
 

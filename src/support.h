@@ -85,6 +85,7 @@ stpcpy (char *a, const char *b)
 
 const char *get_gpgsm_path (void);
 const char *get_gpg_agent_path (void);
+const char *get_gpg_connect_agent_path (void);
 
 /* Set up the default home directory.  The usual --homedir option
    should be parsed later. */
