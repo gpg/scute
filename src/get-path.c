@@ -33,13 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <stdarg.h>
 #ifdef HAVE_W32_SYSTEM
 #include <windows.h>
 #include <shlobj.h>
@@ -48,23 +41,6 @@
 
 #include "support.h"
 
-#ifdef HAVE_W32_SYSTEM
-#define GNUPG_DEFAULT_HOMEDIR "c:/gnupg"
-#elif defined(__VMS)
-#define GNUPG_DEFAULT_HOMEDIR "/SYS\$LOGIN/gnupg" 
-#else
-#define GNUPG_DEFAULT_HOMEDIR "~/.gnupg"
-#endif 
-
-#ifdef HAVE_DOSISH_SYSTEM
-#define DIRSEP_C '\\'
-#define DIRSEP_S "\\"
-#else
-#define DIRSEP_C '/'
-#define DIRSEP_S "/"
-#endif
-
-
 #ifdef HAVE_W32_SYSTEM
 #define RTLD_LAZY 0
 
@@ -319,23 +295,6 @@ get_gpgsm_path (void)
 
 
 const char *
-get_gpg_agent_path (void)
-{
-  static const char *pgmname;
-
-#ifdef HAVE_W32_SYSTEM
-  if (!pgmname)
-    pgmname = find_program_in_inst_dir ("gpg-agent.exe");
-  if (!pgmname)
-    pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpg-agent.exe");
-#endif
-  if (!pgmname)
-    pgmname = GPG_AGENT_PATH;
-  return pgmname;
-}
-
-
-const char *
 get_gpg_connect_agent_path (void)
 {
   static const char *pgmname;
@@ -349,162 +308,4 @@ get_gpg_connect_agent_path (void)
   if (!pgmname)
     pgmname = GPG_CONNECT_AGENT_PATH;
   return pgmname;
-}
-
-
-
-/* Home directory.  */
-
-#ifdef HAVE_W32_SYSTEM
-#ifndef CSIDL_APPDATA
-#define CSIDL_APPDATA 0x001a
-#endif
-#ifndef CSIDL_LOCAL_APPDATA
-#define CSIDL_LOCAL_APPDATA 0x001c
-#endif
-#ifndef CSIDL_COMMON_APPDATA
-#define CSIDL_COMMON_APPDATA 0x0023
-#endif
-#ifndef CSIDL_FLAG_CREATE
-#define CSIDL_FLAG_CREATE 0x8000
-#endif
-#endif /*HAVE_W32_SYSTEM*/
-
-/* Get the standard home directory.  In general this function should
-   not be used as it does not consider a registry value (under W32) or
-   the GNUPGHOME environment variable.  It is better to use
-   default_homedir(). */
-const char *
-standard_homedir (void)
-{
-#ifdef HAVE_W32_SYSTEM
-  static const char *dir;
-
-  if (!dir)
-    {
-      char path[MAX_PATH];
-      
-      /* It might be better to use LOCAL_APPDATA because this is
-         defined as "non roaming" and thus more likely to be kept
-         locally.  For private keys this is desired.  However, given
-         that many users copy private keys anyway forth and back,
-         using a system roaming services might be better than to let
-         them do it manually.  A security conscious user will anyway
-         use the registry entry to have better control.  */
-      if (w32_shgetfolderpath (NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, 
-                               NULL, 0, path) >= 0) 
-        {
-          char *tmp = malloc (strlen (path) + 6 +1);
-	  if (tmp)
-	    {
-	      strcpy (stpcpy (tmp, path), "\\gnupg");
-	      dir = tmp;
-          
-	      /* Try to create the directory if it does not yet exists.  */
-	      if (access (dir, F_OK))
-		CreateDirectory (dir, NULL);
-	    }
-        }
-
-      if (!dir)
-        dir = GNUPG_DEFAULT_HOMEDIR;
-    }
-  return dir;
-#else/*!HAVE_W32_SYSTEM*/
-  return GNUPG_DEFAULT_HOMEDIR;
-#endif /*!HAVE_W32_SYSTEM*/
-}
-
-/* Set up the default home directory.  The usual --homedir option
-   should be parsed later. */
-const char *
-default_homedir (void)
-{
-  const char *dir;
-
-  dir = getenv ("GNUPGHOME");
-#ifdef HAVE_W32_SYSTEM
-  if (!dir || !*dir)
-    {
-      static const char *saved_dir;
-      
-      if (!saved_dir)
-        {
-          if (!dir || !*dir)
-            {
-              char *tmp;
-
-              tmp = read_w32_registry_string (NULL, "Software\\GNU\\GnuPG",
-                                              "HomeDir");
-              if (tmp && *tmp)
-                {
-                  free (tmp);
-                  tmp = NULL;
-                }
-               if (tmp)
-                saved_dir = tmp;
-            }
-          
-          if (!saved_dir)
-            saved_dir = standard_homedir ();
-        }
-      dir = saved_dir;
-    }
-#endif /*HAVE_W32_SYSTEM*/
-  if (!dir || !*dir)
-    dir = GNUPG_DEFAULT_HOMEDIR;
-
-  return dir;
-}
-
-
-/* Construct a filename from the NULL terminated list of parts.  Tilde
-   expansion is done here.  */
-char *
-make_filename (const char *first_part, ...)
-{
-  va_list arg_ptr;
-  size_t n;
-  const char *s;
-  char *name;
-  char *home;
-  char *p;
-  
-  va_start (arg_ptr, first_part);
-  n = strlen (first_part) + 1;
-  while ((s = va_arg (arg_ptr, const char *)))
-    n += strlen (s) + 1;
-  va_end (arg_ptr);
-  
-  home = NULL;
-  if (*first_part == '~' && first_part[1] == '/'
-      && (home = getenv("HOME")) && *home)
-    n += strlen (home);
-
-  name = malloc (n);
-  if (! name)
-    return NULL;
-  p = (home 
-       ? stpcpy (stpcpy (name,home), first_part + 1)
-       : stpcpy (name, first_part));
-
-  va_start (arg_ptr, first_part);
-  while ((s = va_arg(arg_ptr, const char *)))
-    p = stpcpy (stpcpy (p,"/"), s);
-  va_end (arg_ptr);
-
-#ifdef HAVE_W32_SYSTEM
-  /* We better avoid mixing slashes and backslashes and prefer
-     backslashes.  There is usual no problem with mixing them, however
-     a very few W32 API calls can't grok plain slashes.  Printing
-     filenames with mixed slashes also looks a bit strange. */
-  if (strchr (name, '\\'))
-    {
-      for (p = name; *p; p++)
-        if (*p == '/')
-          *p = '\\';
-    }
-#endif
-
-  return name;
 }

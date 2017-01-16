@@ -231,14 +231,12 @@ esac
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
 GPGSM_DEFAULT=no
-GPG_AGENT_DEFAULT=no
 GPG_CONNECT_AGENT_DEFAULT=no
 have_w32_system=no
 case "${host}" in
     *-mingw32*)
         # special stuff for Windoze NT
 	GPGSM_DEFAULT='c:\\gnupg\\gpgsm.exe'
-        GPG_AGENT_DEFAULT='c:\\gnupg\\gpg-agent.exe'
         GPG_CONNECT_AGENT_DEFAULT='c:\\gnupg\\gpg-connect-agent.exe'
 	have_w32_system=yes
         ;;
@@ -372,41 +370,6 @@ if test "$ok" = "maybe"; then
   fi
 fi
 gpgsm_ok="$ok"
-
-# GPG_AGENT
-NO_OVERRIDE=no
-AC_ARG_WITH(gpg-agent,
-	    AC_HELP_STRING([--with-gpg-agent=PATH], [use GPG Agent binary at PATH]),
-	    GPG_AGENT=$withval, NO_OVERRIDE=yes)
-if test "$NO_OVERRIDE" = "yes" || test "$GPG_AGENT" = "yes"; then
-  GPG_AGENT=
-  NO_OVERRIDE=yes
-  if test "$cross_compiling" != "yes"; then
-    AC_PATH_PROG(GPG_AGENT, gpg-agent)
-  fi
-  if test -z "$GPG_AGENT"; then
-    GPG_AGENT="$GPG_AGENT_DEFAULT"
-  fi
-fi
-if test "$GPG_AGENT" = no; then
-  if test "$NO_OVERRIDE" = "yes"; then
-    if test "$cross_compiling" != "yes"; then
-      AC_MSG_WARN([
-***
-*** Could not find GPG Agent, install GPG Agent or use --with-gpg-agent=PATH to enable it
-***])
-    else
-      AC_MSG_ERROR([
-***
-*** Can not determine path to GPG Agent when cross-compiling, use --with-gpg-agent=PATH
-***])
-    fi
-  fi
-else
-  AC_DEFINE_UNQUOTED(GPG_AGENT_PATH, "$GPG_AGENT", [Path to the GPG_AGENT binary.])
-  AC_DEFINE(ENABLE_GPG_AGENT,1, [Whether GPG Agent support is enabled])
-fi
-AM_CONDITIONAL(HAVE_GPG_AGENT, test "$GPG_AGENT" != "no")
 
 # GPG_CONNECT_AGENT
 NO_OVERRIDE=no
