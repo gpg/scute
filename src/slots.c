@@ -439,7 +439,8 @@ slots_update_slot (slot_iterator_t id)
      here.  */
   if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED
       || gpg_err_code (err) == GPG_ERR_CARD_NOT_PRESENT
-      || gpg_err_code (err) == GPG_ERR_CARD)
+      || gpg_err_code (err) == GPG_ERR_CARD
+      || gpg_err_code (err) == GPG_ERR_ENODEV)
     /* Nothing to do.  */
     err = 0;
   else if (err == 0)
