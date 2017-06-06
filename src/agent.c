@@ -1043,7 +1043,7 @@ scute_agent_get_cert (int no, struct cert *cert)
   err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
 			 NULL, NULL, NULL, NULL);
   /* Just to be safe... */
-  if (!err && cert_s.cert_der_len <= 16)
+  if (!err && (cert_s.cert_der_len <= 16 || cert_s.cert_der[0] != 0x30))
     {
       DEBUG (DBG_INFO, "bad card certificate rejected");
       err = gpg_error (GPG_ERR_BAD_CERT);
