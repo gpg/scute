@@ -42,6 +42,9 @@ At runtime:
 * GnuPG 2.0, in particular: gpg-agent, scdaemon
 * Pinentry
 
+Note that client authentication with TLS 1.2 and S/MIME signing
+require GnuPG 2.1.
+
 
 Installation
 ============
@@ -52,7 +55,7 @@ instructions in the file INSTALL that accompanies this software.
 After installation, you can configure Mozilla to use Scute by
 visiting the preferences dialog in the "advanced" category, under
 "Security Devices".  There you can "load" the module from its
-installed path, e.g. "/usr/lib/libscute.so".
+installed path, e.g. "/usr/lib/scute.so".
 
 
 Client Authentication
@@ -161,7 +164,7 @@ ask when establishing the initial connection).
 
 To actually perform the client authentication, the client needs to set
 up the web browser for use with Scute.  The Scute PKCS #11 module,
-installed under /usr/lib/libscute.so by default, needs to be loaded as
+installed under /usr/lib/scute.so by default, needs to be loaded as
 a security device in Firefox under
 Preferences->Advanced->Security->Certificates->Security Devices->Load
 When the security device is loaded, card insertion should cause the

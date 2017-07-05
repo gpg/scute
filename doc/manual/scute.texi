@@ -262,7 +262,9 @@ configured:
 @table @asis
 @item GnuPG
 Scute uses the GnuPG 2.0 framework to access the OpenPGP card and for
-certificate management.  The minimum version required is 2.0.0.
+certificate management.  The minimum version required is 2.0.0 for
+client authentication with TLS 1.0 and 1.1.  Client authentication
+with TLS 1.2, email and document signing require GnuPG 2.1.0.
 
 @item Pinentry
 Pinentry is a dependency of GnuPG 2.0, so it also needs to be installed

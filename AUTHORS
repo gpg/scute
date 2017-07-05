@@ -1,6 +1,6 @@
 Package: scute
 Maintainer: Marcus Brinkmann <marcus@g10code.com>
-Bug reports: bug-scute@g10code.com
+Bug reports: https://dev.gnupg.org/
 Security related bug reports: security@gnupg.org
 License: GPLv2+ with exception for Mozilla
 
