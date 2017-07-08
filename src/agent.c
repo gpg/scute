@@ -395,7 +395,7 @@ unescape_status_string (const unsigned char *src)
 }
 
 
-/* Take a 20 byte hexencoded string and put it into the the provided
+/* Take a 20 byte hexencoded string and put it into the provided
    20 byte buffer FPR in binary format.  Returns true if successful,
    and false otherwise.  */
 static int
