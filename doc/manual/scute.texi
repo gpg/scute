@@ -201,7 +201,7 @@ of Scute into the application is seamless.
 
 Scute is a security device that implements the PKCS #11 interface for
 security tokens.  Applications which know how to use the PKCS #11
-interface to access security tokens for crytpographic operations can use
+interface to access security tokens for cryptographic operations can use
 Scute to access the OpenPGP smart card.  An important example of such an
 application is the Firefox web browser by the Mozilla project, which
 uses the Mozilla Network Security Services library (NSS).
