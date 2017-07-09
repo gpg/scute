@@ -191,7 +191,7 @@ in the future.
 
 @item it's easy
 Building and installing Scute is easy, and preparing smart cards for use
-with Scute is a snatch using the GnuPG 2.0 framework.  The integration
+with Scute is a snatch using the GnuPG 2 framework.  The integration
 of Scute into the application is seamless.
 @end table
 
@@ -207,9 +207,9 @@ application is the Firefox web browser by the Mozilla project, which
 uses the Mozilla Network Security Services library (NSS).
 
 Scute itself does not include a driver for the smart card itself.
-Instead, it uses the GnuPG 2.0 framework to access the smart cards and
+Instead, it uses the GnuPG 2 framework to access the smart cards and
 associated data like certificates.  Scute acts as the glue between the
-application and GnuPG 2.0.
+application and GnuPG 2.
 
 Currently supported usages are client authentication over HTTPS with
 Firefox (allowing users to authenticate themselves to a remote web
@@ -246,11 +246,11 @@ following packages at build time:
 
 @table @code
 @item libgpg-error
-Scute uses the GnuPG 2.0 framework for error handling, so it depends on
+Scute uses the GnuPG 2 framework for error handling, so it depends on
 the GPG error library.  The minimum version required is 1.14.
 
 @item libassuan
-Scute uses the GnuPG 2.0 framework for communication with the GPG Agent,
+Scute uses the GnuPG 2 framework for communication with the GPG Agent,
 so it depends on the Assuan library.  The minimum version required is
 2.0.0.
 @end table
@@ -261,13 +261,13 @@ configured:
 
 @table @asis
 @item GnuPG
-Scute uses the GnuPG 2.0 framework to access the OpenPGP card and for
+Scute uses the GnuPG 2 framework to access the OpenPGP card and for
 certificate management.  The minimum version required is 2.0.0 for
 client authentication with TLS 1.0 and 1.1.  Client authentication
 with TLS 1.2, email and document signing require GnuPG 2.1.0.
 
 @item Pinentry
-Pinentry is a dependency of GnuPG 2.0, so it also needs to be installed
+Pinentry is a dependency of GnuPG 2, so it also needs to be installed
 with it.
 
 @item Firefox et al.
@@ -617,8 +617,9 @@ prompted for your User PIN when you will click the @code{Export} button.
 device manager of Firefox fails with "Unable to load module".
 
 @strong{Solution:} Make sure that Scute is correctly installed, and that
-all libraries and executables are available.  Make sure that the GPG
-Agent is running and can be found via the environment variable
+all libraries and executables are available.  If you are using GnuPG
+2.0 (instead of 2.1), you may need to make sure that the GPG Agent is
+running and can be found via the environment variable
 @code{GPG_AGENT_INFO}.  @xref{Invoking GPG-AGENT, , , gnupg, Using the
 GNU Privacy Guard}, for details on how to run the GPG Agent.
 
@@ -661,7 +662,7 @@ its scope and potential compatibility issues with applications.
 @section Features and Limitations
 
 Scute implements version 2.20 of the
-@uref{http://www.rsasecurity.com/rsalabs/node.asp?id=2133, PKCS #11}
+@uref{https://www.emc.com/emc-plus/rsa-labs/standards-initiatives/pkcs-11-cryptographic-token-interface-standard.htm, PKCS #11}
 specification.
 
 The @uref{http://www.g10code.com/p-card.html,OpenPGP smart card}
@@ -787,24 +788,19 @@ There is a different, probably more powerful way to debug Mozilla PKCS
 #11 libraries.  However, to be able to use it, you need to configure and
 compile the Mozilla NSS sources with @code{--enable-debug}.
 Instructions can be found at:
-@uref{http://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html}
+@uref{https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes}
 
 Here are a couple of links to more information about implementing a
 PKCS #11 module for Mozilla:
 
 @table @uref
-@item http://docs.sun.com/source/816-6150-10/index.htm
-@itemx http://docs.sun.com/source/816-6150-10/pkcs.htm
-Implementing PKCS #11 for the Netscape Security Library (Caution: The
-content may be out of date)
+@item https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/PKCS11_Implement
+Guidelines for implementors of PKCS #11 modules targeting Mozilla
 
-@item http://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
-Common PKCS #11 Implementation Problems
-
-@item http://www.mozilla.org/projects/security/pki/pkcs11/
+@item http://www-archive.mozilla.org/projects/security/pki/pkcs11/
 PKCS #11 Conformance Testing
 
-@item http://www.mozilla.org/projects/security/pki/nss/
+@item https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS
 The Mozilla NSS web page
 @end table
 
