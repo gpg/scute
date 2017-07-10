@@ -305,9 +305,19 @@ create the certificate and send it back to you.  At last, the
 certificate has to be imported into GPGSM.  This section will explain
 all of these steps in detail.
 
+@menu
+* Creating a CSR::                How to create a card-based CSR.
+* Signing the CSR::               Obtain a certificate from the CSR.
+* Importing the Certificate::     How to import the certificate into GPGSM.
+* On-card Certificate::           How to store the certificate on the card.
+@end menu
+
+@node Creating a CSR
+@subsection Creating a CSR
+
 Before you start, make sure that the GPG Agent is running, see
-@ref{Prerequisites}.  There is no need to configure GPGSM, so you can
-create a CSR with the command:
+@ref{Prerequisites} and that your card is in the reader.  There is no
+need to configure GPGSM, so you can create a CSR with the command:
 
 @example
 $ gpgsm --gen-key > floppy-head.csr
@@ -405,6 +415,9 @@ ZBYfQVeXAd7XlxI6d1wXDLwD/26lTU/rH2JU6H1+zSfZxqwVC4Iu+kiN4Y8=
 $
 @end example
 
+@node Signing the CSR
+@subsection Signing the CSR
+
 The next step is to submit this certificate request to the CA, which can
 then create a certificate and send it back to you.
 
@@ -422,7 +435,10 @@ snakeoil-ca-rsa.key -out floppy-head.crt}.  Please see the OpenSSL
 documentation for more details on how to set up and administrate a
 certificate authority infrastructure.
 
-In any way you should end up with a certificate file
+@node Importing the Certificate
+@subsection Importing the Certificate into GPGSM
+
+Once the CSR has been signed, you should end up with a certificate file
 @file{floppy-head.crt}, which you then have to import into GPGSM.  It is
 also recommended that you import the root certificate of the CA first in
 the same fashion.
@@ -454,6 +470,39 @@ Serial number: 10
 The option ``@code{-K}'' is used above because this will only list
 certificates for which a private key is available.  To see more details,
 you may use ``@code{--dump-secret-keys}'' instead of ``@code{-K}''.
+
+@node On-card Certificate
+@subsection Loading the Certificate onto the Card
+
+This step is optional. You may choose to store the certificate directly
+into your OpenPGP card. The benefit of doing so is that Scute will then
+be able to fetch the certificate from the card without having to look
+into the GPGSM store.
+
+You need your certificate in the DER format. Export it from the GPGSM
+store with the following command:
+
+@example
+$ gpgsm -o floppy-head.crt --export Floppy
+@end example
+
+Then, fire up the GnuPG card editor to transfer the certificate to the
+card (note that the @code{writecert} command is not listed in the
+editor's online help):
+
+@example
+$ gpg2 --card-edit
+
+Application ID ...: D27600012301020000005000012340000
+[...]
+
+gpg/card> admin
+Admin commands are allowed
+
+gpg/card> writecert 3 < floppy-head.crt
+
+gpg/card> quit
+@end example
 
 
 @node Client Authentication
