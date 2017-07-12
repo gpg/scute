@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# We do the clean-up only when the tests are run with GNUPGHOME
+# set to the tests directory (which is the default). If the user
+# saw fit to override TESTS_ENVIRONMENT to use another home, we
+# must assume she knows what she is doing.
+if [ "$GNUPGHOME" = "`/bin/pwd`" ]; then
+    socketdir=`gpgconf --list-dirs socketdir`
+    if [ -d "$socketdir" ]; then
+        rm -f $socketdir/S.*
+        rmdir $socketdir || true
+    fi
+
+    if [ -d private-keys-v1.d ]; then
+        rmdir private-keys-v1.d
+    fi
+fi
