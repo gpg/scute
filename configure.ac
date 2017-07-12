@@ -296,7 +296,7 @@ fi
 if test "$GPGSM" = no; then
   if test "$NO_OVERRIDE" = "yes"; then
     if test "$cross_compiling" != "yes"; then
-      AC_MSG_WARN([
+      AC_MSG_ERROR([
 ***
 *** Could not find GpgSM, install GpgSM or use --with-gpgsm=PATH to enable it
 ***])
@@ -381,7 +381,7 @@ if test "$NO_OVERRIDE" = "yes" || test "$GPG_CONNECT_AGENT" = "yes"; then
   GPG_CONNECT_AGENT=
   NO_OVERRIDE=yes
   if test "$cross_compiling" != "yes"; then
-    AC_PATH_PROG(GPG_CONNECT_AGENT, gpg-connect-agent)
+    AC_CHECK_PROG(GPG_CONNECT_AGENT, gpg-connect-agent, gpg-connect-agent)
   fi
   if test -z "$GPG_CONNECT_AGENT"; then
     GPG_CONNECT_AGENT="$GPG_CONNECT_AGENT_DEFAULT"
@@ -390,12 +390,12 @@ fi
 if test "$GPG_CONNECT_AGENT" = no; then
   if test "$NO_OVERRIDE" = "yes"; then
     if test "$cross_compiling" != "yes"; then
-      AC_MSG_WARN([
+      AC_MSG_ERROR([
 ***
 *** Could not find gpg-connect-agent, use --with-gpg-connect-agent=PATH to enable it
 ***])
     else
-      AC_MSG_WARN([
+      AC_MSG_ERROR([
 ***
 *** Can not determine path to gpg-connect-agent when cross-compiling, use --with-gpg-connect-agent=PATH
 ***])
@@ -479,4 +479,8 @@ echo "
 
         Revision: mym4_revision  (mym4_revision_dec)
         Platform: $host
+
+        GpgSM:             ${GPGSM}
+        Gpg-connect-agent: ${GPG_CONNECT_AGENT}
+
 "
