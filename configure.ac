@@ -57,7 +57,7 @@ m4_define([mym4_version],      m4_argn(4, mym4_verslist))
 m4_define([mym4_revision],     m4_argn(7, mym4_verslist))
 m4_define([mym4_revision_dec], m4_argn(8, mym4_verslist))
 m4_esyscmd([echo ]mym4_version[>VERSION])
-AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
+AC_INIT([mym4_package],[mym4_version], [https://dev.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -67,7 +67,7 @@ AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
 #
 LIBSCUTE_LT_CURRENT=0
 LIBSCUTE_LT_AGE=0
-LIBSCUTE_LT_REVISION=2
+LIBSCUTE_LT_REVISION=3
 
 # Version numbers reported by the PKCS #11 module to its users.
 VERSION_MAJOR=1
