@@ -37,7 +37,7 @@ min_automake_version="1.14"
 # another commit and push so that the git magic is able to work.
 m4_define([mym4_package],[scute])
 m4_define([mym4_major], [1])
-m4_define([mym4_minor], [5])
+m4_define([mym4_minor], [6])
 m4_define([mym4_micro], [0])
 
 # To start a new development series, i.e a new major or minor number
