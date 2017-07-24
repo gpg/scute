@@ -1,6 +1,6 @@
 Package: scute
 Maintainer: Damien Goutte-Gattat <dgouttegattat@incenp.org>
-Bug reports: https://dev.gnupg.org/
+Bug reports: https://bugs.gnupg.org/
 Security related bug reports: security@gnupg.org
 License: GPLv2+ with exception for Mozilla
 
