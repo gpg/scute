@@ -385,7 +385,7 @@ slot_init (slot_iterator_t id)
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slots, id);
 
-  err = scute_gpgsm_get_cert (slot->info.grip3, 3, add_object, slot);
+  err = scute_gpgsm_get_cert (slot->info.grip1, 1, add_object, slot);
   if (err)
     goto init_out;
 
