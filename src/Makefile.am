@@ -133,3 +133,7 @@ scute_la_LIBADD = $(scute_libadd) \
 scute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
 scute_la_SOURCES = $(sources)
+
+if ENABLE_SIGKEY
+scute_la_CPPFLAGS += -DSIGKEY
+endif

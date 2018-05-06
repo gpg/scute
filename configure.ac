@@ -313,6 +313,14 @@ else
 fi
 AM_CONDITIONAL(HAVE_GPGSM, test "$GPGSM" != "no")
 
+dnl ***************************************************************************
+dnl Enable the usage of signature key instead of athh key
+dnl ***************************************************************************
+AC_ARG_ENABLE([sigkey],
+    AS_HELP_STRING([--enable-sigkey], [Use signature key]))
+
+AS_IF([test "x$enable_sigkey" = "xyes"], [])
+AM_CONDITIONAL([ENABLE_SIGKEY], [test "$enable_sigkey" = "yes"])
 
 dnl Check for GPGSM version requirement.
 GPGSM_VERSION=unknown

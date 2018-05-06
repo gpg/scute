@@ -385,7 +385,12 @@ slot_init (slot_iterator_t id)
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slots, id);
 
+#if SIGKEY
   err = scute_gpgsm_get_cert (slot->info.grip1, 1, add_object, slot);
+#else
+  err = scute_gpgsm_get_cert (slot->info.grip3, 3, add_object, slot);
+#endif
+
   if (err)
     goto init_out;
 
@@ -1033,8 +1038,14 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     }
 
   sig_len = *pulSignatureLen;
+#if SIGKEY
+  err = scute_agent_sign (slot->info.grip1, pData, ulDataLen,
+			  pSignature, &sig_len);
+#else
   err = scute_agent_sign (slot->info.grip3, pData, ulDataLen,
 			  pSignature, &sig_len);
+#endif
+
   /* FIXME: Oh well.  */
   if (gpg_err_code (err) == GPG_ERR_INV_ARG)
     return CKR_BUFFER_TOO_SMALL;
