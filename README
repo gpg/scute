@@ -1,3 +1,13 @@
+This is a slightly modified versiong of scute.
+
+The usage of the configure switch --enable-sigkey changes the used key to
+OPENPGP.1 (the signature key. This can be used by e.g. LibreOffice to use a
+signing certificate based upon the signature key instead of the authentication
+key.
+
+The modifications were made by:
+Dirk Gottschalk <dirk.gottschalk1980@googlemail.com>
+
 Scute
 =====
 
