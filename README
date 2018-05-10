@@ -1,3 +1,19 @@
+This is a slightly modified versiong of scute.
+
+This modifies version generates two shared objects.
+
+The standard scute.so uses Key 3 on card (authentication key.
+
+scutesig.so uses the signature key. It can be used with Libreoffice to sign
+documents with a certificate based upon the signature key, or even to sign mail
+with this certificate in thunderbird.
+
+The modifications were made by:
+Dirk Gottschalk <dirk.gottschalk1980@googlemail.com>
+
+Original README below
+=====================
+
 Scute
 =====
 

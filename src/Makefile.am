@@ -60,6 +60,35 @@ sources = cryptoki.h pkcs11.h debug.c debug.h settings.h support.h	\
 	p11-verifyrecover.c p11-verifyrecoverinit.c p11-verifyupdate.c	\
 	p11-waitforslotevent.c p11-wrapkey.c sexp-parse.h
 
+sigsources = cryptoki.h pkcs11.h debug.c debug.h settings.h support.h	\
+	locking.h locking.c error-mapping.h error-mapping.c		\
+	get-path.c agent.h agent.c					\
+	slots.h slots-sig.c table.h table.c				\
+	cert.h cert-gpgsm.c cert-object.c gpgsm.h gpgsm.c		\
+	p11-cancelfunction.c p11-closeallsessions.c p11-closesession.c	\
+	p11-copyobject.c p11-createobject.c p11-decrypt.c		\
+	p11-decryptdigestupdate.c p11-decryptfinal.c p11-decryptinit.c	\
+	p11-decryptupdate.c p11-decryptverifyupdate.c p11-derivekey.c	\
+	p11-destroyobject.c p11-digest.c p11-digestencryptupdate.c	\
+	p11-digestfinal.c p11-digestinit.c p11-digestkey.c		\
+	p11-digestupdate.c p11-encrypt.c p11-encryptfinal.c		\
+	p11-encryptinit.c p11-encryptupdate.c p11-finalize.c		\
+	p11-findobjects.c p11-findobjectsfinal.c p11-findobjectsinit.c	\
+	p11-generatekey.c p11-generatekeypair.c p11-generaterandom.c	\
+	p11-getattributevalue.c p11-getfunctionlist.c			\
+	p11-getfunctionstatus.c p11-getinfo.c p11-getmechanisminfo.c	\
+	p11-getmechanismlist.c p11-getobjectsize.c			\
+	p11-getoperationstate.c p11-getsessioninfo.c p11-getslotinfo.c	\
+	p11-getslotlist.c p11-gettokeninfo.c p11-initialize.c		\
+	p11-initpin.c p11-inittoken.c p11-login.c p11-logout.c		\
+	p11-opensession.c p11-seedrandom.c p11-setattributevalue.c	\
+	p11-setoperationstate.c p11-setpin.c p11-sign.c			\
+	p11-signencryptupdate.c p11-signfinal.c	p11-signinit.c		\
+	p11-signrecover.c p11-signrecoverinit.c	p11-signupdate.c	\
+	p11-unwrapkey.c p11-verify.c p11-verifyfinal.c p11-verifyinit.c	\
+	p11-verifyrecover.c p11-verifyrecoverinit.c p11-verifyupdate.c	\
+	p11-waitforslotevent.c p11-wrapkey.c sexp-parse.h
+
 
 if HAVE_LD_VERSION_SCRIPT
 scute_version_script_cmd = -Wl,--version-script=$(srcdir)/libscute.vers
@@ -68,7 +97,8 @@ scute_version_script_cmd =
 endif
 
 
-lib_LTLIBRARIES = scute.la
+lib_LTLIBRARIES = scute.la scutesig.la
+
 
 if HAVE_W32_SYSTEM
 
@@ -133,3 +163,19 @@ scute_la_LIBADD = $(scute_libadd) \
 scute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
 scute_la_SOURCES = $(sources)
+
+
+scutesig_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) -module -avoid-version $(export_symbols) \
+	$(scute_version_script_cmd) -version-info \
+	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+scutesig_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+# scute_libadd must come BEFORE libassuan and gpg-error, because we
+# override it on Windows targets.
+scutesig_la_LIBADD = $(scute_libadd) \
+	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+
+scutesig_la_CPPFLAGS = -I$(srcdir)/../include \
+	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
+scutesig_la_SOURCES = $(sigsources)
+
+scutesig_la_CPPFLAGS += -DSIGKEY
