@@ -11,7 +11,9 @@ if [ "$GNUPGHOME" = "`/bin/pwd`" ]; then
         rmdir $socketdir || true
     fi
 
+    rm -f pubring.kbx reader_*.status
     if [ -d private-keys-v1.d ]; then
+        rm -f private-keys-v1.d/*.key
         rmdir private-keys-v1.d
     fi
 fi
