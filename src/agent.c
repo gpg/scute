@@ -640,7 +640,7 @@ scute_agent_learn (struct agent_card_info_s *info)
   gpg_error_t err;
 
   memset (info, 0, sizeof (*info));
-  err = assuan_transact (agent_ctx, "LEARN --send",
+  err = assuan_transact (agent_ctx, "LEARN --sendinfo",
 			 NULL, NULL, default_inq_cb,
 			 NULL, learn_status_cb, info);
 
