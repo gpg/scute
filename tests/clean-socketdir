@@ -4,6 +4,8 @@
 # set to the tests directory (which is the default). If the user
 # saw fit to override TESTS_ENVIRONMENT to use another home, we
 # must assume she knows what she is doing.
+[ "$GNUPGHOME" = "$HOME/.gnupg" ] && exit 0
+
 if [ "$GNUPGHOME" = "`/bin/pwd`" ]; then
     socketdir=`gpgconf --list-dirs socketdir`
     if [ -d "$socketdir" ]; then
