@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -41,8 +41,9 @@
 #include "agent.h"
 #include "locking.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_Finalize)(CK_VOID_PTR pReserved)
+
+CK_RV CK_SPEC
+C_Finalize (CK_VOID_PTR pReserved)
 {
   /* This is one of the few functions which do not need to take the
      global lock.  */

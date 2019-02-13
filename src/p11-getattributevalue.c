@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -38,10 +38,10 @@
 #include "locking.h"
 #include "slots.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)
-     (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,
-      CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
+
+CK_RV CK_SPEC
+C_GetAttributeValue (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,
+                     CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;

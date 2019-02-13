@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -35,7 +35,7 @@
 
 #include "settings.h"
 
-
+
 /* The list of exported functions.  */
 static CK_FUNCTION_LIST function_list =
   {
@@ -110,9 +110,9 @@ static CK_FUNCTION_LIST function_list =
     C_WaitForSlotEvent: C_WaitForSlotEvent
   };
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetFunctionList)
-     (CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
+
+CK_RV CK_SPEC
+C_GetFunctionList (CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
 {
   /* This is one of the few functions which do not need to take the
      global lock.  */

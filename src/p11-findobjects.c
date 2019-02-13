@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -41,10 +41,10 @@
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)
-     (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject,
-      CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount)
+
+CK_RV CK_SPEC
+C_FindObjects (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject,
+               CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount)
 {
   CK_RV err = CKR_OK;
   CK_ULONG count;

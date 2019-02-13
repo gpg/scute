@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -34,9 +34,10 @@
 #include "cryptoki.h"
 
 
-CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)
-     (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData,
-      CK_ULONG ulEncryptedDataLen, CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
+CK_RV CK_SPEC
+C_Decrypt (CK_SESSION_HANDLE hSession,
+           CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen,
+           CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
 {
   /* FIXME: Implement this.  */
   (void) hSession;

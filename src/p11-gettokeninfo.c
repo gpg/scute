@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -38,9 +38,9 @@
 #include "settings.h"
 #include "slots.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetTokenInfo)
-     (CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
+
+CK_RV CK_SPEC
+C_GetTokenInfo (CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
@@ -81,14 +81,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetTokenInfo)
      the "SCD CHECKPIN" command.  I am not sure how this mixes with
      CKF_PROTECTED_AUTHENTICATION_PATH.
 
-     Not supported: 
+     Not supported:
      CKF_RESTORE_KEY_NOT_NEEDED, CKF_DUAL_CRYPTO_OPERATIONS.
 
      FIXME: We can support those, but do we worry about SO operations?
      CKF_SO_PIN_COUNT_LOW, CKF_SO_PIN_FINAL_TRY, CKF_SO_PIN_LOCKED.
 
      Not supported: CKF_USER_PIN_TO_BE_CHANGED, CKF_SO_PIN_TO_BE_CHANGED.  */
-  
+
   slot_token_pincount (slot, &max, &len);
   if (len < max)
     pInfo->flags |= CKF_USER_PIN_COUNT_LOW;

@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -33,9 +33,9 @@
 
 #include "cryptoki.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_InitPIN)
-     (CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
+
+CK_RV CK_SPEC
+C_InitPIN (CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
 {
   (void) hSession;
   (void) pPin;

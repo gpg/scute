@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -36,10 +36,10 @@
 #include "locking.h"
 #include "slots.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_OpenSession)
-     (CK_SLOT_ID slotID, CK_FLAGS flags, CK_VOID_PTR pApplication,
-      CK_NOTIFY Notify, CK_SESSION_HANDLE_PTR phSession)
+
+CK_RV CK_SPEC
+C_OpenSession (CK_SLOT_ID slotID, CK_FLAGS flags, CK_VOID_PTR pApplication,
+               CK_NOTIFY Notify, CK_SESSION_HANDLE_PTR phSession)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
@@ -54,6 +54,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_OpenSession)
 
   /* We ignore the notification callback data in pApplication and
      Notify.  We never call back into the application.  */
+  (void)pApplication;
+  (void)Notify;
 
   err = scute_global_lock ();
   if (err)
@@ -62,13 +64,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_OpenSession)
   err = slots_lookup (slotID, &slot);
   if (err)
     goto out;
-  
+
   err = slot_create_session (slot, &session, flags & CKF_RW_SESSION);
   if (err)
     goto out;
-  
+
   /* FIXME: Further initialisation comes here.  */
-  
+
   *phSession = session;
 
  out:

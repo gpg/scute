@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -33,12 +33,12 @@
 
 #include "cryptoki.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_UnwrapKey)
-     (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
-      CK_OBJECT_HANDLE hUnwrappingKey, CK_BYTE_PTR pWrappedKey,
-      CK_ULONG ulWrappedKeyLen, CK_ATTRIBUTE_PTR pTemplate,
-      CK_ULONG ulAttributeCount, CK_OBJECT_HANDLE_PTR phKey)
+
+CK_RV CK_SPEC
+C_UnwrapKey (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+             CK_OBJECT_HANDLE hUnwrappingKey, CK_BYTE_PTR pWrappedKey,
+             CK_ULONG ulWrappedKeyLen, CK_ATTRIBUTE_PTR pTemplate,
+             CK_ULONG ulAttributeCount, CK_OBJECT_HANDLE_PTR phKey)
 {
   (void) hSession;
   (void) pMechanism;

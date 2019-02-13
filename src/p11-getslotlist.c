@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -37,8 +37,9 @@
 #include "slots.h"
 
 
-CK_DEFINE_FUNCTION(CK_RV, C_GetSlotList)
-     (CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList, CK_ULONG_PTR pulCount)
+CK_RV CK_SPEC
+C_GetSlotList (CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList,
+               CK_ULONG_PTR pulCount)
 {
   CK_RV err = CKR_OK;
   CK_ULONG left;

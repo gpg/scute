@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -36,8 +36,9 @@
 #include "support.h"
 #include "settings.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetInfo)(CK_INFO_PTR pInfo)
+
+CK_RV CK_SPEC
+C_GetInfo (CK_INFO_PTR pInfo)
 {
   if (pInfo == NULL_PTR)
     return CKR_ARGUMENTS_BAD;

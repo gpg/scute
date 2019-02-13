@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -36,10 +36,10 @@
 #include "locking.h"
 #include "slots.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetMechanismList)
-     (CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList,
-      CK_ULONG_PTR pulCount)
+
+CK_RV CK_SPEC
+C_GetMechanismList (CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList,
+                    CK_ULONG_PTR pulCount)
 {
   CK_RV err = CKR_OK;
   CK_ULONG left;
@@ -67,7 +67,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetMechanismList)
   while (!mechanisms_iterate_last (slot, &mechanism) && left && !err)
     {
       (*pulCount)++;
-      
+
       if (pMechanismList)
 	{
 	  *(pMechanismList++) = mechanism_get_type (slot, mechanism);

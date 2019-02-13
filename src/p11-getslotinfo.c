@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -42,9 +42,9 @@
 #include "settings.h"
 #include "slots.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GetSlotInfo)
-     (CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
+
+CK_RV CK_SPEC
+C_GetSlotInfo (CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;

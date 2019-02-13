@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -33,13 +33,15 @@
 
 #include "cryptoki.h"
 
-
-CK_DEFINE_FUNCTION(CK_RV, C_GenerateKeyPair)
-     (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
-      CK_ATTRIBUTE_PTR pPublicKeyTemplate, CK_ULONG ulPublicKeyAttributeCount,
-      CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
-      CK_ULONG ulPrivateKeyAttributeCount,
-      CK_OBJECT_HANDLE_PTR phPublicKey, CK_OBJECT_HANDLE_PTR phPrivateKey)
+
+CK_RV CK_SPEC
+C_GenerateKeyPair (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+                   CK_ATTRIBUTE_PTR pPublicKeyTemplate,
+                   CK_ULONG ulPublicKeyAttributeCount,
+                   CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
+                   CK_ULONG ulPrivateKeyAttributeCount,
+                   CK_OBJECT_HANDLE_PTR phPublicKey,
+                   CK_OBJECT_HANDLE_PTR phPrivateKey)
 {
   (void) hSession;
   (void) pMechanism;
