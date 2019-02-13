@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2008 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -28,23 +28,63 @@
    exception statement from your version.  */
 
 #include <stdio.h>
-#include <stdbool.h>
+#include <string.h>
 
+#define PGM "t-getslotinfo"
 #include "t-support.h"
+
+
 
 int
 main (int argc, char *argv[])
 {
+  int last_argc = -1;
   CK_RV err;
-  bool token = false;
+  int loop = 0;
+  int token = 0;
   CK_SLOT_ID_PTR slots;
   CK_ULONG slots_count;
   unsigned int i;
 
-  (void) argv;
-
-  if (argc > 1)
-    token = true;
+  if (argc)
+    { argc--; argv++; }
+  while (argc && last_argc != argc )
+    {
+      last_argc = argc;
+      if (!strcmp (*argv, "--"))
+        {
+          argc--; argv++;
+          break;
+        }
+      else if (!strcmp (*argv, "--help"))
+        {
+          fputs ("usage: " PGM " [options]\n"
+                 "Options:\n"
+                 "  --loop N        Run N times with a 2 second delay.\n"
+                 "  --token         Only present tokens\n",
+                 stdout);
+          exit (0);
+        }
+      else if (!strcmp (*argv, "--loop"))
+        {
+          argc--; argv++;
+          if (argc)
+            {
+              loop = atoi (*argv);
+              argc--; argv++;
+            }
+        }
+      else if (!strcmp (*argv, "--token"))
+        {
+          argc--; argv++;
+          token = 1;
+        }
+      else if (!strncmp (*argv, "--", 2))
+        {
+          fprintf (stderr, "unknown option '%s'\n", *argv);
+          exit (1);
+        }
+    }
 
   init_cryptoki ();
 
@@ -53,6 +93,9 @@ main (int argc, char *argv[])
 
   printf ("Number of slots%s: %lu\n", token ? " (with tokens)" : "",
 	  slots_count);
+  if (!slots_count)
+    return 0;  /* Nothing to do.  */
+
   slots = malloc (sizeof (CK_SLOT_ID) * slots_count);
   if (!slots)
     fail_if_err (CKR_HOST_MEMORY);
@@ -60,8 +103,7 @@ main (int argc, char *argv[])
   err = C_GetSlotList (token, slots, &slots_count);
   fail_if_err (err);
 
-  //  while (1)
-    {
+ again:
   for (i = 0; i < slots_count; i++)
     {
       CK_SLOT_INFO info;
@@ -76,7 +118,7 @@ main (int argc, char *argv[])
       printf ("    Flags: %#lx", info.flags);
       if (info.flags)
 	{
-	  bool any = false;
+	  int any = 0;
 	  CK_FLAGS xflags;
 
 	  xflags = info.flags & ~(CKF_TOKEN_PRESENT | CKF_REMOVABLE_DEVICE
@@ -85,17 +127,17 @@ main (int argc, char *argv[])
 	  if (info.flags & CKF_TOKEN_PRESENT)
 	    {
 	      printf ("TOKEN_PRESENT");
-	      any = true;
+	      any = 1;
 	    }
 	  if (info.flags & CKF_REMOVABLE_DEVICE)
 	    {
 	      printf ("%sREMOVABLE_DEVICE", any ? " | " : "");
-	      any = true;
+	      any = 1;
 	    }
 	  if (info.flags & CKF_HW_SLOT)
 	    {
 	      printf ("%sHW_SLOT", any ? " | " : "");
-	      any = true;
+              any = 1;
 	    }
 	  if (xflags)
 	    printf ("%s%#lx", any ? " | " : "", xflags);
@@ -107,11 +149,17 @@ main (int argc, char *argv[])
       printf ("    Firmware version: %i.%i\n", info.firmwareVersion.major,
 	      info.firmwareVersion.minor);
     }
+
+  if (loop > 0)
+    loop--;
+  if (loop)
+    {
 #ifdef WIN32
-  _sleep (2);
+      _sleep (2);
 #else
-  sleep (2);
+      sleep (2);  /* Why? */
 #endif
+      goto again;
     }
 
   return 0;

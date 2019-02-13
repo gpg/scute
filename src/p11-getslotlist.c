@@ -36,7 +36,17 @@
 #include "locking.h"
 #include "slots.h"
 
-
+
+/* Return the list of available slots.  With TOKENPRESENT set only
+ * slots with a present tokens are returned.  If PSLOTLIST is NULL the
+ * function only counts the number of slots and stores that number at
+ * PULCOUNT.  Further this also updates the inetrnal state and thus
+ * this needs to be called to check for new devices.  If PSLOTLIST is
+ * not NULL it must point to an array which receives the slot
+ * information.  PULCOUNT must point to a variable which initially
+ * holds the number of allocated slot items and will be updated on
+ * return to the stored number of slot items.
+ */
 CK_RV CK_SPEC
 C_GetSlotList (CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList,
                CK_ULONG_PTR pulCount)
