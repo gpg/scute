@@ -385,7 +385,7 @@ slot_init (slot_iterator_t id)
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slots, id);
 
-  err = scute_gpgsm_get_cert (slot->info.grip3, 3, add_object, slot);
+  err = scute_gpgsm_get_cert (slot->info.grip3, "OPENPGP.3", add_object, slot);
   if (err)
     goto init_out;
 
@@ -423,11 +423,15 @@ slots_update_slot (slot_iterator_t id)
      the session, if possible.  */
   err = scute_agent_learn (&slot->info);
 
-  /* First check if this is really an OpenPGP card.  FIXME: Should
-     probably report the error in a better way.  */
-  if (!err && (!slot->info.serialno
-	       || strncmp (slot->info.serialno, "D27600012401", 12)
-	       || strlen (slot->info.serialno) != 32))
+  /* First check if this is really a PIV or an OpenPGP card.  FIXME:
+   * Should probably report the error in a better way and use a
+   * generic way to identify cards without resorting to special-casing
+   * PIV cards. */
+  if (!err && slot->info.is_piv)
+    ; /* Okay, this is a PIV card.  */
+  else if (!err && (!slot->info.serialno
+                    || strncmp (slot->info.serialno, "D27600012401", 12)
+                    || strlen (slot->info.serialno) != 32))
     {
       DEBUG (DBG_INFO, "token not an OpenPGP card: %s", slot->info.serialno);
       err = gpg_error (GPG_ERR_CARD_NOT_PRESENT);
@@ -540,11 +544,18 @@ slot_token_label (slot_iterator_t id)
 
 
 /* Get the manufacturer of the token.  */
-char *
+const char *
 slot_token_manufacturer (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slots, id);
   unsigned int uval;
+
+  if (slot->info.is_piv)
+    {
+      if (slot->info.cardtype && !strcmp (slot->info.cardtype, "yubikey"))
+        return "Yubikey";
+      return "Unknown";
+    }
 
   /* slots_update() makes sure this is valid.  */
   uval = xtoi_2 (slot->info.serialno + 16) * 256
@@ -582,13 +593,21 @@ slot_token_manufacturer (slot_iterator_t id)
 }
 
 
-/* Get the manufacturer of the token.  */
-char *
+/* Get the application used on the token.  */
+const char *
 slot_token_application (slot_iterator_t id)
 {
-  (void) id;
+  struct slot *slot = scute_table_data (slots, id);
+
+  if (!slot)
+    return "[ooops]";
+
   /* slots_update() makes sure this is correct.  */
-  return "OpenPGP";
+
+  if (slot->info.is_piv)
+    return "PIV";
+  else
+    return "OpenPGP";
 }
 
 
@@ -599,6 +618,13 @@ slot_token_serial (slot_iterator_t id, char *dst)
 {
   struct slot *slot = scute_table_data (slots, id);
   int i;
+
+  if (slot->info.is_piv)
+    {
+      strncpy (dst, slot->info.serialno, 15);
+      dst[15] = 0;
+      return 16;
+    }
 
   /* slots_update() makes sure serialno is valid.  */
   for (i = 0; i < 8; i++)
@@ -616,10 +642,20 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
   struct slot *slot = scute_table_data (slots, id);
 
   /* slots_update() makes sure serialno is valid.  */
-  *hw_major = xtoi_2 (slot->info.serialno + 12);
-  *hw_minor = xtoi_2 (slot->info.serialno + 14);
-  *fw_major = 0;
-  *fw_minor = 0;
+  if (slot->info.is_piv)
+    {
+      *hw_major = 0;
+      *hw_minor = 0;
+      *fw_major = 0;
+      *fw_minor = 0;
+    }
+  else
+    {
+      *hw_major = xtoi_2 (slot->info.serialno + 12);
+      *hw_minor = xtoi_2 (slot->info.serialno + 14);
+      *fw_major = 0;
+      *fw_minor = 0;
+    }
 }
 
 

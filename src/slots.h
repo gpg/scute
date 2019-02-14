@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -93,10 +93,10 @@ bool slot_token_present (slot_iterator_t slot);
 char *slot_token_label (slot_iterator_t id);
 
 /* Get the manufacturer of the token.  */
-char *slot_token_manufacturer (slot_iterator_t id);
+const char *slot_token_manufacturer (slot_iterator_t id);
 
-/* Get the manufacturer of the token.  */
-char *slot_token_application (slot_iterator_t id);
+/* Get the application of the token.  */
+const char *slot_token_application (slot_iterator_t id);
 
 /* Get the serial number of the token.  Must not write more than 16
    bytes starting from DST.  */

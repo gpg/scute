@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -39,7 +39,7 @@
 
 /* The callback type invoked for each certificate found in the
    search.  */
-typedef gpg_error_t (*cert_get_cb_t) (void *hook, 
+typedef gpg_error_t (*cert_get_cb_t) (void *hook,
 				      CK_ATTRIBUTE_PTR attrp,
 				      CK_ULONG attr_countp);
 
@@ -47,7 +47,7 @@ typedef gpg_error_t (*cert_get_cb_t) (void *hook,
    Returns allocated attributes for the certificate object in ATTRP
    and ATTR_COUNTP, and for the private key object in PRV_ATTRP
    and PRV_ATTR_COUNTP.  */
-gpg_error_t scute_gpgsm_get_cert (char *grip, int no,
+gpg_error_t scute_gpgsm_get_cert (char *grip, const char *certref,
 				  cert_get_cb_t cert_get_cb, void *hook);
 
 #endif	/* GPGSM_H */

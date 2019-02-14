@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -43,7 +43,7 @@
 
 /* Copy a string into its location, with blank character padding.  */
 static inline void
-scute_copy_string (char *dest, char *src, int max_len)
+scute_copy_string (char *dest, const char *src, int max_len)
 {
   int i;
   for (i = 0; (i < max_len) && (*src != '\0'); i++)
@@ -63,7 +63,7 @@ scute_copy_string (char *dest, char *src, int max_len)
 #ifndef HAVE_TTYNAME
 /* Systems without ttyname (W32) will merely return NULL. */
 static inline char *
-ttyname (int fd) 
+ttyname (int fd)
 {
   return NULL;
 }
@@ -87,5 +87,5 @@ const char *get_gpgsm_path (void);
 const char *get_gpg_connect_agent_path (void);
 
 
-    
+
 #endif	/* !SUPPORT_H */

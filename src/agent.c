@@ -416,6 +416,21 @@ unhexify_fpr (const char *hexstr, unsigned char *fpr)
   return 1;
 }
 
+/* Return true if HEXSTR is a valid keygrip.  */
+static unsigned int
+hexgrip_valid_p (const char *hexstr)
+{
+  const char *s;
+  int n;
+
+  for (s=hexstr, n=0; hexdigitp (s); s++, n++)
+    ;
+  if ((*s && *s != ' ') || n != 40)
+    return 0; /* Bad keygrip */
+  else
+    return 1; /* Valid.  */
+}
+
 
 /* Take the serial number from LINE and return it verbatim in a newly
    allocated string.  We make sure that only hex characters are
@@ -448,12 +463,58 @@ scute_agent_release_card_info (struct agent_card_info_s *info)
     return;
 
   free (info->serialno);
+  free (info->cardtype);
   free (info->disp_name);
   free (info->disp_lang);
   free (info->pubkey_url);
   free (info->login_data);
+  while (info->kinfo)
+    {
+      key_info_t ki = info->kinfo->next;
+      free (info->kinfo);
+      info->kinfo = ki;
+    }
 
   memset (info, 0, sizeof (*info));
+}
+
+
+/* Return the key info object for the key KEYREF.  If it is not found
+ * NULL is returned.  */
+key_info_t
+scute_find_kinfo (agent_card_info_t info, const char *keyref)
+{
+  key_info_t kinfo;
+
+  for (kinfo = info->kinfo; kinfo; kinfo = kinfo->next)
+    if (!strcmp (kinfo->keyref, keyref))
+      return kinfo;
+  return NULL;
+}
+
+
+/* Create a new key info object with KEYREF.  All fields but the
+ * keyref are zeroed out.  The created object is appended to the list
+ * at INFO. */
+static key_info_t
+create_kinfo (agent_card_info_t info, const char *keyref)
+{
+  key_info_t kinfo, ki;
+
+  kinfo = calloc (1, sizeof *kinfo + strlen (keyref));
+  if (!kinfo)
+    return NULL;
+  strcpy (kinfo->keyref, keyref);
+
+  if (!info->kinfo)
+    info->kinfo = kinfo;
+  else
+    {
+      for (ki=info->kinfo; ki->next; ki = ki->next)
+        ;
+      ki->next = kinfo;
+    }
+  return kinfo;
 }
 
 
@@ -461,9 +522,11 @@ scute_agent_release_card_info (struct agent_card_info_s *info)
 static gpg_error_t
 learn_status_cb (void *opaque, const char *line)
 {
-  struct agent_card_info_s *parm = opaque;
+  agent_card_info_t parm = opaque;
   const char *keyword = line;
   int keywordlen;
+  key_info_t kinfo;
+  const char *keyref;
   int i;
 
   for (keywordlen = 0; *line && !spacep (line); line++, keywordlen++)
@@ -473,9 +536,17 @@ learn_status_cb (void *opaque, const char *line)
 
   if (keywordlen == 8 && !memcmp (keyword, "SERIALNO", keywordlen))
     {
-      if (parm->serialno)
-	free (parm->serialno);
+      free (parm->serialno);
       parm->serialno = store_serialno (line);
+    }
+  else if (keywordlen == 7 && !memcmp (keyword, "APPTYPE", keywordlen))
+    {
+      parm->is_piv = !strcmp (line, "PIV");
+    }
+  else if (keywordlen == 8 && !memcmp (keyword, "CARDTYPE", keywordlen))
+    {
+      free (parm->cardtype);
+      parm->cardtype = unescape_status_string (line);
     }
   else if (keywordlen == 9 && !memcmp (keyword, "DISP-NAME", keywordlen))
     {
@@ -572,38 +643,53 @@ learn_status_cb (void *opaque, const char *line)
     }
   else if (keywordlen == 11 && !memcmp (keyword, "KEYPAIRINFO", keywordlen))
     {
-      const char *grip = line;
+      /* The format of such a line is:
+       *   KEYPARINFO <hexgrip> <keyref>
+       */
+      const char *hexgrip = line;
+
       while (*line && !spacep (line))
         line++;
+      while (spacep (line))
+        line++;
+      keyref = line;
 
-      if (line - grip == 40)
-	{
-	  while (spacep (line))
-	    line++;
-	  if (!memcmp (line, "OPENPGP.", 8))
-	    {
-	      int no;
-	      line += 8;
+      if (hexgrip_valid_p (hexgrip))
+        {
+          /* Check whether we already have an item for the keyref.  */
+          kinfo = scute_find_kinfo (parm, keyref);
+          if (!kinfo)  /* New entry.  */
+            {
+              kinfo = create_kinfo (parm, keyref);
+              if (!kinfo)
+                goto no_core;
+            }
+          else /* Existing entry - clear the grip.  */
+            *kinfo->grip = 0;
 
-	      no = atoi (line);
+          strncpy (kinfo->grip, hexgrip, sizeof kinfo->grip);
+          kinfo->grip[sizeof kinfo->grip -1] = 0;
 
-	      if (no == 1)
-		{
-		  memcpy (parm->grip1, grip, 40);
-		  parm->grip1valid = 1;
-		}
-	      else if (no == 2)
-		{
-		  memcpy (parm->grip2, grip, 40);
-		  parm->grip2valid = 1;
-		}
-	      else if (no == 3)
-		{
-		  memcpy (parm->grip3, grip, 40);
-		  parm->grip3valid = 1;
-		}
-	    }
-	}
+          /* Keep legacy info.  */
+	  if (!strcmp (keyref, "OPENPGP.1"))
+            {
+              strncpy (parm->grip1, hexgrip, sizeof parm->grip1);
+              parm->grip1[sizeof parm->grip1 - 1] = 0;
+              parm->grip1valid = 1;
+            }
+          else if (!strcmp (keyref, "OPENPGP.2"))
+            {
+              strncpy (parm->grip2, hexgrip, sizeof parm->grip2);
+              parm->grip2[sizeof parm->grip2 - 1] = 0;
+              parm->grip2valid = 1;
+            }
+          else if (!strcmp (keyref, "OPENPGP.3"))
+            {
+              strncpy (parm->grip3, hexgrip, sizeof parm->grip3);
+              parm->grip3[sizeof parm->grip3 - 1] = 0;
+              parm->grip3valid = 1;
+            }
+        }
     }
   else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
     {
@@ -630,6 +716,9 @@ learn_status_cb (void *opaque, const char *line)
         }
     }
   return 0;
+
+ no_core:
+  return gpg_error_from_syserror ();
 }
 
 
@@ -1027,9 +1116,9 @@ get_cert_data_cb (void *opaque, const void *data, size_t data_len)
 }
 
 
-/* Try to get certificate for key numer NO.  */
+/* Try to get certificate for CERTREF.  */
 gpg_error_t
-scute_agent_get_cert (int no, struct cert *cert)
+scute_agent_get_cert (const char *certref, struct cert *cert)
 {
   gpg_error_t err;
   char cmd[150];
@@ -1039,7 +1128,7 @@ scute_agent_get_cert (int no, struct cert *cert)
   cert_s.cert_der_len = 0;
   cert_s.cert_der_size = 0;
 
-  snprintf (cmd, sizeof (cmd), "SCD READCERT OPENPGP.%i", no);
+  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", certref);
   err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
 			 NULL, NULL, NULL, NULL);
   /* Just to be safe... */

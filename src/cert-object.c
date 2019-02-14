@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2007 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -45,21 +45,12 @@
 #include "debug.h"
 
 
-/* Parsing certificates is problematic, as there is no reliable
-   standard.  However, we must parse at least the subject field (see
-   below).  So, disabling cert parsing does currently not disable it
-   completely.  The purpose of the symbol is to document which parts
-   of the code are mandatory, and which are optional.  */
-#define CERT_PARSING 1
-
-
-#if CERT_PARSING || 1
-
 #define atoi_1(p)   (*(p) - '0' )
 #define atoi_2(p)   ((atoi_1(p) * 10) + atoi_1((p)+1))
 #define atoi_4(p)   ((atoi_2(p) * 100) + atoi_2((p)+2))
 
 
+#if 0 /* Currently not used.  */
 static bool
 time_to_ck_date (time_t *atime, CK_DATE *ckdate)
 {
@@ -86,7 +77,7 @@ time_to_ck_date (time_t *atime, CK_DATE *ckdate)
   if (!(broken_time.tm_year >= 0 && broken_time.tm_year <= 8099
 	&& broken_time.tm_mon >= 0 && broken_time.tm_mon <= 11
 	&& broken_time.tm_mday >= 1 && broken_time.tm_mday <= 31))
-    { 
+    {
       DEBUG (DBG_INFO, "unrepresentable time %i-%i-%i",
 	     broken_time.tm_year, broken_time.tm_mon, broken_time.tm_mday);
       return false;
@@ -101,12 +92,12 @@ time_to_ck_date (time_t *atime, CK_DATE *ckdate)
   ckdate->year[1] = LAST_DIGIT (nr);
   nr = nr / 10;
   ckdate->year[0] = LAST_DIGIT (nr);
-  
+
   nr = broken_time.tm_mon + 1;
   ckdate->month[1] = LAST_DIGIT (nr);
   nr = nr / 10;
   ckdate->month[0] = LAST_DIGIT (nr);
-  
+
   nr = broken_time.tm_mday;
   ckdate->day[1] = LAST_DIGIT (nr);
   nr = nr / 10;
@@ -114,7 +105,7 @@ time_to_ck_date (time_t *atime, CK_DATE *ckdate)
 
   return true;
 }
-
+#endif /*0*/
 
 static gpg_error_t
 asn1_get_len (unsigned char **asn1, int *asn1_len, int *rlen)
@@ -241,7 +232,7 @@ asn1_get_element (unsigned char *cert, int cert_len,
   /* We found the subject.  */
   *sub_start = prev_certp;
   *sub_len = certp - prev_certp;
-  
+
   return 0;
 }
 
@@ -380,7 +371,6 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
 
   return 0;
 }
-#endif
 
 
 static gpg_error_t
@@ -453,8 +443,6 @@ scute_attr_cert (struct cert *cert,
   CK_DATE obj_end_date;
   CK_ULONG obj_java_midp_sec_domain = 0;
 
-#if CERT_PARSING || 1
-  /* See below.  */
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
   if (err)
@@ -463,8 +451,7 @@ scute_attr_cert (struct cert *cert,
 	     gpg_strerror (err));
       return err;
     }
-#endif
-#if CERT_PARSING
+
   err = asn1_get_issuer (cert->cert_der, cert->cert_der_len,
 			 &issuer_start, &issuer_len);
   if (err)
@@ -482,7 +469,6 @@ scute_attr_cert (struct cert *cert,
 	     gpg_strerror (err));
       return err;
     }
-#endif
 
 
 #define NR_ATTR_CERT 20
@@ -494,77 +480,106 @@ scute_attr_cert (struct cert *cert,
       return gpg_error (GPG_ERR_ENOMEM);
     }
 
-#define one_attr_ext(type, val, size)					\
-  if (!err)								\
-    err = attr_one (attr, &attr_count, type, val, size)
-
-#define one_attr(type, val) one_attr_ext (type, &val, sizeof (val))
-
-#define empty_attr(type)						\
-  if (!err)								\
-    err = attr_empty (attr, &attr_count, type)
-
-  one_attr (CKA_CLASS, obj_class);
-  one_attr (CKA_TOKEN, obj_token);
-  one_attr (CKA_PRIVATE, obj_private);
-  one_attr (CKA_MODIFIABLE, obj_modifiable);
-  one_attr (CKA_LABEL, obj_label);
-  one_attr (CKA_CERTIFICATE_TYPE, obj_cert_type);
-  one_attr (CKA_TRUSTED, obj_trusted);
-  one_attr (CKA_CERTIFICATE_CATEGORY, obj_cert_cat);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_CLASS,
+                    &obj_class, sizeof obj_class);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_TOKEN,
+                    &obj_token, sizeof obj_token);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_PRIVATE,
+                    &obj_private, sizeof obj_private);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
+                    &obj_modifiable, sizeof obj_modifiable);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_LABEL,
+                    &obj_label, sizeof obj_label);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_CERTIFICATE_TYPE,
+                    &obj_cert_type, sizeof obj_cert_type);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_TRUSTED,
+                    &obj_trusted, sizeof obj_trusted);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_CERTIFICATE_CATEGORY,
+                    &obj_cert_cat, sizeof obj_cert_cat);
 
   /* FIXME: Calculate check_value.  */
-  one_attr (CKA_CHECK_VALUE, obj_check_value);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_CHECK_VALUE,
+                    &obj_check_value, sizeof obj_check_value);
 
 #if 0
   if (time_to_ck_date (&cert->timestamp, &obj_start_date))
     {
-      one_attr (CKA_START_DATE, obj_start_date);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_START_DATE,
+                        &obj_start_date, sizeof obj_start_date);
     }
 
   if (time_to_ck_date (&cert->expires, &obj_end_date))
     {
-      one_attr (CKA_END_DATE, obj_end_date);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_END_DATE,
+                        &obj_end_date, sizeof obj_end_date);
     }
 #else
   /* For now, we disable these fields.  We can parse them from the
      certificate just as the other data.  However, we would like to
      avoid parsing the certificates at all, let's see how much
      functionality we really need in the PKCS#11 token first.  */
-  empty_attr (CKA_START_DATE);
-  empty_attr (CKA_END_DATE);
+  (void)obj_start_date;
+  (void)obj_end_date;
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_START_DATE);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_END_DATE);
 #endif
 
   /* Note: This attribute is mandatory.  Without it, Firefox client
      authentication won't work.  */
-#if CERT_PARSING || 1
-  one_attr_ext (CKA_SUBJECT, subject_start, subject_len);
-#endif
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SUBJECT,
+                    subject_start, subject_len);
 
 #if 0
   /* If we get the info directly from the card, we don't have a
      fingerprint, and parsing the subject key identifier is quite a
      mouth full.  Let's try a different approach for now.  */
-  one_attr_ext (CKA_ID, cert->fpr, 40);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ID,
+                    cert->fpr, 40);
 #else
   {
     char certptr[40];
     snprintf (certptr, DIM (certptr), "%p", cert);
-    one_attr_ext (CKA_ID, certptr, strlen (certptr));
+    if (!err)
+      err = attr_one (attr, &attr_count, CKA_ID,
+                      certptr, strlen (certptr));
   }
 #endif
 
-#if CERT_PARSING
-  one_attr_ext (CKA_ISSUER, issuer_start, issuer_len);
-  one_attr_ext (CKA_SERIAL_NUMBER, serial_start, serial_len);
-#endif
-  one_attr_ext (CKA_VALUE, cert->cert_der, cert->cert_der_len);
-  
-  empty_attr (CKA_URL);
-  empty_attr (CKA_HASH_OF_SUBJECT_PUBLIC_KEY);
-  empty_attr (CKA_HASH_OF_ISSUER_PUBLIC_KEY);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ISSUER,
+                    issuer_start, issuer_len);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SERIAL_NUMBER,
+                    serial_start, serial_len);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_VALUE,
+                    cert->cert_der, cert->cert_der_len);
 
-  one_attr (CKA_JAVA_MIDP_SECURITY_DOMAIN, obj_java_midp_sec_domain);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_URL);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_HASH_OF_SUBJECT_PUBLIC_KEY);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_HASH_OF_ISSUER_PUBLIC_KEY);
+
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_JAVA_MIDP_SECURITY_DOMAIN,
+                    &obj_java_midp_sec_domain, sizeof obj_java_midp_sec_domain);
 
   if (err)
     {
@@ -624,7 +639,6 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
   CK_BBOOL obj_wrap_with_trusted = CK_FALSE;
   CK_BBOOL obj_always_authenticate = CK_FALSE;
 
-#if CERT_PARSING
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
   if (err)
@@ -649,7 +663,6 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
 	     gpg_strerror (err));
       return err;
     }
-#endif
 
 #define NR_ATTR_PRV 27
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_PRV);
@@ -660,36 +673,39 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
       return gpg_error (GPG_ERR_ENOMEM);
     }
 
-#undef one_attr_ext
-#define one_attr_ext(type, val, size)					\
-  if (!err)								\
-    err = attr_one (attr, &attr_count, type, val, size)
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_CLASS,
+                    &obj_class, sizeof obj_class);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_TOKEN,
+                    &obj_token, sizeof obj_token);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_PRIVATE,
+                    &obj_private, sizeof obj_private);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
+                    &obj_modifiable, sizeof obj_modifiable);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_LABEL,
+                    &obj_label, sizeof obj_label);
 
-#undef one_attr
-#define one_attr(type, val) one_attr_ext (type, &val, sizeof (val))
-
-#undef empty_attr
-#define empty_attr(type)						\
-  if (!err)								\
-    err = attr_empty (attr, &attr_count, type)
-
-  one_attr (CKA_CLASS, obj_class);
-  one_attr (CKA_TOKEN, obj_token);
-  one_attr (CKA_PRIVATE, obj_private);
-  one_attr (CKA_MODIFIABLE, obj_modifiable);
-  one_attr (CKA_LABEL, obj_label);
-
-  one_attr (CKA_KEY_TYPE, obj_key_type);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_KEY_TYPE,
+                    &obj_key_type, sizeof obj_key_type);
 #if 0
   /* If we get the info directly from the card, we don't have a
      fingerprint, and parsing the subject key identifier is quite a
      mouth full.  Let's try a different approach for now.  */
-  one_attr_ext (CKA_ID, cert->fpr, 40);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ID,
+                    &cert->fpr, 40);
 #else
   {
     char certptr[40];
     snprintf (certptr, DIM (certptr), "%p", cert);
-    one_attr_ext (CKA_ID, certptr, strlen (certptr));
+    if (!err)
+      err = attr_one (attr, &attr_count, CKA_ID,
+                      certptr, strlen (certptr));
   }
 #endif
 
@@ -703,47 +719,86 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
      gpgsm.  */
   if (time_to_ck_date (&cert->timestamp, &obj_start_date))
     {
-      one_attr (CKA_START_DATE, obj_start_date);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_START_DATE,
+                        &obj_start_date, sizeof obj_start_date);
     }
 
   if (time_to_ck_date (&cert->expires, &obj_end_date))
     {
-      one_attr (CKA_END_DATE, obj_end_date);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_END_DATE,
+                        &obj_end_date, sizeof obj_end_date);
     }
 #else
   /* For now, we disable these fields.  We can parse them from the
      certificate just as the other data.  However, we would like to
      avoid parsing the certificates at all, let's see how much
      functionality we really need in the PKCS#11 token first.  */
-  empty_attr (CKA_START_DATE);
-  empty_attr (CKA_END_DATE);
+  (void)obj_start_date;
+  (void)obj_end_date;
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_START_DATE);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_END_DATE);
 #endif
 
-  one_attr (CKA_DERIVE, obj_derive);
-  one_attr (CKA_LOCAL, obj_local);
-  one_attr (CKA_KEY_GEN_MECHANISM, obj_key_gen);
-  one_attr (CKA_ALLOWED_MECHANISMS, obj_mechanisms);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_DERIVE,
+                    &obj_derive, sizeof obj_derive);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_LOCAL,
+                    &obj_local, sizeof obj_local);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_KEY_GEN_MECHANISM,
+                    &obj_key_gen, sizeof obj_key_gen);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ALLOWED_MECHANISMS,
+                    &obj_mechanisms, sizeof obj_mechanisms);
 
-#if CERT_PARSING
-  one_attr_ext (CKA_SUBJECT, subject_start, subject_len);
-#endif
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SUBJECT,
+                    subject_start, subject_len);
 
-  one_attr (CKA_SENSITIVE, obj_sensitive);
-  one_attr (CKA_DECRYPT, obj_decrypt);
-  one_attr (CKA_SIGN, obj_sign);
-  one_attr (CKA_SIGN_RECOVER, obj_sign_recover);
-  one_attr (CKA_UNWRAP, obj_unwrap);
-  one_attr (CKA_EXTRACTABLE, obj_extractable);
-  one_attr (CKA_ALWAYS_SENSITIVE, obj_always_sensitive);
-  one_attr (CKA_NEVER_EXTRACTABLE, obj_never_extractable);
-  one_attr (CKA_WRAP_WITH_TRUSTED, obj_wrap_with_trusted);
-  empty_attr (CKA_UNWRAP_TEMPLATE);
-  one_attr (CKA_ALWAYS_AUTHENTICATE, obj_always_authenticate);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SENSITIVE,
+                    &obj_sensitive, sizeof obj_sensitive);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_DECRYPT,
+                    &obj_decrypt, sizeof obj_decrypt);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SIGN,
+                    &obj_sign, sizeof obj_sign);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_SIGN_RECOVER,
+                    &obj_sign_recover, sizeof obj_sign_recover);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_UNWRAP,
+                    &obj_unwrap, sizeof obj_unwrap);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_EXTRACTABLE,
+                    &obj_extractable, sizeof obj_extractable);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ALWAYS_SENSITIVE,
+                    &obj_always_sensitive, sizeof obj_always_sensitive);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_NEVER_EXTRACTABLE,
+                    &obj_never_extractable, sizeof obj_never_extractable);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_WRAP_WITH_TRUSTED,
+                    &obj_wrap_with_trusted, sizeof obj_wrap_with_trusted);
+  if (!err)
+    err = attr_empty (attr, &attr_count, CKA_UNWRAP_TEMPLATE);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ALWAYS_AUTHENTICATE,
+                    &obj_always_authenticate, sizeof obj_always_authenticate);
 
-#if CERT_PARSING
-  one_attr_ext (CKA_MODULUS, modulus_start, modulus_len);
-  one_attr_ext (CKA_PUBLIC_EXPONENT, public_exp_start, public_exp_len);
-#endif
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_MODULUS,
+                    modulus_start, modulus_len);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
+                    public_exp_start, public_exp_len);
 
   if (err)
     {

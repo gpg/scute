@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2008 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -51,7 +51,7 @@
 
 struct search
 {
-  bool found;
+  bool found;    /* Set to true if a private key object was found.  */
   cert_get_cb_t cert_get_cb;
   void *hook;
   bool with_chain;
@@ -95,7 +95,7 @@ search_cb (void *hook, struct cert *cert)
   err = scute_attr_cert (cert, &attrp, &attr_countp);
   if (err)
     return err;
-  
+
   err = (*ctx->cert_get_cb) (ctx->hook, attrp, attr_countp);
   if (err)
     {
@@ -107,12 +107,20 @@ search_cb (void *hook, struct cert *cert)
 }
 
 
-/* Create the attributes required for a new certificate object.
-   Returns allocated attributes for the certificate object in ATTRP
-   and ATTR_COUNTP, and for the private key object in PRV_ATTRP
-   and PRV_ATTR_COUNTP.  */
+/* Create the attributes required for a new certificate object.  If
+ * CERTREF is not NULL it is used to locate the cert directly from the
+ * card; if CERTREF is NULL or a cert was not found on the card, GRIP
+ * is used to find the certificate in the local key store of gpgsm.
+ *
+ * FIXME: This is all pretty questionable because our input data
+ * always comes from the card.
+ *
+ * Returns allocated attributes for the certificate object in ATTRP
+ * and ATTR_COUNTP, and for the private key object in PRV_ATTRP and
+ * PRV_ATTR_COUNTP.  */
 gpg_error_t
-scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
+scute_gpgsm_get_cert (char *grip, const char *certref,
+                      cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search search;
@@ -122,14 +130,14 @@ scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
   search.hook = hook;
   search.with_chain = false;
 
-  /* If the key is from the card, we might get the certificate from
-     the card as well.  */
-  if (no >= 0)
+  /* If the cert is requested from the card, we try to get it from
+   * the card as well.  */
+  if (certref)
     {
       struct cert cert;
 
       memset (&cert, '\0', sizeof (cert));
-      err = scute_agent_get_cert (no, &cert);
+      err = scute_agent_get_cert (certref, &cert);
       if (! err)
 	{
 #if 0
@@ -145,7 +153,7 @@ scute_gpgsm_get_cert (char *grip, int no, cert_get_cb_t cert_get_cb, void *hook)
 	  return err;
 	}
     }
-  
+
   search.with_chain = true;
   err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
   return err;
