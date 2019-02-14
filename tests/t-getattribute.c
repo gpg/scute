@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2007 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -421,7 +421,7 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 			 CKR_GENERAL_ERROR : 0);
 	    printf ("     Key Start Date: %.4s/%.2s/%.2s\n",
 		    key_sdate.year, key_sdate.month, key_sdate.day);
-	    
+
 	    fail_if_err ((key_attr[7].ulValueLen != sizeof (key_edate)) ?
 			 CKR_GENERAL_ERROR : 0);
 	    printf ("     Key End Date: %.4s/%.2s/%.2s\n",
@@ -540,7 +540,7 @@ main (int argc, char *argv[])
 
   if (argc > 1 && !strcmp ("--printable", argv[1]))
     printable = true;
-    
+
   init_cryptoki ();
 
   err = C_GetSlotList (true, NULL, &slots_count);
@@ -570,7 +570,7 @@ main (int argc, char *argv[])
       err = C_OpenSession (slots[i], CKF_SERIAL_SESSION, NULL, NULL,
 			   &session);
       fail_if_err (err);
-     
+
       printf ("    Session ID: %lu\n", session);
 
       err = C_FindObjectsInit (session, NULL, 0);

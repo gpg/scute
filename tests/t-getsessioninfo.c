@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -101,7 +101,7 @@ main (int argc, char *argv[])
 	    }
 	  DO_FLAG (CKF_RW_SESSION);
 	  DO_FLAG (CKF_SERIAL_SESSION);
-	  
+
 	  xflags = info.flags & ~xflags;
 	  if (xflags)
 	    printf ("%s%#lx", any ? " | " : "", xflags);

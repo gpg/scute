@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -240,11 +240,11 @@ session_state_str (CK_STATE state)
 
 #define fail_if_err(err)					\
   do								\
-    {								\
-      if (err)							\
+    { unsigned int _err = (err);                                \
+      if (_err)							\
         {							\
           fprintf (stderr, "%s:%d: %s\n",			\
-                   __FILE__, __LINE__, ERRMSG(err));		\
+                   __FILE__, __LINE__, ERRMSG(_err));		\
           exit (1);						\
         }							\
     }								\
