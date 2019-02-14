@@ -97,9 +97,9 @@ C_GetTokenInfo (CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
   else if (len == 0)
     pInfo->flags |= CKF_USER_PIN_LOCKED;
 
-  pInfo->ulMaxSessionCount = CK_UNAVAILABLE_INFORMATION;
+  pInfo->ulMaxSessionCount = CK_EFFECTIVELY_INFINITE;
   pInfo->ulSessionCount = CK_UNAVAILABLE_INFORMATION;
-  pInfo->ulMaxRwSessionCount = CK_UNAVAILABLE_INFORMATION;
+  pInfo->ulMaxRwSessionCount = CK_EFFECTIVELY_INFINITE;
   pInfo->ulRwSessionCount = CK_UNAVAILABLE_INFORMATION;
   slot_token_maxpinlen (slot, &pInfo->ulMaxPinLen, &pInfo->ulMinPinLen);
 

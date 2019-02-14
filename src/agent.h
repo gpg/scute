@@ -90,12 +90,6 @@ struct agent_card_info_s
 			   cache it anyway.  */
   int chvmaxlen[3];	/* Maximum allowed length of a CHV.  */
   int chvretry[3];	/* Allowed retries for the CHV; 0 = blocked.  */
-  char grip1valid;
-  char grip2valid;
-  char grip3valid;
-  char grip1[41];
-  char grip2[41];
-  char grip3[41];
   int rng_available;    /* True if the GET CHALLENGE operation
                            is supported. */
   int is_piv;           /* True if this is a PIV card.  */
@@ -131,11 +125,11 @@ void scute_agent_release_card_info (struct agent_card_info_s *info);
 key_info_t scute_find_kinfo (agent_card_info_t info, const char *keyref);
 
 
-/* Sign the data DATA of length LEN with the key GRIP and return the
-   signature in SIG_RESULT and SIG_LEN.  */
-gpg_error_t scute_agent_sign (char *grip, unsigned char *data, int len,
-			      unsigned char *sig_result,
-			      unsigned int *sig_len);
+/* Sign the data DATA of length LEN with the key HEXGRIP and return
+ * the signature in SIG_RESULT and SIG_LEN.  */
+gpg_error_t scute_agent_sign (const char *hexgrip,
+                              unsigned char *data, int len,
+			      unsigned char *sig_result, unsigned int *sig_len);
 
 /* Determine if FPR is trusted.  */
 gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted);

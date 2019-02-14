@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -37,14 +37,14 @@
 /* The manufacturer ID in UTF-8.  Only up to 32 bytes are used.  */
 #define MANUFACTURER_ID	"g10 Code GmbH"
 
-#define LIBRARY_DESCRIPTION	"Cryptoki for SCDaemon"
+#define LIBRARY_DESCRIPTION "Cryptoki for GnuPG"
 
 /* The version number of this library.  Defined by config.h.  */
 #if (! defined VERSION_MAJOR) || (! defined VERSION_MINOR)
 #error Define VERSION_MAJOR and VERSION_MINOR in config.h.
 #endif
 
-/* FIXME: The following should be queried from SCD, really.  */
+/* FIXME: The following should be queried from GnuPG, really.  */
 #define SLOT_DESCRIPTION "GnuPG Smart Card Daemon"
 #define SLOT_MANUFACTURER_ID "g10 Code GmbH"
 #define SLOT_HARDWARE_VERSION_MAJOR 0

@@ -37,6 +37,18 @@
 #include "slots.h"
 
 
+/* Sign the data (PDATA,ULDATALEN) using the information recorded in
+ * the HSESSION by C_SignInit.  PSIGNAURE is a buffer to receive the
+ * signature.  The length of that buffer must be stored in a variable
+ * to which PULSIGNATURELEN points to; on success that length is
+ * updated to the actual length of the signature in PULSIGNATURE.
+ *
+ * If the function returns CKR_BUFFER_TOO_SMALL no further C_SignInit
+ * is required, instead the function can be called again with a larger
+ * buffer.  On a successful operation CKR_OK is returned and other
+ * signatures may be created without an new C_SignInit.  On all other
+ * return codes a new C_SignInit is required.
+ */
 CK_RV CK_SPEC
 C_Sign (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
         CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
@@ -56,11 +68,14 @@ C_Sign (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
   if (err)
     goto out;
 
-  /* FIXME: Who cares if they called sign init correctly.  */
+  /* FIXME: Check that C_SignInit has been called.  */
+
   err = session_sign (slot, session, pData, ulDataLen,
 		      pSignature, pulSignatureLen);
 
  out:
+  /* FIXME: Update the flag which indicates whether C_SignInit has
+   * been called.  */
   scute_global_unlock ();
   return err;
 }

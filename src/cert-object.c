@@ -414,7 +414,7 @@ scute_attr_free (CK_ATTRIBUTE_PTR attr, CK_ULONG attr_count)
 
 
 gpg_error_t
-scute_attr_cert (struct cert *cert,
+scute_attr_cert (struct cert *cert, const char *grip,
 		 CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp)
 {
   CK_RV err = 0;
@@ -432,9 +432,6 @@ scute_attr_cert (struct cert *cert,
   CK_BBOOL obj_token = CK_TRUE;
   CK_BBOOL obj_private = CK_FALSE;
   CK_BBOOL obj_modifiable = CK_FALSE;
-  CK_BYTE obj_label[] = { 'D', 'u', 'm', 'm', 'y', ' ',
-			  'L', 'a', 'b', 'e', 'l' };
-
   CK_CERTIFICATE_TYPE obj_cert_type = CKC_X_509;
   CK_BBOOL obj_trusted = cert->is_trusted;
   CK_ULONG obj_cert_cat = 0;
@@ -493,8 +490,14 @@ scute_attr_cert (struct cert *cert,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_LABEL,
-                    &obj_label, sizeof obj_label);
+    {
+      if (*cert->certref)
+        err = attr_one (attr, &attr_count, CKA_LABEL,
+                        cert->certref, strlen (cert->certref));
+      else
+        err = attr_one (attr, &attr_count, CKA_LABEL,
+                        "DummyLabel", 10);
+    }
   if (!err)
     err = attr_one (attr, &attr_count, CKA_CERTIFICATE_TYPE,
                     &obj_cert_type, sizeof obj_cert_type);
@@ -543,22 +546,19 @@ scute_attr_cert (struct cert *cert,
     err = attr_one (attr, &attr_count, CKA_SUBJECT,
                     subject_start, subject_len);
 
-#if 0
-  /* If we get the info directly from the card, we don't have a
-     fingerprint, and parsing the subject key identifier is quite a
-     mouth full.  Let's try a different approach for now.  */
+  /* We construct the CKA_ID from the CERTREF and the KEYGRIP.  This
+   * allows us to use both values as needed.  */
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_ID,
-                    cert->fpr, 40);
-#else
-  {
-    char certptr[40];
-    snprintf (certptr, DIM (certptr), "%p", cert);
-    if (!err)
+    {
+      char cka_id_buffer[200];
+
+      snprintf (cka_id_buffer, sizeof cka_id_buffer, "%s %s",
+                *cert->certref ? cert->certref:"-",
+                grip && *grip? grip : "?" );
       err = attr_one (attr, &attr_count, CKA_ID,
-                      certptr, strlen (certptr));
-  }
-#endif
+                      cka_id_buffer, strlen (cka_id_buffer));
+    }
+
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_ISSUER,
@@ -599,8 +599,8 @@ scute_attr_cert (struct cert *cert,
 
 
 gpg_error_t
-scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
-		CK_ULONG *attr_countp)
+scute_attr_prv (struct cert *cert, const char *grip,
+                CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp)
 {
   CK_RV err = 0;
   CK_ATTRIBUTE_PTR attr;
@@ -617,9 +617,6 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
   CK_BBOOL obj_token = CK_TRUE;
   CK_BBOOL obj_private = CK_FALSE;
   CK_BBOOL obj_modifiable = CK_FALSE;
-  CK_BYTE obj_label[] = { 'O', 'P', 'E', 'N', 'P', 'G',
-			  'P', '.', '3' };
-
   CK_KEY_TYPE obj_key_type = CKK_RSA;
   CK_DATE obj_start_date;
   CK_DATE obj_end_date;
@@ -686,28 +683,31 @@ scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_LABEL,
-                    &obj_label, sizeof obj_label);
+    {
+      if (*cert->certref)
+        err = attr_one (attr, &attr_count, CKA_LABEL,
+                        cert->certref, strlen (cert->certref));
+      else
+        err = attr_one (attr, &attr_count, CKA_LABEL,
+                        "DummyLabel", 10);
+    }
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_KEY_TYPE,
                     &obj_key_type, sizeof obj_key_type);
-#if 0
-  /* If we get the info directly from the card, we don't have a
-     fingerprint, and parsing the subject key identifier is quite a
-     mouth full.  Let's try a different approach for now.  */
+
+  /* We construct the CKA_ID from the CERTREF and the KEYGRIP.  This
+   * allows us to use both values as needed.  */
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_ID,
-                    &cert->fpr, 40);
-#else
-  {
-    char certptr[40];
-    snprintf (certptr, DIM (certptr), "%p", cert);
-    if (!err)
+    {
+      char cka_id_buffer[200];
+
+      snprintf (cka_id_buffer, sizeof cka_id_buffer, "%s %s",
+                *cert->certref ? cert->certref:"-",
+                grip && *grip? grip : "?" );
       err = attr_one (attr, &attr_count, CKA_ID,
-                      certptr, strlen (certptr));
-  }
-#endif
+                      cka_id_buffer, strlen (cka_id_buffer));
+    }
 
 #if 0
   /* For now, we disable these fields.  We can parse them from the

@@ -73,9 +73,9 @@ LIBSCUTE_LT_REVISION=3
 VERSION_MAJOR=1
 VERSION_MINOR=0
 
-NEED_GPG_ERROR_VERSION=1.14
-NEED_LIBASSUAN_VERSION=2.0.0
-NEED_GPGSM_VERSION=1.9.6
+NEED_GPG_ERROR_VERSION=1.24
+NEED_LIBASSUAN_VERSION=2.5.0
+NEED_GPGSM_VERSION=2.2.0
 # Some status variables to give feedback at the end of a configure run.
 have_gpg_error=no
 have_libassuan=no
@@ -252,7 +252,7 @@ AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 # Generate values for the DLL version info
 if test "$have_w32_system" = yes; then
     BUILD_TIMESTAMP=`date --iso-8601=minutes`
-    changequote(,)dnl 
+    changequote(,)dnl
     BUILD_FILEVERSION=`echo "$VERSION" | sed 's/\([0-9.]*\).*/\1./;s/\./,/g'`
     changequote([,])dnl
     BUILD_FILEVERSION="${BUILD_FILEVERSION}${BUILD_REVISION_DEC}"
@@ -439,7 +439,7 @@ die=no
 if test "$have_gpg_error" = "no"; then
    die=yes
    AC_MSG_NOTICE([[
-***  
+***
 *** You need libgpg-error to build this program.
 **  This library is for example available at
 ***   ftp://ftp.gnupg.org/pub/gcrypt/libgpg-error

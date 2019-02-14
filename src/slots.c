@@ -167,7 +167,7 @@ mechanism_alloc (void **data_r, void *hook)
   /* Set some default values.  */
   mechanism->type = CKM_RSA_PKCS;
   mechanism->info.ulMinKeySize = 1024;
-  mechanism->info.ulMaxKeySize = 1024;
+  mechanism->info.ulMaxKeySize = 4096;
   mechanism->info.flags = CKF_HW | (*flags);
 
   *data_r = mechanism;
@@ -384,16 +384,20 @@ slot_init (slot_iterator_t id)
 {
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slots, id);
+  key_info_t ki;
 
-  err = scute_gpgsm_get_cert (slot->info.grip3, "OPENPGP.3", add_object, slot);
-  if (err)
-    goto init_out;
+  for (ki = slot->info.kinfo; ki; ki = ki->next)
+    {
+      err = scute_gpgsm_get_cert (ki->grip, ki->keyref, add_object, slot);
+      if (err)
+        goto leave;
+    }
 
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
 
- init_out:
+ leave:
   if (err)
     slot_reset (id);
 
@@ -1027,6 +1031,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
   if (err)
     return err;
 
+  /* FIXME: What kind of strange loop is this?  */
   while (attr_count-- > 0)
     if (attr->type == CKA_CLASS)
       break;
@@ -1045,7 +1050,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 }
 
 
-/* FIXME: The dscription is wrong:
+/* FIXME: The description is wrong:
    Set the signing key for session SID in slot ID to KEY.  */
 CK_RV
 session_sign (slot_iterator_t id, session_iterator_t sid,
@@ -1053,27 +1058,57 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
   struct slot *slot = scute_table_data (slots, id);
+  struct session *session = scute_table_data (slot->sessions, sid);
   gpg_error_t err;
+  CK_ATTRIBUTE_PTR attr;
+  CK_ULONG attr_count;
+  CK_OBJECT_CLASS key_class = CKO_PRIVATE_KEY;
   unsigned int sig_len;
+  CK_BYTE key_id[100];
+  int i;
+  const char *keyref;
 
-   /* FIXME: Who cares if they called sign init correctly.  Should
-      check the signing_key object.  */
+  if (!pSignature)
+    return CKR_ARGUMENTS_BAD;
 
-  if (pSignature == NULL_PTR)
-    {
-      err = scute_agent_sign (NULL, NULL, 0, NULL, &sig_len);
-      if (err)
-	return scute_gpg_err_to_ck (err);
-      *pulSignatureLen = sig_len;
-      return 0;
-    }
+  if (!session->signing_key)
+    return CKR_OPERATION_NOT_INITIALIZED;
+
+  err = slot_get_object (id, session->signing_key, &attr, &attr_count);
+  if (err)
+    return err;
+  if (attr_count == (CK_ULONG) -1)
+    return CKR_KEY_HANDLE_INVALID;
+  if (attr->ulValueLen != sizeof (key_class)
+      || memcmp (attr->pValue, &key_class, sizeof (key_class)))
+    return CKR_KEY_HANDLE_INVALID;
+
+  /* Find the CKA_ID */
+  for (i = 0; i < attr_count; i++)
+    if (attr[i].type == CKA_ID)
+      break;
+  if (i == attr_count)
+    return CKR_GENERAL_ERROR;
+
+  if (attr[i].ulValueLen >= sizeof key_id - 1)
+    return CKR_GENERAL_ERROR;
+  strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
+  key_id[attr[i].ulValueLen] = 0;
+  DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
+  for (keyref=key_id; *keyref && *keyref != ' '; keyref++)
+    ;
+  if (*keyref)
+    keyref++;  /* Point to the grip.  */
+  DEBUG (DBG_INFO, "Using keyref '%s'", keyref);
 
   sig_len = *pulSignatureLen;
-  err = scute_agent_sign (slot->info.grip3, pData, ulDataLen,
-			  pSignature, &sig_len);
-  /* FIXME: Oh well.  */
-  if (gpg_err_code (err) == GPG_ERR_INV_ARG)
-    return CKR_BUFFER_TOO_SMALL;
+  err = scute_agent_sign (keyref, pData, ulDataLen, pSignature, &sig_len);
 
-  return scute_gpg_err_to_ck (err);
+  /* Take care of error codes which are not mapped by default.  */
+  if (gpg_err_code (err) == GPG_ERR_INV_LENGTH)
+    return CKR_BUFFER_TOO_SMALL;
+  else if (gpg_err_code (err) == GPG_ERR_INV_ARG)
+    return CKR_ARGUMENTS_BAD;
+  else
+    return scute_gpg_err_to_ck (err);
 }

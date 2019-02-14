@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2007 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -45,6 +45,10 @@ struct cert
 {
   /* True if we started to fill in a certificate.  */
   bool valid;
+
+  /* The certifciate reference if retrieved from a card or an empty
+   * string if not known.  Example value: "OPENPGP.3".  */
+  char certref[25];
 
 #if 1
   /* We disable some elements, because they are easy to get from gpgsm
@@ -121,15 +125,15 @@ gpg_error_t scute_gpgsm_search_certs_by_grip (const char *grip,
 gpg_error_t scute_gpgsm_search_certs_by_fpr (const char *fpr,
 					     cert_search_cb_t search_cb,
 					     void *search_cb_hook);
-     
+
 
 /* From cert-object.c.  */
 
-gpg_error_t scute_attr_cert (struct cert *cert,
+gpg_error_t scute_attr_cert (struct cert *cert, const char *grip,
 			     CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp);
 
-gpg_error_t scute_attr_prv (struct cert *cert, CK_ATTRIBUTE_PTR *attrp,
-			    CK_ULONG *attr_countp);
+gpg_error_t scute_attr_prv (struct cert *cert, const char *grip,
+                            CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp);
 
 void scute_attr_free (CK_ATTRIBUTE_PTR attr, CK_ULONG attr_count);
 

@@ -36,7 +36,11 @@
 #include "locking.h"
 #include "slots.h"
 
-
+/* Prepare a signature operation.  HSESSION is the session's handle.
+ * PMECHANISM describes the mechanism to be used.  HKEY describes the
+ * key to be used.  After calling this function either C_Sign or
+ * (C_SignUpdate, C_SignFinal) can be used to actually sign the data.
+ * The preparation is valid until C_Sign or C_SignFinal.   */
 CK_RV CK_SPEC
 C_SignInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
             CK_OBJECT_HANDLE hKey)

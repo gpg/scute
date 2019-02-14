@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -46,7 +46,7 @@ main (int argc, char *argv[])
   err = C_GetInfo (&info);
   fail_if_err (err);
 
-  printf ("Cryptoki version: %i.%i\n", info.cryptokiVersion.major, 
+  printf ("Cryptoki version: %i.%i\n", info.cryptokiVersion.major,
 	  info.cryptokiVersion.minor);
   if (info.cryptokiVersion.major != 2)
     fail ("Cryptoki major version is not 2");
@@ -59,8 +59,8 @@ main (int argc, char *argv[])
     fail ("Flags is not 0");
 
   printf ("Library description: %.32s\n", info.libraryDescription);
-  printf ("Library version: %i.%i\n", info.cryptokiVersion.major, 
-	  info.cryptokiVersion.minor);
+  printf ("Library version: %i.%i\n", info.libraryVersion.major,
+	  info.libraryVersion.minor);
 
   return 0;
 }

@@ -85,6 +85,35 @@ dump_one (CK_ATTRIBUTE_PTR attr, unsigned char *data, unsigned int max_size)
 
 
 CK_RV
+dump_one_string (CK_ATTRIBUTE_PTR attr,
+                 unsigned char *data, unsigned int max_size)
+{
+  unsigned int i;
+  int blanks = 0;
+
+  if (attr->ulValueLen > max_size)
+    {
+      putc ('\n', stdout);
+      return CKR_GENERAL_ERROR;
+    }
+  for (i = 0; i < attr->ulValueLen; i++)
+    {
+      if (data[i] == ' ')
+        {
+          blanks++;
+          continue;
+        }
+      for (; blanks; blanks--)
+        putc (' ', stdout);
+      putc (data[i], stdout);
+    }
+  putc ('\n', stdout);
+
+  return 0;
+}
+
+
+CK_RV
 dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 {
   CK_RV err;
@@ -186,9 +215,8 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 	printf ("     Certificate Modifiable: %s\n",
 		cert_modifiable ? "true" : "false");
 
-	printf ("     Certificate Label: Length %lu\n",
-		cert_attr[4].ulValueLen);
-	err = dump_one (&cert_attr[4], cert_label, sizeof (cert_label));
+	printf ("     Certificate Label: ");
+	err = dump_one_string (&cert_attr[4], cert_label, sizeof (cert_label));
 	fail_if_err (err);
 
 	fail_if_err ((cert_attr[5].ulValueLen != sizeof (cert_trusted)) ?
@@ -246,9 +274,8 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 	err = dump_one (&cert_attr[10], cert_subject, sizeof (cert_subject));
 	fail_if_err (err);
 
-	printf ("     Certificate ID: Length %lu\n",
-		cert_attr[11].ulValueLen);
-	err = dump_one (&cert_attr[11], cert_id, sizeof (cert_id));
+	printf ("     Certificate ID: ");
+	err = dump_one_string (&cert_attr[11], cert_id, sizeof (cert_id));
 	fail_if_err (err);
 
 	printf ("     Certificate Issuer: Length %lu\n",
@@ -405,14 +432,12 @@ dump_object (CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object)
 	printf ("     Key Modifiable: %s\n",
 		key_modifiable ? "true" : "false");
 
-	printf ("     Key Label: Length %lu\n",
-		key_attr[4].ulValueLen);
-	err = dump_one (&key_attr[4], key_label, sizeof (key_label));
+	printf ("     Key Label: ");
+	err = dump_one_string (&key_attr[4], key_label, sizeof (key_label));
 	fail_if_err (err);
 
-	printf ("     Key ID: Length %lu\n",
-		key_attr[5].ulValueLen);
-	err = dump_one (&key_attr[5], key_id, sizeof (key_id));
+	printf ("     Key ID: ");
+	err = dump_one_string (&key_attr[5], key_id, sizeof (key_id));
 	fail_if_err (err);
 
 	if (key_attr[6].ulValueLen && key_attr[7].ulValueLen)

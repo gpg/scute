@@ -2,7 +2,7 @@
    Copyright (C) 2006 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -128,7 +128,7 @@ main (int argc, char *argv[])
       err = C_OpenSession (slots[i], CKF_SERIAL_SESSION, NULL, NULL,
 			   &session);
       fail_if_err (err);
-     
+
       printf ("    Session ID: %lu\n", session);
 
       err = C_FindObjectsInit (session, attr, DIM (attr));

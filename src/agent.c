@@ -669,26 +669,6 @@ learn_status_cb (void *opaque, const char *line)
 
           strncpy (kinfo->grip, hexgrip, sizeof kinfo->grip);
           kinfo->grip[sizeof kinfo->grip -1] = 0;
-
-          /* Keep legacy info.  */
-	  if (!strcmp (keyref, "OPENPGP.1"))
-            {
-              strncpy (parm->grip1, hexgrip, sizeof parm->grip1);
-              parm->grip1[sizeof parm->grip1 - 1] = 0;
-              parm->grip1valid = 1;
-            }
-          else if (!strcmp (keyref, "OPENPGP.2"))
-            {
-              strncpy (parm->grip2, hexgrip, sizeof parm->grip2);
-              parm->grip2[sizeof parm->grip2 - 1] = 0;
-              parm->grip2valid = 1;
-            }
-          else if (!strcmp (keyref, "OPENPGP.3"))
-            {
-              strncpy (parm->grip3, hexgrip, sizeof parm->grip3);
-              parm->grip3[sizeof parm->grip3 - 1] = 0;
-              parm->grip3valid = 1;
-            }
         }
     }
   else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
@@ -854,7 +834,7 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 }
 
 /* Parse the result of an pksign operation which is a s-expression in
-   normal form that looks like (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>))).
+   canonical form that looks like (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>))).
    The raw result is stored in RESULT of size *LEN, and *LEN is
    adjusted to the actual size.  */
 static gpg_error_t
@@ -897,7 +877,7 @@ pksign_parse_result (const struct signature *sig,
   if (! n)
     return gpg_error (GPG_ERR_INV_SEXP);
 
-  /* Remove nul byte prepended by gpg-agent. */
+  /* Remove a possible prepended zero byte. */
   if (!*s && n > 1)
     {
       n -= 1;
@@ -990,9 +970,13 @@ decode_hash (const unsigned char *data, int len,
   return 0;
 }
 
-/* Call the agent to learn about a smartcard.  */
+
+/* Call the agent to sign (DATA,LEN) using the key described by
+ * HEXGRIP.  Stores the signature in SIG_RESULT and its lengtn at
+ * SIG_LEN; SIGLEN must initially point to the allocated size of
+ * SIG_RESULT.  */
 gpg_error_t
-scute_agent_sign (char *grip, unsigned char *data, int len,
+scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
 		  unsigned char *sig_result, unsigned int *sig_len)
 {
   char cmd[150];
@@ -1020,10 +1004,11 @@ scute_agent_sign (char *grip, unsigned char *data, int len,
       return 0;
     }
 
-  if (grip == NULL || sig_result == NULL)
+  if (!hexgrip || !sig_result)
     return gpg_error (GPG_ERR_INV_ARG);
 
-  snprintf (cmd, sizeof (cmd), "SIGKEY %s", grip);
+  snprintf (cmd, sizeof (cmd), "SIGKEY %s", hexgrip);
+
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
   if (err)
@@ -1149,6 +1134,8 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
 
   cert->cert_der = cert_s.cert_der;
   cert->cert_der_len = cert_s.cert_der_len;
+  strncpy (cert->certref, certref, sizeof cert->certref -1);
+  cert->certref[sizeof cert->certref - 1] = 0;
 
   return 0;
 }

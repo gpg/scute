@@ -49,19 +49,21 @@
 #include "debug.h"
 
 
-struct search
+/* Communication object for search_cb.  */
+struct search_cb_parm
 {
   bool found;    /* Set to true if a private key object was found.  */
   cert_get_cb_t cert_get_cb;
   void *hook;
   bool with_chain;
+  const char *grip;
 };
 
 
 static gpg_error_t
 search_cb (void *hook, struct cert *cert)
 {
-  struct search *ctx = hook;
+  struct search_cb_parm *ctx = hook;
   gpg_error_t err = 0;
 
   CK_ATTRIBUTE_PTR attrp;
@@ -70,7 +72,7 @@ search_cb (void *hook, struct cert *cert)
   /* Add the private key object only once.  */
   if (!ctx->found)
     {
-      err = scute_attr_prv (cert, &attrp, &attr_countp);
+      err = scute_attr_prv (cert, ctx->grip, &attrp, &attr_countp);
       if (err)
 	return err;
 
@@ -92,7 +94,7 @@ search_cb (void *hook, struct cert *cert)
     scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
-  err = scute_attr_cert (cert, &attrp, &attr_countp);
+  err = scute_attr_cert (cert, ctx->grip, &attrp, &attr_countp);
   if (err)
     return err;
 
@@ -123,12 +125,15 @@ scute_gpgsm_get_cert (char *grip, const char *certref,
                       cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
-  struct search search;
+  struct search_cb_parm search;
 
   search.found = false;
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
   search.with_chain = false;
+  search.grip = grip;
+
+  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: certref='%s'", certref);
 
   /* If the cert is requested from the card, we try to get it from
    * the card as well.  */
@@ -154,6 +159,7 @@ scute_gpgsm_get_cert (char *grip, const char *certref,
 	}
     }
 
+  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
   err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
   return err;
