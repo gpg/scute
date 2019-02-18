@@ -92,7 +92,7 @@ struct cert
   /* The key grip.  */
   unsigned char grip[41];
 
-  /* The chain ID.  */
+  /* The chain ID as return by a gpgsm key listing.  */
   unsigned char chain_id[41];
 
   /* The certificate in DER format.  This is not entered by the search
@@ -109,22 +109,23 @@ struct cert
 
 
 /* From cert-gpgsm.c.  */
+enum keylist_modes
+  {
+   KEYLIST_BY_GRIP,
+   KEYLIST_BY_FPR
+  };
+
 
 /* The callback type invoked for each certificate found in the
    search.  */
 typedef gpg_error_t (*cert_search_cb_t) (void *hook, struct cert *cert);
 
-/* Invoke SEARCH_CB for each certificate found using assuan connection
-   CTX to GPGSM.  */
-gpg_error_t scute_gpgsm_search_certs_by_grip (const char *grip,
-					      cert_search_cb_t search_cb,
-					      void *search_cb_hook);
-
-/* Invoke SEARCH_CB for each certificate found using assuan connection
-   CTX to GPGSM.  */
-gpg_error_t scute_gpgsm_search_certs_by_fpr (const char *fpr,
-					     cert_search_cb_t search_cb,
-					     void *search_cb_hook);
+/* Search for certificates using a key listing using PATTERN which is
+ * described by MODE.  Invoke SEARCH_CB for each certificate found.  */
+gpg_error_t scute_gpgsm_search_certs (enum keylist_modes mode,
+                                      const char *pattern,
+                                      cert_search_cb_t search_cb,
+                                      void *search_cb_hook);
 
 
 /* From cert-object.c.  */

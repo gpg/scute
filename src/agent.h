@@ -132,7 +132,7 @@ gpg_error_t scute_agent_sign (const char *hexgrip,
 			      unsigned char *sig_result, unsigned int *sig_len);
 
 /* Determine if FPR is trusted.  */
-gpg_error_t scute_agent_is_trusted (char *fpr, bool *is_trusted);
+gpg_error_t scute_agent_is_trusted (const char *fpr, bool *is_trusted);
 
 /* Try to get certificate for key numer NO.  */
 gpg_error_t scute_agent_get_cert (const char *certref, struct cert *cert);

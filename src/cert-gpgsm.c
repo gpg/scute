@@ -2,7 +2,7 @@
    Copyright (C) 2006, 2007 g10 Code GmbH
 
    This file is part of Scute.
- 
+
    Scute is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -45,33 +45,39 @@
 #include "support.h"
 #include "debug.h"
 
-
-#ifndef HAVE_W32_SYSTEM
-#define COMPAT_FALLBACK
-#endif
 
-
 /* The maximum length of a key listing line.  We take the double of
-   the allowed Assuan line length to avoid a memmove after a part of a
-   line has been processed.  FIXME: There is actually no limit on the
-   length of the line. */
-#define MAX_LINE_LEN	(1024*2)
+ * the allowed Assuan line length plus some extra space to avoid a
+ * memmove after a part of a line has been processed.  */
+#define MAX_LINE_LEN	(ASSUAN_LINELENGTH*2 + 200)
 
-struct search_ctx
+struct keylist_ctx
 {
   /* The pending line in an active key listing.  */
   char pending[MAX_LINE_LEN + 1];
   unsigned int pending_len;
 
+  /* The current certificate.  */
+  struct cert cert;
+
   /* The caller's search callback, invoked for each certificate.  */
   cert_search_cb_t search_cb;
   void *search_cb_hook;
-
-  /* The current certificate.  */
-  struct cert cert;
 };
 
 
+/* Support macros  */
+#define atoi_1(p)   (*(p) - '0' )
+#define atoi_2(p)   ((atoi_1(p) * 10) + atoi_1((p)+1))
+#define atoi_4(p)   ((atoi_2(p) * 100) + atoi_2((p)+2))
+
+
+/*** Local prototypes  ***/
+static gpg_error_t export_cert (const char *fpr, struct cert *cert);
+
+
+
+
 /* Release allocated storage for the certificate CERT and reset the
    certificate.  */
 static void
@@ -89,12 +95,6 @@ cert_reset (struct cert *cert)
   memset (cert, '\0', sizeof (struct cert));
 }
 
-
-/* Support routines for key list processing.  */
-
-#define atoi_1(p)   (*(p) - '0' )
-#define atoi_2(p)   ((atoi_1(p) * 10) + atoi_1((p)+1))
-#define atoi_4(p)   ((atoi_2(p) * 100) + atoi_2((p)+2))
 
 /* Parse the string TIMESTAMP into a time_t.  The string may either be
    seconds since Epoch or in the ISO 8601 format like
@@ -127,7 +127,7 @@ parse_timestamp (const char *timestamp, char **endp)
 
       memset (&buf, 0, sizeof buf);
       buf.tm_year = year - 1900;
-      buf.tm_mon = atoi_2 (timestamp+4) - 1; 
+      buf.tm_mon = atoi_2 (timestamp+4) - 1;
       buf.tm_mday = atoi_2 (timestamp+6);
       buf.tm_hour = atoi_2 (timestamp+9);
       buf.tm_min = atoi_2 (timestamp+11);
@@ -229,9 +229,9 @@ decode_c_string (const char *src, char **destp, size_t len)
 		    /* A binary zero is not representable in a C
 		       string.  */
 		    *(dest++) = '\\';
-		    *(dest++) = '0'; 
+		    *(dest++) = '0';
 		  }
-		else 
+		else
 		  *((unsigned char *) dest++) = val;
 		src += 4;
 	      }
@@ -244,28 +244,19 @@ decode_c_string (const char *src, char **destp, size_t len)
 	    *(dest++) = *(src++);
 	    *(dest++) = *(src++);
 	  }
-        } 
+        }
     }
   *(dest++) = 0;
 
   return 0;
 }
 
+
 
-/* The cert handler for certificate searches.  This is invoked for
-   each complete certificate found by search_certs_line, and the last
-   pending certificate when EOF is encountered by search_certs.  */
+/* Helper for keylist_cb.  This fucntion is invoked for each complete
+ * line assembled by keylist_cb.  */
 static gpg_error_t
-search_certs_cert (struct search_ctx *ctx)
-{
-  return (*ctx->search_cb) (ctx->search_cb_hook, &ctx->cert);
-}
-
-
-/* The line handler for certificate searches.  This is invoked for
-   each complete line found by search_certs.  */
-static gpg_error_t
-search_certs_line (struct search_ctx *ctx)
+keylist_cb_line (struct keylist_ctx *ctx)
 {
   char *line;
   enum { RT_NONE, RT_CRT, RT_CRS, RT_FPR, RT_GRP, RT_UID } rectype = RT_NONE;
@@ -301,7 +292,7 @@ search_certs_line (struct search_ctx *ctx)
     rectype = RT_GRP;
   else if (!strcmp (field[0], "uid"))
     rectype = RT_UID;
-  else 
+  else
     rectype = RT_NONE;
 
   switch (rectype)
@@ -313,8 +304,11 @@ search_certs_line (struct search_ctx *ctx)
 	{
 	  gpg_error_t err;
 
-	  err = search_certs_cert (ctx);
-	  if (err)
+          /* Return the cert.  */
+          err = export_cert (ctx->cert.fpr, &ctx->cert);
+          if (!err)
+            err = ctx->search_cb (ctx->search_cb_hook, &ctx->cert);
+          if (err)
 	    return err;
 
 	  cert_reset (cert);
@@ -334,7 +328,7 @@ search_certs_line (struct search_ctx *ctx)
 	  int i = atoi (field[2]);
 	  /* Ignore invalid values.  */
 	  if (i > 1)
-	    cert->length = i; 
+	    cert->length = i;
 	}
 
       /* Field 4 has the public key algorithm.  */
@@ -433,13 +427,13 @@ search_certs_line (struct search_ctx *ctx)
 
 
 /* This is the data line callback handler provided to assuan_transact
-   in scute_gpgsm_search_certs.  It buffers incomplete lines, and also
-   handles the EOF signal provided directly by
-   scute_gpgsm_search_certs.  */
+ * in scute_gpgsm_search_certs_by_{grip,fpr}.  It buffers incomplete
+ * lines, and is also used to handle the EOF signal directly outside
+ * of assuan_transact.  */
 static gpg_error_t
-search_certs (void *hook, const void *line_data, size_t line_len)
+keylist_cb (void *hook, const void *line_data, size_t line_len)
 {
-  struct search_ctx *ctx = hook;
+  struct keylist_ctx *ctx = hook;
   const char *line = line_data;
   gpg_error_t err;
 
@@ -451,23 +445,29 @@ search_certs (void *hook, const void *line_data, size_t line_len)
 	 newline.  */
       if (ctx->pending_len)
 	{
-	  err = search_certs_line (ctx);
+	  err = keylist_cb_line (ctx);
 	  if (err)
 	    return err;
 	}
 
-      /* Check for a pending certificate.  */
+      /* Check for a pending certificate and return it.  */
       if (ctx->cert.valid)
-	return search_certs_cert (ctx);
+        {
+          err = export_cert (ctx->cert.fpr, &ctx->cert);
+          if (!err)
+            err = ctx->search_cb (ctx->search_cb_hook, &ctx->cert);
+        }
+      else
+        err = 0;
 
-      return 0;
+      return err;
     }
 
   while (line_len)
     {
       if (*line == '\n')
 	{
-	  err = search_certs_line (ctx);
+	  err = keylist_cb_line (ctx);
 	  if (err)
 	    return err;
 	}
@@ -486,132 +486,7 @@ search_certs (void *hook, const void *line_data, size_t line_len)
 }
 
 
-/* Invoke SEARCH_CB for each certificate found using assuan connection
-   CTX to GPGSM.  */
-static gpg_error_t
-scute_gpgsm_search_certs (assuan_context_t ctx, cert_search_cb_t search_cb,
-			  void *search_cb_hook)
-{
-  gpg_error_t err;
-  struct search_ctx search;
-
-  err = assuan_transact (ctx, "OPTION with-key-data", NULL, NULL,
-			 NULL, NULL, NULL, NULL);
-  if (err)
-    return err;
-
-  search.pending_len = 0;
-  search.search_cb = search_cb;
-  search.search_cb_hook = search_cb_hook;
-  memset (&search.cert, '\0', sizeof (search.cert));
-
-  err = assuan_transact (ctx, "DUMPKEYS", &search_certs, &search, NULL,
-			 NULL, NULL, NULL);
-  if (err)
-    goto out;
-
-  /* Signal the EOF.  This is not done by Assuan for us.  */
-  err = search_certs (&search, NULL, 0);
-  if (err)
-    goto out;
-
- out:
-  cert_reset (&search.cert);
-  return err;
-}
-
 
-struct search_ctx_by_field
-{
-  /* What we are searching for.  */
-  enum { SEARCH_BY_GRIP, SEARCH_BY_FPR } field;
-
-  /* The pattern we are looking for.  */
-  const char *pattern;
-
-  cert_search_cb_t search_cb;
-  void *search_cb_hook;
-};
-  
-
-#ifdef COMPAT_FALLBACK
-/* This is a compatibility function for GPGSM 2.0.0, which does not
-   support the --data option with the EXPORT command.  */
-static gpg_error_t
-export_cert_compat (char *fpr, struct cert *cert)
-{
-  gpg_error_t err;
-  assuan_context_t ctx;
-  const char *argv[] = { "gpgsm", "--server", NULL };
-  int got;
-#define COMMANDLINELEN 80
-  char cmd[COMMANDLINELEN];
-  int output_fds[2];
-  int child_fds[2];
-
-#define MAX_CERT_SIZE 4096
-  cert->cert_der = malloc (MAX_CERT_SIZE);
-  if (!cert->cert_der)
-    return gpg_error_from_syserror ();
-
-  if(pipe (output_fds) < 0)
-    return gpg_error_from_syserror ();
-
-  child_fds[0] = assuan_fd_from_posix_fd (output_fds[1]);
-  child_fds[1] = -1;
-
-  err = assuan_new (&ctx);
-  if (err)
-    {
-      close (output_fds[0]);
-      close (output_fds[1]);
-      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s\n",
-	     gpg_strerror (err));
-      return err;
-    }
-
-  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, child_fds,
-			     NULL, NULL, 128);
-  close (output_fds[1]);
-  if (err)
-    {
-      close (output_fds[0]);
-      assuan_release (ctx);
-      DEBUG (DBG_CRIT, "failed to spawn %s\n", get_gpgsm_path ());
-      return err;
-    }
-
-  snprintf (cmd, sizeof (cmd), "OUTPUT FD=%i", output_fds[1]);
-  err = assuan_transact (ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
-  if (err)
-    goto export_out;
-
-  /* FIXME: This will only work if the certificate is small and fits
-     into the pipe buffer completely!!!  */
-  snprintf (cmd, sizeof (cmd), "EXPORT %s\n", cert->fpr);
-  err = assuan_transact (ctx, cmd, NULL, NULL, NULL, NULL, NULL, NULL);
-  if (err)
-    goto export_out;
-
-  do
-    {
-      got = read (output_fds[0], cert->cert_der + cert->cert_der_len,
-		  MAX_CERT_SIZE - cert->cert_der_len);
-      if (got > 0)
-	cert->cert_der_len += got;
-    }
-  while (!err && got > 0 && cert->cert_der_len < MAX_CERT_SIZE);
-  
-  if (got < 0 || cert->cert_der_len == MAX_CERT_SIZE)
-    err = gpg_error (GPG_ERR_GENERAL);
-
- export_out:
-  assuan_release (ctx);
-  close (output_fds[0]);
-  return err;
-}
-#endif
-
 
 struct export_hook
 {
@@ -653,8 +528,11 @@ export_cert_cb (void *hook, const void *line_data, size_t line_len)
 }
 
 
+/* Export the certifciate using a second assuan connection.  This is
+ * called during the key listing after a "crt" record has been
+ * received.  */
 static gpg_error_t
-export_cert (char *fpr, struct cert *cert)
+export_cert (const char *fpr, struct cert *cert)
 {
   gpg_error_t err;
   assuan_context_t ctx;
@@ -684,7 +562,7 @@ export_cert (char *fpr, struct cert *cert)
   exp.buffer_len = 0;
   exp.buffer_size = 0;
 
-  snprintf (cmd, sizeof (cmd), "EXPORT --data -- %s\n", cert->fpr);
+  snprintf (cmd, sizeof (cmd), "EXPORT --data -- %s", cert->fpr);
   err = assuan_transact (ctx, cmd, export_cert_cb, &exp,
 			 NULL, NULL, NULL, NULL);
   assuan_release (ctx);
@@ -694,19 +572,6 @@ export_cert (char *fpr, struct cert *cert)
       cert->cert_der = exp.buffer;
       cert->cert_der_len = exp.buffer_len;
     }
-#ifdef COMPAT_FALLBACK
-  else if (gpg_err_code (err) == GPG_ERR_ASS_NO_OUTPUT)
-    {
-      /* For compatibility with GPGSM 2.0.0, we fall back to a work
-	 around in that case.  */
-      if (cert->cert_der)
-	{
-	  free (cert->cert_der);
-	  cert->cert_der = NULL;
-	}
-      err = export_cert_compat (fpr, cert);
-    }
-#endif
 
   if (!err)
     err = scute_agent_is_trusted (fpr, &cert->is_trusted);
@@ -715,80 +580,18 @@ export_cert (char *fpr, struct cert *cert)
 }
 
 
-static gpg_error_t
-search_certs_by_field (void *hook, struct cert *cert)
-{
-  struct search_ctx_by_field *ctx = hook;
-  gpg_error_t err = 0;
-
-  if ((ctx->field == SEARCH_BY_GRIP && !strcmp (ctx->pattern, cert->grip))
-      || (ctx->field == SEARCH_BY_FPR && !strcmp (ctx->pattern, cert->fpr)))
-    {
-      if (strlen (cert->fpr) != 40)
-	return gpg_error (GPG_ERR_GENERAL);
-
-      err = export_cert (cert->fpr, cert);
-      if (err)
-	return err;
-
-      err = (*ctx->search_cb) (ctx->search_cb_hook, cert);
-    }
-
-  return err;
-}
-
-
-/* Invoke SEARCH_CB for each certificate found using assuan connection
-   CTX to GPGSM.  */
+/* Search for certificates using a key listing using PATTERN which is
+ * described by MODE.  Invoke SEARCH_CB for each certificate found.  */
 gpg_error_t
-scute_gpgsm_search_certs_by_grip (const char *grip,
-				  cert_search_cb_t search_cb,
-				  void *search_cb_hook)
+scute_gpgsm_search_certs (enum keylist_modes mode, const char *pattern,
+                          cert_search_cb_t search_cb,
+                          void *search_cb_hook)
 {
   gpg_error_t err;
   assuan_context_t ctx;
   const char *argv[] = { "gpgsm", "--server", NULL };
-  struct search_ctx_by_field search;
-
-  err = assuan_new (&ctx);
-  if (err)
-    {
-      DEBUG (DBG_CRIT, "failed to allocate assuan context: %s",
-	     gpg_strerror (err));
-      return err;
-    }
-
-  err = assuan_pipe_connect (ctx, get_gpgsm_path (), argv, NULL,
-			     NULL, NULL, 128);
-  if (err)
-    {
-      assuan_release (ctx);
-      DEBUG (DBG_CRIT, "spawning %s\n", get_gpgsm_path ());
-      return err;
-    }
-
-  search.field = SEARCH_BY_GRIP;
-  search.pattern = grip;
-  search.search_cb = search_cb;
-  search.search_cb_hook = search_cb_hook;
-
-  err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
-  assuan_release (ctx);
-  return err;
-}
-
-
-/* Invoke SEARCH_CB for each certificate found using assuan connection
-   CTX to GPGSM.  */
-gpg_error_t
-scute_gpgsm_search_certs_by_fpr (const char *fpr,
-				 cert_search_cb_t search_cb,
-				 void *search_cb_hook)
-{
-  gpg_error_t err;
-  assuan_context_t ctx;
-  const char *argv[] = { "gpgsm", "--server", NULL };
-  struct search_ctx_by_field search;
+  char line[ASSUAN_LINELENGTH];
+  struct keylist_ctx  keylist_ctx;
 
   err = assuan_new (&ctx);
   if (err)
@@ -807,12 +610,33 @@ scute_gpgsm_search_certs_by_fpr (const char *fpr,
       return err;
     }
 
-  search.field = SEARCH_BY_FPR;
-  search.pattern = fpr;
-  search.search_cb = search_cb;
-  search.search_cb_hook = search_cb_hook;
+  memset (&keylist_ctx, 0, sizeof keylist_ctx);
+  keylist_ctx.search_cb = search_cb;
+  keylist_ctx.search_cb_hook = search_cb_hook;
 
-  err = scute_gpgsm_search_certs (ctx, &search_certs_by_field, &search);
+  err = assuan_transact (ctx, "OPTION with-key-data", NULL, NULL,
+                         NULL, NULL, NULL, NULL);
+  if (err)
+    goto leave;
+
+
+  snprintf (line, sizeof line, "LISTKEYS %s%s",
+            mode == KEYLIST_BY_GRIP? "&":"",
+            pattern);
+  err = assuan_transact (ctx, line,
+                         keylist_cb, &keylist_ctx,
+                         NULL, NULL,
+                         NULL, NULL);
+  if (err)
+    goto leave;
+
+  /* Signal the EOF.  This is not done by Assuan for us.  */
+  err = keylist_cb (&keylist_ctx, NULL, 0);
+  if (err)
+    goto leave;
+
+ leave:
+  cert_reset (&keylist_ctx.cert);
   assuan_release (ctx);
   return err;
 }

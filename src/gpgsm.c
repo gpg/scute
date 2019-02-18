@@ -91,7 +91,7 @@ search_cb (void *hook, struct cert *cert)
      might still be able to proceed, for example with client
      authentication.  */
   if (ctx->with_chain && strcmp (cert->chain_id, cert->fpr))
-    scute_gpgsm_search_certs_by_fpr (cert->chain_id, search_cb, ctx);
+    scute_gpgsm_search_certs (KEYLIST_BY_FPR, cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
   err = scute_attr_cert (cert, ctx->grip, &attrp, &attr_countp);
@@ -161,6 +161,6 @@ scute_gpgsm_get_cert (char *grip, const char *certref,
 
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
-  err = scute_gpgsm_search_certs_by_grip (grip, search_cb, &search);
+  err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
   return err;
 }

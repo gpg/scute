@@ -1036,7 +1036,7 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
 
 /* Determine if FPR is trusted.  */
 gpg_error_t
-scute_agent_is_trusted (char *fpr, bool *is_trusted)
+scute_agent_is_trusted (const char *fpr, bool *is_trusted)
 {
   gpg_error_t err;
   bool trusted = false;
