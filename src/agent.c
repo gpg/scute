@@ -712,6 +712,20 @@ scute_agent_learn (struct agent_card_info_s *info)
   err = assuan_transact (agent_ctx, "LEARN --sendinfo",
 			 NULL, NULL, default_inq_cb,
 			 NULL, learn_status_cb, info);
+  if (gpg_err_source(err) == GPG_ERR_SOURCE_SCD
+      && gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
+    {
+      /* SCD session is in card removed state.  clear that state.  */
+      err = assuan_transact (agent_ctx, "SCD SERIALNO",
+                             NULL, NULL, NULL, NULL, NULL, NULL);
+      if (!err)
+        {
+          memset (info, 0, sizeof (*info));
+          err = assuan_transact (agent_ctx, "LEARN --sendinfo",
+                                 NULL, NULL, default_inq_cb,
+                                 NULL, learn_status_cb, info);
+        }
+    }
 
   return err;
 }
