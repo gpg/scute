@@ -536,14 +536,12 @@ slot_token_present (slot_iterator_t id)
 }
 
 
-/* Return the token label.  */
-char *
+/* Return the token label.  We use the dispserialno here too because
+ * Firefox prints that value in the prompt ("Stored at:").  */
+const char *
 slot_token_label (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
-
-  /* slots_update() makes sure this is valid.  */
-  return slot->info.serialno;
+  return slot_token_serial (id);
 }
 
 
@@ -615,26 +613,14 @@ slot_token_application (slot_iterator_t id)
 }
 
 
-/* Get the serial number of the token.  Must not write more than 16
-   bytes starting from DST.  */
-int
-slot_token_serial (slot_iterator_t id, char *dst)
+/* Get the serial number of the token.  */
+const char *
+slot_token_serial (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slots, id);
-  int i;
 
-  if (slot->info.is_piv)
-    {
-      strncpy (dst, slot->info.serialno, 15);
-      dst[15] = 0;
-      return 16;
-    }
-
-  /* slots_update() makes sure serialno is valid.  */
-  for (i = 0; i < 8; i++)
-    dst[i] = slot->info.serialno[20 + i];
-
-  return 8;
+  /* slots_update() makes sure this is valid.  */
+  return slot->info.dispserialno? slot->info.dispserialno : slot->info.serialno;
 }
 
 

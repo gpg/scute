@@ -90,7 +90,7 @@ CK_RV slots_lookup (CK_SLOT_ID id, slot_iterator_t *slot);
 bool slot_token_present (slot_iterator_t slot);
 
 /* Return the token label.  */
-char *slot_token_label (slot_iterator_t id);
+const char *slot_token_label (slot_iterator_t id);
 
 /* Get the manufacturer of the token.  */
 const char *slot_token_manufacturer (slot_iterator_t id);
@@ -98,9 +98,8 @@ const char *slot_token_manufacturer (slot_iterator_t id);
 /* Get the application of the token.  */
 const char *slot_token_application (slot_iterator_t id);
 
-/* Get the serial number of the token.  Must not write more than 16
-   bytes starting from DST.  */
-int slot_token_serial (slot_iterator_t id, char *dst);
+/* Get the serial number of the token.  */
+const char *slot_token_serial (slot_iterator_t id);
 
 /* Get the manufacturer of the token.  */
 void slot_token_version (slot_iterator_t id,

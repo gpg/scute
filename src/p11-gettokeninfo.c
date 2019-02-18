@@ -65,9 +65,7 @@ C_GetTokenInfo (CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
   scute_copy_string (pInfo->manufacturerID,
 		     slot_token_manufacturer (slot), 32);
   scute_copy_string (pInfo->model, slot_token_application (slot), 16);
-  len = slot_token_serial (slot, pInfo->serialNumber);
-  while (len < 16)
-    pInfo->serialNumber[len++] = ' ';
+  scute_copy_string (pInfo->serialNumber, slot_token_serial (slot), 16);
 
   pInfo->flags = CKF_TOKEN_INITIALIZED
     | CKF_PROTECTED_AUTHENTICATION_PATH | CKF_WRITE_PROTECTED

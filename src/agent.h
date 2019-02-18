@@ -61,7 +61,8 @@ typedef struct key_info_s *key_info_t;
 struct agent_card_info_s
 {
   char *serialno;	/* Malloced hex string.  */
-  char *cardtype;       /* Null or mallcoed string with the card type.  */
+  char *dispserialno;   /* NULL or malloced human readable S/N.  */
+  char *cardtype;       /* Null or malloced string with the card type.  */
   char *disp_name;	/* Malloced.  */
   char *disp_lang;	/* Malloced.  */
   int  disp_sex;	/* 0 = unspecified, 1 = male, 2 = female.  */
