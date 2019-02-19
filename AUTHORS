@@ -2,7 +2,7 @@ Package: scute
 Maintainer: Damien Goutte-Gattat <dgouttegattat@incenp.org>
 Bug reports: https://bugs.gnupg.org/
 Security related bug reports: security@gnupg.org
-License: GPLv2+ with exception for Mozilla
+License: LGPL-2.1-or-later
 
 
 g10 Code GmbH <code@g10code.com>
@@ -13,6 +13,9 @@ Andreas Jellinghaus <aj@dungeon.inka.de>
 
 Alon Bar-Lev <alon.barlev@gmail.com>
  - Contributions to src/pkcs11.h.
+
+Damien Goutte-Gattat <dgouttegattat@incenp.org>
+ - Various changes.
 
 
  Copyright 2006, 2008 g10 Code GmbH

@@ -22,19 +22,16 @@ This is Edition @value{EDITION}, last updated @value{UPDATED}, of
 @c NOTE: Don't forget to update the year for the TeX version, too.
 Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
 
-The Scute Manual is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
-option) any later version.
+The Scute Manual is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation; either version 2.1 of the
+License, or (at your option) any later version.  The text of the
+license can be found in the section entitled ``Library Copying''.
 
 The Scute Manual is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this program; if not, write to the Free Software Foundation,
-Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 
 @end ifinfo
 
@@ -54,19 +51,16 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
 
 
-The Scute Manual is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
-option) any later version.
+The Scute Manual is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation; either version 2.1 of the
+License, or (at your option) any later version.  The text of the
+license can be found in the section entitled ``Library Copying''.
 
 The Scute Manual is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this program; if not, write to the Free Software Foundation,
-Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 @end titlepage
 @page
 
@@ -89,7 +83,7 @@ module.
 
 Appendices
 
-* Copying::                       The GNU General Public License says
+* Library Copying::               The GNU General Public License says
                                   how you can copy and share Scute.
 
 Indices
@@ -181,7 +175,7 @@ smart card.  Apart from that, it offers a couple of other benefits:
 @table @asis
 @item it's free software
 Anybody can use, modify, and redistribute it under the terms of the GNU
-General Public License (@pxref{Copying}).
+General Public License (@pxref{Library Copying}).
 
 @item it's built to grow
 Although Scute initially provided a single function, client
@@ -446,7 +440,7 @@ the same fashion.
 @example
 $ gpgsm --import floppy-head.crt
 gpgsm: certificate imported
-  
+
 gpgsm: total number processed: 1
 gpgsm:               imported: 1
 @end example
@@ -864,7 +858,7 @@ list displayed is correct, but in anyway the wrong security module is
 unloaded.
 
 
-@include gpl.texi
+@include lesser.texi
 
 
 @node Concept Index

@@ -1,29 +1,26 @@
 /* sexp-parse.h - S-expression helper functions
  * Copyright (C) 2002, 2003, 2007 Free Software Foundation, Inc.
+ * Copyright (C) 2002, 2003, 2007 Werner Koch
  *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of either
+ * This file is part of Scute.
  *
- *   - the GNU Lesser General Public License as published by the Free
- *     Software Foundation; either version 3 of the License, or (at
- *     your option) any later version.
+ * Scute is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
  *
- * or
+ * Scute is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *   - the GNU General Public License as published by the Free
- *     Software Foundation; either version 2 of the License, or (at
- *     your option) any later version.
- *
- * or both in parallel, as here.
- *
- * This file is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <https://gnu.org/licenses/>.
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
+
+/* Note that this file has been taken from GnuPG and re-licensed to
+ * the LGPL.  See the commit log for details.  */
 
 #ifndef SEXP_PARSE_H
 #define SEXP_PARSE_H

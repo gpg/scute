@@ -1,54 +1,59 @@
 /* pkcs11.h
-   Copyright 2006, 2007 g10 Code GmbH
-   Copyright 2006 Andreas Jellinghaus
-
-   This file is free software; as a special exception the author gives
-   unlimited permission to copy and/or distribute it, with or without
-   modifications, as long as this notice is preserved.
-
-   This file is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY, to the extent permitted by law; without even
-   the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-   PURPOSE.  */
-
-/* Please submit changes back to the Scute project at
-   http://www.scute.org/ (or send them to marcus@g10code.com), so that
-   they can be picked up by other projects from there as well.  */
+ * Copyright 2006, 2007 g10 Code GmbH
+ * Copyright 2006 Andreas Jellinghaus
+ *
+ * This file is free software; as a special exception the authors give
+ * unlimited permission to copy and/or distribute it, with or without
+ * modifications, as long as this notice is preserved.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY, to the extent permitted by law; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ * SPDX-License-Identifier: FSFULLR
+ */
 
 /* This file is a modified implementation of the PKCS #11 standard by
-   RSA Security Inc.  It is mostly a drop-in replacement, with the
-   following change:
+ * RSA Security Inc.  It is mostly a drop-in replacement, with the
+ * following change:
+ *
+ * This header file does not require any macro definitions by the user
+ * (like CK_DEFINE_FUNCTION etc).  In fact, it defines those macros
+ * for you (if useful, some are missing, let me know if you need
+ * more).
+ *
+ * There is an additional API available that does comply better to the
+ * GNU coding standard.  It can be switched on by defining
+ * CRYPTOKI_GNU before including this header file.  For this, the
+ * following changes are made to the specification:
+ *
+ * All structure types are changed to a "struct ck_foo" where CK_FOO
+ * is the type name in PKCS #11.
+ *
+ * All non-structure types are changed to ck_foo_t where CK_FOO is the
+ * lowercase version of the type name in PKCS #11.  The basic types
+ * (CK_ULONG et al.) are removed without substitute.
+ *
+ * All members of structures are modified in the following way: Type
+ * indication prefixes are removed, and underscore characters are
+ * inserted before words.  Then the result is lowercased.
+ *
+ * Note that function names are still in the original case, as they
+ * need for ABI compatibility.
+ *
+ * CK_FALSE, CK_TRUE and NULL_PTR are removed without substitute.  Use
+ * <stdbool.h>.
+ *
+ * If CRYPTOKI_COMPAT is defined before including this header file,
+ * then none of the API changes above take place, and the API is the
+ * one defined by the PKCS #11 standard.
+ *
+ *
+ * Please submit changes back to the Scute project with a request to
+ * https://dev.gnupg.org, so that they can be picked up by other
+ * projects from there as well.
+ */
 
-   This header file does not require any macro definitions by the user
-   (like CK_DEFINE_FUNCTION etc).  In fact, it defines those macros
-   for you (if useful, some are missing, let me know if you need
-   more).
-
-   There is an additional API available that does comply better to the
-   GNU coding standard.  It can be switched on by defining
-   CRYPTOKI_GNU before including this header file.  For this, the
-   following changes are made to the specification:
-
-   All structure types are changed to a "struct ck_foo" where CK_FOO
-   is the type name in PKCS #11.
-
-   All non-structure types are changed to ck_foo_t where CK_FOO is the
-   lowercase version of the type name in PKCS #11.  The basic types
-   (CK_ULONG et al.) are removed without substitute.
-
-   All members of structures are modified in the following way: Type
-   indication prefixes are removed, and underscore characters are
-   inserted before words.  Then the result is lowercased.
-
-   Note that function names are still in the original case, as they
-   need for ABI compatibility.
-
-   CK_FALSE, CK_TRUE and NULL_PTR are removed without substitute.  Use
-   <stdbool.h>.
-
-   If CRYPTOKI_COMPAT is defined before including this header file,
-   then none of the API changes above take place, and the API is the
-   one defined by the PKCS #11 standard.  */
 
 #ifndef PKCS11_H
 #define PKCS11_H 1

@@ -1,33 +1,24 @@
 /* agent.c - Talking to gpg-agent.
-   Copyright (C) 2008 g10 Code GmbH
+ * Copyright (C) 2008 g10 Code GmbH
+ *
+ * This file is part of Scute.
+ *
+ * Scute is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * Scute is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <https://gnu.org/licenses/>.
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
-   This file is part of Scute.
- 
-   Scute is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-
-   Scute is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Scute; if not, write to the Free Software Foundation,
-   Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-   In addition, as a special exception, g10 Code GmbH gives permission
-   to link this library: with the Mozilla Foundation's code for
-   Mozilla (or with modified versions of it that use the same license
-   as the "Mozilla" code), and distribute the linked executables.  You
-   must obey the GNU General Public License in all respects for all of
-   the code used other than "Mozilla".  If you modify this file, you
-   may extend this exception to your version of the file, but you are
-   not obligated to do so.  If you do not wish to do so, delete this
-   exception statement from your version.  */
-
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <stdio.h>
@@ -73,7 +64,7 @@ dlclose (void * hd)
       return 0;
     }
   return -1;
-}  
+}
 
 
 /* Return a string from the W32 Registry or NULL in case of error.
@@ -85,7 +76,7 @@ read_w32_registry_string (const char *root, const char *dir, const char *name)
   HKEY root_key, key_handle;
   DWORD n1, nbytes, type;
   char *result = NULL;
-	
+
   if ( !root )
     root_key = HKEY_CURRENT_USER;
   else if ( !strcmp( root, "HKEY_CLASSES_ROOT" ) )
@@ -102,7 +93,7 @@ read_w32_registry_string (const char *root, const char *dir, const char *name)
     root_key = HKEY_CURRENT_CONFIG;
   else
     return NULL;
-	
+
   if ( RegOpenKeyEx ( root_key, dir, 0, KEY_READ, &key_handle ) )
     {
       if (root)
@@ -133,10 +124,10 @@ read_w32_registry_string (const char *root, const char *dir, const char *name)
       goto leave;
     }
   result[nbytes] = 0; /* Make sure it is really a string.  */
-  if (type == REG_EXPAND_SZ && strchr (result, '%')) 
+  if (type == REG_EXPAND_SZ && strchr (result, '%'))
     {
       char *tmp;
-        
+
       n1 += 1000;
       tmp = malloc (n1+1);
       if (!tmp)
@@ -165,7 +156,7 @@ read_w32_registry_string (const char *root, const char *dir, const char *name)
           result = malloc (strlen (tmp)+1);
           if (!result)
             result = tmp;
-          else 
+          else
             {
               strcpy (result, tmp);
               free (tmp);
@@ -258,8 +249,8 @@ find_program_at_standard_place (const char *name)
 {
   char path[MAX_PATH];
   char *result = NULL;
-      
-  if (w32_shgetfolderpath (NULL, CSIDL_PROGRAM_FILES, NULL, 0, path) >= 0) 
+
+  if (w32_shgetfolderpath (NULL, CSIDL_PROGRAM_FILES, NULL, 0, path) >= 0)
     {
       result = malloc (strlen (path) + 1 + strlen (name) + 1);
       if (result)

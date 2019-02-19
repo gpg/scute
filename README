@@ -411,21 +411,8 @@ Copyright and License
 =====================
 
 Scute is copyrighted by g10 Code GmbH and licensed under the GNU
-General Pubic License version 2 or later with this exception:
-
-  In addition, as a special exception, g10 Code GmbH gives permission
-  to link this library: with the Mozilla Foundation's code for
-  Mozilla (or with modified versions of it that use the same license
-  as the "Mozilla" code), and distribute the linked executables.  You
-  must obey the GNU General Public License in all respects for all of
-  the code used other than "Mozilla".  If you modify the software, you
-  may extend this exception to your version of the software, but you
-  are not obligated to do so.  If you do not wish to do so, delete this
-  exception statement from your version and from all source files.
-
-
-g10 Code GmbH
-marcus@g10code.com
+Lesser General Public License version 2.1 or later.  See the file
+COPYING.LESSER for details.
 
 
  Copyright 2006, 2009 g10 Code GmbH

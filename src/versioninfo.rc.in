@@ -1,6 +1,6 @@
 /* versioninfo.rc.in - for scute
- *    Copyright (C) 2005 g10 Code GmbH
- * 
+ * Copyright (C) 2005 g10 Code GmbH
+ *
  * This file is free software; as a special exception the author gives
  * unlimited permission to copy and/or distribute it, with or without
  * modifications, as long as this notice is preserved.
@@ -8,8 +8,9 @@
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * SPDX-License-Identifier: FSFULLR
  */
- 
+
 /* This file is processed by configure to create versioninfo.rc */
 
 #line __LINE__ "versioninfo.rc.in"
@@ -34,7 +35,7 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", "Provided under the terms of the GNU Lesser General Public License version 2 or later with a special exception for Mozilla based software.\0"
+            VALUE "Comments", "Provided under the terms of the GNU Lesser General Public License version 2.1.\0"
             VALUE "CompanyName", "g10 Code GmbH\0"
             VALUE "FileDescription", "SCUTE - The GnuPG PKCS#11 interface\0"
             VALUE "FileVersion", "@LIBSCUTE_LT_CURRENT@.@LIBSCUTE_LT_AGE@.@LIBSCUTE_LT_REVISION@.@BUILD_REVISION@\0"
@@ -49,4 +50,3 @@ BEGIN
         END
     END
 END
-
