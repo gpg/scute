@@ -1,8 +1,10 @@
 Scute
 =====
 
-This is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
-Smart Card Daemon.  Currently, only the OpenPGP card is supported.
+This is a PKCS #11 implementation for the GnuPG Agent using smart
+cards managed by GnuPG's scdaemon.  Currently, OpenPGP and PIV cards
+are supported.
+
 
 TOC
 ===
@@ -21,7 +23,7 @@ TOC
 Purpose
 =======
 
-Scute enables you to use your OpenPGP smart card for client
+Scute enables you to use your OpenPGP or PIV smart card for client
 authentication with SSL in Mozilla.  See below for more details on how
 to get this working.
 
@@ -38,12 +40,9 @@ For the compilation:
 * libassuan 2.0.0
 
 At runtime:
-* Mozilla (or any other supported application using PKCS #11).
-* GnuPG 2.0, in particular: gpg-agent, scdaemon
+* Firefix, Thunderbird or any other supported application using PKCS #11.
+* GnuPG 2.2
 * Pinentry
-
-Note that client authentication with TLS 1.2 and S/MIME signing
-require GnuPG 2.1.
 
 
 Installation
@@ -52,7 +51,7 @@ Installation
 To install the PKCS #11 Module, follow the generic installation
 instructions in the file INSTALL that accompanies this software.
 
-After installation, you can configure Mozilla to use Scute by
+After installation, you can configure Firefox or Thunderbord to use Scute by
 visiting the preferences dialog in the "advanced" category, under
 "Security Devices".  There you can "load" the module from its
 installed path, e.g. "/usr/lib/scute.so".
@@ -82,7 +81,7 @@ card by uploading an off-card key or generating a key on the card.
 The card you got may already have been initialised.  Otherwise, you
 can find more information on this step in the smartcard HowTo, which
 also documents other basic card operations:
-http://www.gnupg.org/(en)/howtos/card-howto/en/smartcard-howto.html
+https://gnupg.org/howtos/card-howto/en/smartcard-howto.html
 
 Once the card is initialised, we have to generate a certificate
 signing request (CSR) to get the authentication key of the card
@@ -168,7 +167,7 @@ installed under /usr/lib/scute.so by default, needs to be loaded as
 a security device in Firefox under
 Preferences->Advanced->Security->Certificates->Security Devices->Load
 When the security device is loaded, card insertion should cause the
-security device list be updated with the inserted token (the card), and the certificate that has been imported into gpgsm should be visible under 
+security device list be updated with the inserted token (the card), and the certificate that has been imported into gpgsm should be visible under
 Preferences->Advanced->Security->Certificates->View Certificates
 automatically.
 
@@ -240,7 +239,7 @@ The Server Perspective
 The service provider will set up an Apache web server with SSL
 support, and configure it to accept certificates from the CA.  This
 step is quite involved.  Garex has a concise HowTo online at
-http://www.garex.net/apache/ about how to do this.  Beside the
+https://www.garex.net/apache/ about how to do this.  Beside the
 creation of a certificate that has its own fully qualified domain name
 (FQDN) as common name (CN part of the DN), this involves installing
 the Apache SSL module and configuration for it, for example in
@@ -378,33 +377,24 @@ There is a different, probably more powerful way to debug Mozilla PKCS
 #11 libraries.  However, to be able to use it, you need to configure
 and compile the Mozilla NSS sources with --enable-debug.  Instructions
 can be found at:
-http://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html
+https://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html
 
 Here are a couple of links to more information about implementing a
 PKCS #11 module for Mozilla:
 
 Implementing PKCS #11 for the Netscape Security Library
 (Caution: The content may be out of date)
-http://docs.sun.com/source/816-6150-10/index.htm
-http://docs.sun.com/source/816-6150-10/pkcs.htm
+https://docs.sun.com/source/816-6150-10/index.htm
+https://docs.sun.com/source/816-6150-10/pkcs.htm
 
 Common PKCS #11 Implementation Problems
-http://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
+https://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
 
 PKCS #11 Conformance Testing
-http://www.mozilla.org/projects/security/pki/pkcs11/
+https://www.mozilla.org/projects/security/pki/pkcs11/
 
 And of course the Mozilla NSS web page:
-http://www.mozilla.org/projects/security/pki/nss/
-
-
-Mozilla Bugs
-============
-
-Mozilla has a bug that causes the security devices list to become
-corrupt when a security device is unloaded: The wrong entry is removed
-from the list.  This is corrected by waiting for a refresh or closing
-and reopening the security device manager.
+https://www.mozilla.org/projects/security/pki/nss/
 
 
 Copyright and License

@@ -1,4 +1,5 @@
 # Emacs, please get me into -*- org -*- mode.
+#+STARTUP: showall
 
 * Manual:
 ** Some FIXME's which need attention.
@@ -14,13 +15,10 @@
 
 * Missing features:
 ** Add canonical gnupg logging module.
+   This is meanwhile part of libgpg-error which is already in use.
 ** Mozilla ignores the CKA_TRUSTED attribute to certificates, so
    exporting the information from GPGSM (ISTRUSTED) will not be
    useful.  It's unclear if this can be improved in a meaningful way.
-
-* Could be done better:
-** Search for grip/fingerprint directly instead iterating over all
-   keys with GPGSM?
 
 * Standard ambiguities, or non-conformance in the applications:
 ** If the token is removed, the current sessions are closed.  If then

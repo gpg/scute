@@ -1,6 +1,15 @@
 Noteworthy changes in version 1.6.0 (unreleased)
 ------------------------------------------------
 
+ * Support for PIV cards.
+
+ * Speedup by letting GPGSM select missing keys.
+
+ * License change to LGPL-2.1-or-later.
+   (See commit 60a071e3b7b2885ce994667a9186173772f3a647).
+
+ * Requires the current stable version of GnuPG (2.2.0)
+
 
 Noteworthy changes in version 1.5.0 (2017-07-14)
 ------------------------------------------------
