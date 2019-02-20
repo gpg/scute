@@ -19,9 +19,13 @@
 
 ## Process this file with automake to produce Makefile.in
 
-website = index.xhtml documentation.xhtml download.xhtml contact.xhtml \
-	format/web.css format/scute-logo.svg format/scute-border.jpg
-
-EXTRA_DIST = $(addprefix website/, $(website))
+EXTRA_DIST = \
+	website/contact.xhtml           /
+	website/documentation.xhtml	/
+	website/download.xhtml		/
+	website/index.xhtml		/
+	website/format/scute-border.jpg	/
+	website/format/scute-logo.svg	/
+	website/format/web.css
 
 SUBDIRS = manual

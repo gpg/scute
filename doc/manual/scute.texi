@@ -30,7 +30,7 @@ license can be found in the section entitled ``Library Copying''.
 
 The Scute Manual is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
 General Public License for more details.
 
 @end ifinfo
@@ -60,7 +60,7 @@ license can be found in the section entitled ``Library Copying''.
 The Scute Manual is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
+lesser General Public License for more details.
 @end titlepage
 @page
 
