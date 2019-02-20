@@ -12,3 +12,4 @@ m4/Makefile.in
 obj/
 src/Makefile.in
 tests/Makefile.in
+/VERSION

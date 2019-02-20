@@ -104,6 +104,9 @@ AH_VERBATIM([_REENTRANT],
 # Checks for programs.
 AC_PROG_CC
 
+# Note: A suitable gitlog-to-changelog script can be found in GnuPG master.
+AC_CHECK_PROGS(GITLOG_TO_CHANGELOG, gitlog-to-changelog, [gitlog-to-changelog])
+
 #
 # Setup gcc specific options
 #
