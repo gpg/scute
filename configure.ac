@@ -204,6 +204,7 @@ AC_DEFINE_UNQUOTED(VERSION_MINOR, $VERSION_MINOR, [Minor version number])
 # all safety checks here.  We are driving without seat belts now!
 # http://lists.cairographics.org/archives/cairo/2009-April/016962.html
 lt_cv_deplibs_check_method=pass_all
+
 LT_PREREQ([2.2.6])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
@@ -217,6 +218,11 @@ case "${host}" in
         ;;
     *-*-gnu*)
 	have_ld_version_script=yes
+        ;;
+    *-apple-darwin*)
+        AC_DEFINE(_DARWIN_C_SOURCE, 900000L,
+                  Expose all libc features (__DARWIN_C_FULL).)
+        AC_DEFINE(_XOPEN_SOURCE, 500, Activate POSIX interface on MacOS X)
         ;;
 esac
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
