@@ -146,7 +146,7 @@ main (int argc, char *argv[])
   if (loop)
     {
 #ifdef WIN32
-      _sleep (2);
+      Sleep (2*1000);
 #else
       sleep (2);  /* Why? */
 #endif

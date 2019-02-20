@@ -25,12 +25,29 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_W32_SYSTEM
-#include <windows.h>
-#include <shlobj.h>
-#include <io.h>
+# include <windows.h>
+# include <shlobj.h>
+# include <io.h>
 #endif
 
 #include "support.h"
+
+#ifndef HAVE_STPCPY
+static char *
+my_stpcpy (char *a, const char *b)
+{
+    while( *b )
+	*a++ = *b++;
+    *a = 0;
+
+    return (char*)a;
+}
+# undef stpcpy
+# define stpcpy(a,b) my_stpcpy ((a), (b))
+#endif /* !HAVE_STPCPY */
+
+
+
 
 #ifdef HAVE_W32_SYSTEM
 #define RTLD_LAZY 0
@@ -39,6 +56,7 @@ static __inline__ void *
 dlopen (const char * name, int flag)
 {
   void * hd = LoadLibrary (name);
+  (void)flag;
   return hd;
 }
 

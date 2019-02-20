@@ -65,22 +65,10 @@ scute_copy_string (char *dest, const char *src, int max_len)
 static inline char *
 ttyname (int fd)
 {
+  (void)fd;
   return NULL;
 }
 #endif /* !HAVE_TTYNAME */
-
-#ifndef HAVE_STPCPY
-static inline char *
-stpcpy (char *a, const char *b)
-{
-    while( *b )
-	*a++ = *b++;
-    *a = 0;
-
-    return (char*)a;
-}
-#endif /* !HAVE_STPCPY */
-
 
 
 const char *get_gpgsm_path (void);

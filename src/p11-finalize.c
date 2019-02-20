@@ -22,8 +22,8 @@
 #include <config.h>
 #endif
 #ifdef HAVE_W32_SYSTEM
-#define __USE_W32_SOCKETS 1
-#include <windows.h>
+# include <winsock2.h>
+# include <windows.h>
 #endif
 
 #include "cryptoki.h"

@@ -30,11 +30,12 @@
 #include <stdarg.h>
 
 #ifdef HAVE_W32_SYSTEM
-#define PATHSEP_C ';'
-#define WINVER 0x0500  /* Required for AllowSetForegroundWindow.  */
-#include <windows.h>
+# define PATHSEP_C ';'
+# define WINVER 0x0500  /* Required for AllowSetForegroundWindow.  */
+# include <winsock2.h>
+# include <windows.h>
 #else
-#define PATHSEP_C ':'
+# define PATHSEP_C ':'
 #endif
 
 #include <assuan.h>
@@ -64,8 +65,8 @@ gnupg_allow_set_foregound_window (pid_t pid)
     return;
 #ifdef HAVE_W32_SYSTEM
   else if (!AllowSetForegroundWindow (pid))
-    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %i\n",
-	   (unsigned long)pid, GetLastError ());
+    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %u\n",
+	   (unsigned long)pid, (unsigned int)GetLastError ());
 #endif
 }
 

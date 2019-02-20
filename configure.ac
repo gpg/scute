@@ -262,13 +262,6 @@ AC_SUBST(BUILD_REVISION_DEC)
 AC_SUBST(BUILD_TIMESTAMP)
 AC_SUBST(BUILD_FILEVERSION)
 
-# Checks for libraries.
-
-AC_CHECK_FUNCS([ttyname localtime_r timegm stpcpy])
-
-# Run the checks needed for estream-printf.c
-estream_PRINTF_INIT
-
 # The error code library.  Error codes are sent over the IPC layer and
 # have to be interpreted.
 AM_PATH_GPG_ERROR("$NEED_GPG_ERROR_VERSION",
@@ -416,6 +409,7 @@ AC_HEADER_STDBOOL
 AC_C_INLINE
 
 # Checks for library functions.
+AC_CHECK_FUNCS([ttyname localtime_r timegm stpcpy])
 
 # Check for programs needed for the manual.
 AC_CHECK_PROG(CONVERT, convert, convert)
