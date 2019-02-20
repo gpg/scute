@@ -38,7 +38,7 @@ C_SignInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
-  session_iterator_t session;
+  session_iterator_t sid;
 
   if (pMechanism == NULL_PTR || pMechanism->mechanism != CKM_RSA_PKCS)
     return CKR_ARGUMENTS_BAD;
@@ -50,13 +50,10 @@ C_SignInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot, &session);
-  if (err)
-    goto out;
+  err = slots_lookup_session (hSession, &slot, &sid);
+  if (!err)
+    err = session_set_signing_key (slot, sid, hKey);
 
-  err = session_set_signing_key (slot, session, hKey);
-
- out:
   scute_global_unlock ();
   return err;
 }

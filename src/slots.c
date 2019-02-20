@@ -992,7 +992,8 @@ session_get_search_result (slot_iterator_t id, session_iterator_t sid,
 }
 
 
-/* Set the signing key for session SID in slot ID to KEY.  */
+/* Set the signing key for session SID in slot ID to KEY.  This is the
+ * core of C_SignInit.  */
 CK_RV
 session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 			 object_iterator_t key)
@@ -1027,8 +1028,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 }
 
 
-/* FIXME: The description is wrong:
-   Set the signing key for session SID in slot ID to KEY.  */
+/* The core of C_Sign - see there for a description.  */
 CK_RV
 session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pData, CK_ULONG ulDataLen,
@@ -1036,6 +1036,7 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
 {
   struct slot *slot = scute_table_data (slots, id);
   struct session *session = scute_table_data (slot->sessions, sid);
+  int rc;
   gpg_error_t err;
   CK_ATTRIBUTE_PTR attr;
   CK_ULONG attr_count;
@@ -1051,24 +1052,36 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   if (!session->signing_key)
     return CKR_OPERATION_NOT_INITIALIZED;
 
-  err = slot_get_object (id, session->signing_key, &attr, &attr_count);
-  if (err)
-    return err;
+  rc = slot_get_object (id, session->signing_key, &attr, &attr_count);
+  if (rc)
+    goto leave;
   if (attr_count == (CK_ULONG) -1)
-    return CKR_KEY_HANDLE_INVALID;
+    {
+      rc = CKR_KEY_HANDLE_INVALID;
+      goto leave;
+    }
   if (attr->ulValueLen != sizeof (key_class)
       || memcmp (attr->pValue, &key_class, sizeof (key_class)))
-    return CKR_KEY_HANDLE_INVALID;
+    {
+      rc = CKR_KEY_HANDLE_INVALID;
+      goto leave;
+    }
 
   /* Find the CKA_ID */
   for (i = 0; i < attr_count; i++)
     if (attr[i].type == CKA_ID)
       break;
   if (i == attr_count)
-    return CKR_GENERAL_ERROR;
+    {
+      rc = CKR_GENERAL_ERROR;
+      goto leave;
+    }
 
   if (attr[i].ulValueLen >= sizeof key_id - 1)
-    return CKR_GENERAL_ERROR;
+    {
+      rc = CKR_GENERAL_ERROR;
+      goto leave;
+    }
   strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
   key_id[attr[i].ulValueLen] = 0;
   DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
@@ -1076,16 +1089,19 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     ;
   if (*keyref)
     keyref++;  /* Point to the grip.  */
-  DEBUG (DBG_INFO, "Using keyref '%s'", keyref);
 
   sig_len = *pulSignatureLen;
   err = scute_agent_sign (keyref, pData, ulDataLen, pSignature, &sig_len);
-
   /* Take care of error codes which are not mapped by default.  */
   if (gpg_err_code (err) == GPG_ERR_INV_LENGTH)
-    return CKR_BUFFER_TOO_SMALL;
+    rc = CKR_BUFFER_TOO_SMALL;
   else if (gpg_err_code (err) == GPG_ERR_INV_ARG)
-    return CKR_ARGUMENTS_BAD;
+    rc = CKR_ARGUMENTS_BAD;
   else
-    return scute_gpg_err_to_ck (err);
+    rc = scute_gpg_err_to_ck (err);
+
+ leave:
+  if (rc != CKR_OK && rc != CKR_BUFFER_TOO_SMALL)
+    session->signing_key = 0;
+  return rc;
 }

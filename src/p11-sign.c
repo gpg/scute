@@ -37,8 +37,12 @@
  * If the function returns CKR_BUFFER_TOO_SMALL no further C_SignInit
  * is required, instead the function can be called again with a larger
  * buffer.  On a successful operation CKR_OK is returned and other
- * signatures may be created without an new C_SignInit.  On all other
+ * signatures may be created without a new C_SignInit.  On all other
  * return codes a new C_SignInit is required.
+ *
+ * In contrast to the specs the return code CKR_ARGUMENTS_BAD may not
+ * require a new C_SignInit because this can be considered a bug in
+ * the caller's code.
  */
 CK_RV CK_SPEC
 C_Sign (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
@@ -46,7 +50,7 @@ C_Sign (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
 {
   CK_RV err = CKR_OK;
   slot_iterator_t slot;
-  session_iterator_t session;
+  session_iterator_t sid;
 
   if (pData == NULL_PTR || pulSignatureLen == NULL_PTR)
     return CKR_ARGUMENTS_BAD;
@@ -55,18 +59,11 @@ C_Sign (CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
   if (err)
     return err;
 
-  err = slots_lookup_session (hSession, &slot, &session);
-  if (err)
-    goto out;
+  err = slots_lookup_session (hSession, &slot, &sid);
+  if (!err)
+    err = session_sign (slot, sid, pData, ulDataLen,
+                        pSignature, pulSignatureLen);
 
-  /* FIXME: Check that C_SignInit has been called.  */
-
-  err = session_sign (slot, session, pData, ulDataLen,
-		      pSignature, pulSignatureLen);
-
- out:
-  /* FIXME: Update the flag which indicates whether C_SignInit has
-   * been called.  */
   scute_global_unlock ();
   return err;
 }
