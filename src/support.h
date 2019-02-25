@@ -71,8 +71,8 @@ ttyname (int fd)
 #endif /* !HAVE_TTYNAME */
 
 
+const char *get_gpgconf_path (void);
 const char *get_gpgsm_path (void);
-const char *get_gpg_connect_agent_path (void);
 
 
 

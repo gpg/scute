@@ -49,7 +49,7 @@
 
 
 /* The global agent context.  */
-static assuan_context_t agent_ctx = NULL;
+static assuan_context_t agent_ctx;
 
 /* The version number of the agent.  */
 static int agent_version_major;
@@ -78,32 +78,34 @@ agent_connect (assuan_context_t *ctx_r)
 {
   gpg_error_t err = 0;
   assuan_context_t ctx = NULL;
-  char buffer[255];
-  FILE *p;
+  char buffer[512];
+  FILE *fp;
 
-  /* Use gpg-connect-agent to obtain the socket name
-   * directly from the agent itself. */
-  snprintf (buffer, sizeof buffer, "%s 'GETINFO socket_name' /bye",
-            get_gpg_connect_agent_path ());
+  /* Use gpgconf to obtain the socket name.  */
+  snprintf (buffer, sizeof buffer, "%s --null --list-dirs agent-socket",
+            get_gpgconf_path ());
 #ifdef HAVE_W32_SYSTEM
-  p = _popen (buffer, "r");
+  fp = _popen (buffer, "r");
 #else
-  p = popen (buffer, "r");
+  fp = popen (buffer, "r");
 #endif
-  if (p)
+  if (fp)
     {
-      int ret;
+      int i, c;
 
-      ret = fscanf (p, "D %254s\nOK\n", buffer);
-      if (ret == EOF)       /* I/O error? */
-        err = gpg_error_from_errno (errno);
-      else if (ret != 1)    /* Unexpected reply */
-        err = gpg_error (GPG_ERR_NO_AGENT);
+      for (i=0; i < sizeof buffer - 1  && (c = getc (fp)) != EOF; i++)
+        buffer[i] = c;
+      if (c == EOF && ferror (fp))       /* I/O error? */
+        err = gpg_error_from_syserror ();
+      else if (!(i < sizeof buffer - 1))
+        err = gpg_error (GPG_ERR_NO_AGENT);  /* Path too long.  */
+      else if (!i || buffer[i-1])
+        err = gpg_error (GPG_ERR_NO_AGENT);  /* No terminating nul. */
 
-      pclose (p);
+      pclose (fp);
     }
   else
-    err = gpg_error_from_errno (errno);
+    err = gpg_error_from_syserror ();
 
   /* Then connect to the socket we got. */
   if (!err)

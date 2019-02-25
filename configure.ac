@@ -66,7 +66,7 @@ VERSION_MINOR=0
 
 NEED_GPG_ERROR_VERSION=1.24
 NEED_LIBASSUAN_VERSION=2.5.0
-NEED_GPGSM_VERSION=2.2.0
+
 # Some status variables to give feedback at the end of a configure run.
 have_gpg_error=no
 have_libassuan=no
@@ -190,9 +190,6 @@ AC_ARG_ENABLE(optimization,
 AC_SUBST(LIBSCUTE_LT_CURRENT)
 AC_SUBST(LIBSCUTE_LT_AGE)
 AC_SUBST(LIBSCUTE_LT_REVISION)
-AC_DEFINE_UNQUOTED(NEED_GPGSM_VERSION, "$NEED_GPGSM_VERSION",
-				       [Min. needed GPGSM version.])
-
 AC_SUBST(PACKAGE)
 AC_SUBST(VERSION)
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
@@ -230,14 +227,10 @@ case "${host}" in
 esac
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
-GPGSM_DEFAULT=no
-GPG_CONNECT_AGENT_DEFAULT=no
 have_w32_system=no
 case "${host}" in
     *-mingw32*)
-        # special stuff for Windoze NT
-	GPGSM_DEFAULT='c:\\gnupg\\gpgsm.exe'
-        GPG_CONNECT_AGENT_DEFAULT='c:\\gnupg\\gpg-connect-agent.exe'
+        # special stuff for Windows NT
 	have_w32_system=yes
         ;;
     *)
@@ -271,133 +264,6 @@ AM_PATH_GPG_ERROR("$NEED_GPG_ERROR_VERSION",
 AM_PATH_LIBASSUAN("$NEED_LIBASSUAN_VERSION",
                   have_libassuan=yes, have_libassuan=no)
 
-# GPGSM
-NO_OVERRIDE=no
-AC_ARG_WITH(gpgsm,
-	    AC_HELP_STRING([--with-gpgsm=PATH], [use GpgSM binary at PATH]),
-	    GPGSM=$withval, NO_OVERRIDE=yes)
-if test "$NO_OVERRIDE" = "yes" || test "$GPGSM" = "yes"; then
-  GPGSM=
-  NO_OVERRIDE=yes
-  if test "$cross_compiling" != "yes"; then
-    AC_PATH_PROG(GPGSM, gpgsm)
-  fi
-  if test -z "$GPGSM"; then
-    GPGSM="$GPGSM_DEFAULT"
-  fi
-fi
-if test "$GPGSM" = no; then
-  if test "$NO_OVERRIDE" = "yes"; then
-    if test "$cross_compiling" != "yes"; then
-      AC_MSG_ERROR([
-***
-*** Could not find GpgSM, install GpgSM or use --with-gpgsm=PATH to enable it
-***])
-    else
-      AC_MSG_ERROR([
-***
-*** Can not determine path to GpgSM when cross-compiling, use --with-gpgsm=PATH
-***])
-    fi
-  fi
-else
-  AC_DEFINE_UNQUOTED(GPGSM_PATH, "$GPGSM", [Path to the GPGSM binary.])
-  AC_DEFINE(ENABLE_GPGSM,1,[Whether GPGSM support is enabled])
-fi
-AM_CONDITIONAL(HAVE_GPGSM, test "$GPGSM" != "no")
-
-
-dnl Check for GPGSM version requirement.
-GPGSM_VERSION=unknown
-ok=maybe
-if test -z "$GPGSM" -o "x$GPGSM" = "xno"; then
-  ok=no
-else
-  if test "$cross_compiling" = "yes"; then
-    AC_MSG_WARN([GPGSM version can not be checked when cross compiling])
-    ok=no
-  else
-    if test ! -x "$GPGSM"; then
-      AC_MSG_WARN([GPGSM not executable, version check disabled])
-      ok=no
-    fi
-  fi
-fi
-if test "$ok" = "maybe"; then
-  AC_MSG_CHECKING(for GPGSM >= $NEED_GPGSM_VERSION)
-  req_major=`echo $NEED_GPGSM_VERSION | \
-             sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
-  req_minor=`echo $NEED_GPGSM_VERSION | \
-	     sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\2/'`
-  req_micro=`echo $NEED_GPGSM_VERSION | \
-	     sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\3/'`
-  gpgsm_version=`$GPGSM --version | grep ^gpgsm`
-  major=`echo $gpgsm_version | \
-	 sed 's/^gpgsm (GnuPG) \([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
-  minor=`echo $gpgsm_version | \
-	 sed 's/^gpgsm (GnuPG) \([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\2/'`
-  micro=`echo $gpgsm_version | \
-	 sed 's/^gpgsm (GnuPG) \([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\3/'`
-  GPGSM_VERSION=`echo $gpgsm_version | sed 's/^gpgsm (GnuPG) //'`
-
-  if test "$major" -gt "$req_major"; then
-    ok=yes
-  else
-    if test "$major" -eq "$req_major"; then
-      if test "$minor" -gt "$req_minor"; then
-        ok=yes
-      else
-        if test "$minor" -eq "$req_minor"; then
-          if test "$micro" -ge "$req_micro"; then
-            ok=yes
-	  fi
-        fi
-      fi
-    fi
-  fi
-  if test "$ok" = "yes"; then
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no)
-    AC_MSG_WARN([GPGSM must be at least version $NEED_GPGSM_VERSION])
-  fi
-fi
-gpgsm_ok="$ok"
-
-# GPG_CONNECT_AGENT
-NO_OVERRIDE=no
-AC_ARG_WITH(gpg-connect-agent,
-            AC_HELP_STRING([--with-gpg-connect-agent=PATH],
-                           [use gpg-connect-agent binary at PATH]),
-            GPG_CONNECT_AGENT=$withval, NO_OVERRIDE=yes)
-if test "$NO_OVERRIDE" = "yes" || test "$GPG_CONNECT_AGENT" = "yes"; then
-  GPG_CONNECT_AGENT=
-  NO_OVERRIDE=yes
-  if test "$cross_compiling" != "yes"; then
-    AC_CHECK_PROG(GPG_CONNECT_AGENT, gpg-connect-agent, gpg-connect-agent)
-  fi
-  if test -z "$GPG_CONNECT_AGENT"; then
-    GPG_CONNECT_AGENT="$GPG_CONNECT_AGENT_DEFAULT"
-  fi
-fi
-if test "$GPG_CONNECT_AGENT" = no; then
-  if test "$NO_OVERRIDE" = "yes"; then
-    if test "$cross_compiling" != "yes"; then
-      AC_MSG_ERROR([
-***
-*** Could not find gpg-connect-agent, use --with-gpg-connect-agent=PATH to enable it
-***])
-    else
-      AC_MSG_ERROR([
-***
-*** Can not determine path to gpg-connect-agent when cross-compiling, use --with-gpg-connect-agent=PATH
-***])
-    fi
-  fi
-else
-  AC_DEFINE_UNQUOTED(GPG_CONNECT_AGENT_PATH, "$GPG_CONNECT_AGENT",
-                     [Path to the GPG_CONNECT_AGENT binary.])
-fi
 
 
 # Checks for header files.
@@ -473,8 +339,4 @@ echo "
 
         Revision: mym4_revision  (mym4_revision_dec)
         Platform: $host
-
-        GpgSM:             ${GPGSM}
-        Gpg-connect-agent: ${GPG_CONNECT_AGENT}
-
 "

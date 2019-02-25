@@ -30,7 +30,10 @@
 # include <io.h>
 #endif
 
+#include <gpg-error.h>
+#include "debug.h"
 #include "support.h"
+
 
 #ifndef HAVE_STPCPY
 static char *
@@ -286,35 +289,96 @@ find_program_at_standard_place (const char *name)
 #endif
 
 
+/* Return the file name of the gpgconf utility.  */
 const char *
-get_gpgsm_path (void)
+get_gpgconf_path (void)
 {
   static const char *pgmname;
 
 #ifdef HAVE_W32_SYSTEM
   if (!pgmname)
-    pgmname = find_program_in_inst_dir ("gpgsm.exe");
+    pgmname = find_program_in_inst_dir ("gpgconf.exe");
   if (!pgmname)
-    pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpgsm.exe");
+    pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpgconf.exe");
 #endif
   if (!pgmname)
-    pgmname = GPGSM_PATH;
+    pgmname = "gpgconf";
   return pgmname;
 }
 
 
-const char *
-get_gpg_connect_agent_path (void)
+/* Return the bindir where the main binaries are installed.  This may
+ * return NULL.  */
+static const char *
+get_bindir (void)
 {
-  static const char *pgmname;
+  static char *bindir;
+  gpg_error_t err = 0;
+  char buffer[512];
+  FILE *fp;
 
+  if (!bindir)
+    {
+      snprintf (buffer, sizeof buffer, "%s --null --list-dirs bindir",
+                get_gpgconf_path ());
 #ifdef HAVE_W32_SYSTEM
-  if (!pgmname)
-    pgmname = find_program_in_inst_dir ("gpg-connect-agent.exe");
-  if (!pgmname)
-    pgmname = find_program_at_standard_place ("GNU\\GnuPG\\gpg-connect-agent.exe");
+      fp = _popen (buffer, "r");
+#else
+      fp = popen (buffer, "r");
 #endif
+      if (fp)
+        {
+          int i, c;
+
+          for (i=0; i < sizeof buffer - 1  && (c = getc (fp)) != EOF; i++)
+            buffer[i] = c;
+          if (c == EOF && ferror (fp))
+            err = gpg_error_from_syserror ();
+          else if (!(i < sizeof buffer - 1))
+            err = gpg_error (GPG_ERR_NO_AGENT);  /* Path too long.  */
+          else if (!i || buffer[i-1])
+            err = gpg_error (GPG_ERR_NO_AGENT);  /* No terminating nul. */
+          else if (!(bindir = strdup (buffer)))
+            err = gpg_error_from_syserror ();
+
+          pclose (fp);
+        }
+      else
+        err = gpg_error_from_syserror ();
+
+      if (err)
+        DEBUG (DBG_CRIT, "error locating GnuPG's installation directory: %s",
+               gpg_strerror (err));
+    }
+
+  return bindir;
+}
+
+
+const char *
+get_gpgsm_path (void)
+{
+  static char *pgmname;
+#ifdef HAVE_W32_SYSTEM
+  static const char gpgsm[] = "gpgsm.exe";
+#else
+  static const char gpgsm[] = "gpgsm";
+#endif
+
   if (!pgmname)
-    pgmname = GPG_CONNECT_AGENT_PATH;
+    {
+      char *buffer;
+      const char *bindir = get_bindir ();
+      if (!bindir)
+        return gpgsm;  /* Error fallback without any path component.  */
+
+      buffer = malloc (strlen (bindir) + 1 + strlen (gpgsm) + 1);
+      if (!buffer)
+        return gpgsm;  /* Error fallback.  */
+
+      strcpy (stpcpy (stpcpy (buffer, bindir), "/"), gpgsm);
+      pgmname = buffer;
+    }
+
   return pgmname;
 }
