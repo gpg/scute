@@ -30,6 +30,8 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H	1
 
+#include <gpg-error.h>
+
 #define spacep(p)   (*(p) == ' ' || *(p) == '\t')
 #define digitp(p)   (*(p) >= '0' && *(p) <= '9')
 #define hexdigitp(a) (digitp (a)			\
@@ -71,7 +73,10 @@ ttyname (int fd)
 #endif /* !HAVE_TTYNAME */
 
 
+gpg_error_t read_first_line (const char *command, char *buffer, size_t bufsize);
 const char *get_gpgconf_path (void);
+int get_gnupg_version (int *minor);
+int is_gnupg_older_than (int major, int minor, int micro);
 const char *get_gpgsm_path (void);
 
 

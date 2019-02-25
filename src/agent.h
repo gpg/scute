@@ -82,9 +82,6 @@ typedef struct agent_card_info_s *agent_card_info_t;
    initial greeting.  */
 gpg_error_t scute_agent_initialize (void);
 
-/* Return the major and minor version of the agent.  */
-int scute_agent_get_agent_version (int *minor);
-
 /* Tear down the agent connection and release all associated
    resources.  */
 void scute_agent_finalize (void);

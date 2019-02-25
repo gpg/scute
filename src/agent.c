@@ -51,10 +51,6 @@
 /* The global agent context.  */
 static assuan_context_t agent_ctx;
 
-/* The version number of the agent.  */
-static int agent_version_major;
-static int agent_version_minor;
-
 
 
 /* Hack required for Windows.  */
@@ -79,33 +75,25 @@ agent_connect (assuan_context_t *ctx_r)
   gpg_error_t err = 0;
   assuan_context_t ctx = NULL;
   char buffer[512];
-  FILE *fp;
 
-  /* Use gpgconf to obtain the socket name.  */
-  snprintf (buffer, sizeof buffer, "%s --null --list-dirs agent-socket",
+  /* Use gpgconf to make sure that gpg-agent is started and to obtain
+   * the socket name.  For older version of gnupg we will fallback to
+   * using two gpgconf commands with the same effect.  */
+  snprintf (buffer, sizeof buffer, "%s --show-socket --launch gpg-agent",
             get_gpgconf_path ());
-#ifdef HAVE_W32_SYSTEM
-  fp = _popen (buffer, "r");
-#else
-  fp = popen (buffer, "r");
-#endif
-  if (fp)
+  err = read_first_line (buffer, buffer, sizeof buffer);
+  if (gpg_err_code (err) == GPG_ERR_NO_AGENT && is_gnupg_older_than (2, 2, 14))
     {
-      int i, c;
-
-      for (i=0; i < sizeof buffer - 1  && (c = getc (fp)) != EOF; i++)
-        buffer[i] = c;
-      if (c == EOF && ferror (fp))       /* I/O error? */
-        err = gpg_error_from_syserror ();
-      else if (!(i < sizeof buffer - 1))
-        err = gpg_error (GPG_ERR_NO_AGENT);  /* Path too long.  */
-      else if (!i || buffer[i-1])
-        err = gpg_error (GPG_ERR_NO_AGENT);  /* No terminating nul. */
-
-      pclose (fp);
+      snprintf (buffer, sizeof buffer, "%s --launch gpg-agent",
+                get_gpgconf_path ());
+      err = read_first_line (buffer, NULL, 0);
+      if (!err)
+        {
+          snprintf (buffer, sizeof buffer, "%s --list-dirs agent-socket",
+                    get_gpgconf_path ());
+          err = read_first_line (buffer, buffer, sizeof buffer);
+        }
     }
-  else
-    err = gpg_error_from_syserror ();
 
   /* Then connect to the socket we got. */
   if (!err)
@@ -177,28 +165,6 @@ agent_simple_cmd (assuan_context_t ctx, const char *fmt, ...)
   free (optstr);
 
   return err;
-}
-
-
-/* Read and stroe the agent's version number.  */
-static gpg_error_t
-read_version_cb (void *opaque, const void *buffer, size_t length)
-{
-  char version[20];
-  const char *s;
-
-  (void) opaque;
-
-  if (length > sizeof (version) -1)
-    length = sizeof (version) - 1;
-  strncpy (version, buffer, length);
-  version[length] = 0;
-
-  agent_version_major = atoi (version);
-  s = strchr (version, '.');
-  agent_version_minor = s? atoi (s+1) : 0;
-
-  return 0;
 }
 
 
@@ -301,21 +267,51 @@ agent_configure (assuan_context_t ctx)
   if (err && gpg_err_code (err) != GPG_ERR_UNKNOWN_OPTION)
     return err;
 
-  err = assuan_transact (ctx, "GETINFO version",
-                         read_version_cb, NULL,
-                         NULL, NULL, NULL, NULL);
-  if (gpg_err_code (err) == GPG_ERR_UNKNOWN_OPTION)
-    err = 0;
-  else if (err)
-    return err;
-
-
   return err;
 }
 
 
+/* Check for a broken pipe, that is a lost connection to the agent.
+ * Update the gloabls so that a re-connect is done the next time.
+ * Returns ERR or the modified code GPG_ERR_NO_AGENT.  */
+static gpg_error_t
+check_broken_pipe (gpg_error_t err)
+{
+  /* Note that Scute _currently_ uses GPG_ERR_SOURCE_ANY.  */
+  if (gpg_err_code (err) == GPG_ERR_EPIPE
+      && gpg_err_source (err) == GPG_ERR_SOURCE_ANY)
+    {
+      DEBUG (DBG_INFO, "Broken connection to the gpg-agent");
+      scute_agent_finalize ();
+      err = gpg_error (GPG_ERR_NO_AGENT);
+    }
+  return err;
+}
+
+
+/* If the connection to the agent was lost earlier and detected by
+ * check_broken_pipe we try to reconnect.  */
+static gpg_error_t
+ensure_agent_connection (void)
+{
+  gpg_error_t err;
+
+  if (agent_ctx)
+    return 0;  /* Connection still known.  */
+
+  DEBUG (DBG_INFO, "Re-connecting to gpg-agent");
+  err = agent_connect (&agent_ctx);
+  if (err)
+    return err;
+
+  err = agent_configure (agent_ctx);
+  return check_broken_pipe (err);
+}
+
+
 /* Try to connect to the agent via socket.  Handle the server's
-   initial greeting.  */
+   initial greeting.  This is used only once when SCute is loaded.
+   Re-connection is done using ensure_agent_connection.  */
 gpg_error_t
 scute_agent_initialize (void)
 {
@@ -337,14 +333,6 @@ scute_agent_initialize (void)
     scute_agent_finalize ();
 
   return err;
-}
-
-
-int
-scute_agent_get_agent_version (int *minor)
-{
-  *minor = agent_version_minor;
-  return agent_version_major;
 }
 
 
@@ -743,10 +731,12 @@ scute_agent_learn (struct agent_card_info_s *info)
   gpg_error_t err;
 
   memset (info, 0, sizeof (*info));
-  err = assuan_transact (agent_ctx, "SCD LEARN --force",
-			 NULL, NULL,
-                         default_inq_cb, NULL,
-			 learn_status_cb, info);
+  err = ensure_agent_connection ();
+  if (!err)
+    err = assuan_transact (agent_ctx, "SCD LEARN --force",
+                           NULL, NULL,
+                           default_inq_cb, NULL,
+                           learn_status_cb, info);
   if (gpg_err_source(err) == GPG_ERR_SOURCE_SCD
       && gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
     {
@@ -764,7 +754,7 @@ scute_agent_learn (struct agent_card_info_s *info)
     }
   if (!err)
     {
-      /* Also try to get the human readabale serial number.  */
+      /* Also try to get the human readable serial number.  */
       err = assuan_transact (agent_ctx, "SCD GETATTR $DISPSERIALNO",
                              NULL, NULL,
                              default_inq_cb, NULL,
@@ -774,8 +764,7 @@ scute_agent_learn (struct agent_card_info_s *info)
         err = 0; /* Not implemented or GETATTR not supported.  */
     }
 
-
-  return err;
+  return check_broken_pipe (err);
 }
 
 
@@ -836,14 +825,21 @@ scute_agent_check_status (void)
   int any = 0;
   char flag = '-';
 
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
   /* First we look at the eventcounter to see if anything happened at
      all.  This is a low overhead function which won't even clutter a
      gpg-agent log file.  There is no need for error checking here. */
   if (last_flag)
-    assuan_transact (agent_ctx, "GETEVENTCOUNTER",
-                     NULL, NULL,
-                     NULL, NULL,
-                     geteventcounter_status_cb, &any);
+    {
+      err = assuan_transact (agent_ctx, "GETEVENTCOUNTER",
+                             NULL, NULL,
+                             NULL, NULL,
+                             geteventcounter_status_cb, &any);
+      check_broken_pipe (err);
+    }
 
   if (any || !last_flag)
     {
@@ -851,6 +847,7 @@ scute_agent_check_status (void)
                              read_status_cb, &flag,
                              default_inq_cb, NULL,
                              NULL, NULL);
+      err = check_broken_pipe (err);
       if (err)
         return err;
       last_flag = flag;
@@ -1071,8 +1068,12 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
 
   snprintf (cmd, sizeof (cmd), "SIGKEY %s", hexgrip);
 
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
-			 NULL, NULL, NULL);
+                         NULL, NULL, NULL);
+  err = check_broken_pipe (err);
   if (err)
     return err;
 
@@ -1083,11 +1084,13 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
   snprintf (cmd, sizeof (cmd), "SETHASH --hash=%s %s", hash, pretty_data);
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
+  err = check_broken_pipe (err);
   if (err)
     return err;
 
   err = assuan_transact (agent_ctx, "PKSIGN",
 			 pksign_cb, &sig, default_inq_cb, NULL, NULL, NULL);
+  err = check_broken_pipe (err);
   if (err)
     return err;
 
@@ -1231,11 +1234,16 @@ scute_agent_decrypt (const char *hexgrip,
       return 0;
     }
 
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
   snprintf (cmd, sizeof (cmd), "SETKEY %s", hexgrip);
   err = assuan_transact (agent_ctx, cmd,
                          NULL, NULL,
                          default_inq_cb, NULL,
 			 NULL, NULL);
+  err = check_broken_pipe (err);
   if (err)
     return err;
 
@@ -1269,6 +1277,7 @@ scute_agent_decrypt (const char *hexgrip,
 			 pkdecrypt_data_cb, &pkdecrypt,
                          pkdecrypt_inq_cb, &pkdecrypt,
                          NULL, NULL);
+  err = check_broken_pipe (err);
   if (!err)
     err = pkdecrypt_parse_result (&pkdecrypt, r_plaindata, r_plaindatalen);
 
@@ -1285,9 +1294,14 @@ scute_agent_is_trusted (const char *fpr, bool *is_trusted)
   bool trusted = false;
   char cmd[150];
 
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
   snprintf (cmd, sizeof (cmd), "ISTRUSTED %s", fpr);
   err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
 			 NULL, NULL, NULL);
+  err = check_broken_pipe (err);
   if (err && gpg_err_code (err) != GPG_ERR_NOT_TRUSTED)
     return err;
   else if (!err)
@@ -1356,9 +1370,14 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
   cert_s.cert_der_len = 0;
   cert_s.cert_der_size = 0;
 
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
   snprintf (cmd, sizeof (cmd), "SCD READCERT %s", certref);
   err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
 			 NULL, NULL, NULL, NULL);
+  err = check_broken_pipe (err);
   /* Just to be safe... */
   if (!err && (cert_s.cert_der_len <= 16 || cert_s.cert_der[0] != 0x30))
     {
@@ -1409,13 +1428,17 @@ scute_agent_get_random (unsigned char *data, size_t len)
     gpg_error_t err;
     struct random_request request;
 
+    err = ensure_agent_connection ();
+    if (err)
+      return err;
+
     snprintf (command, sizeof(command), "SCD RANDOM %zu", len);
 
     request.buffer = data;
     request.len = len;
     err = assuan_transact (agent_ctx, command, get_challenge_data_cb,
                            &request, NULL, NULL, NULL, NULL);
-
+    err = check_broken_pipe (err);
     return err;
 }
 

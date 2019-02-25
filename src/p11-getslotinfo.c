@@ -63,7 +63,7 @@ C_GetSlotInfo (CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
     pInfo->flags |= CKF_TOKEN_PRESENT;
 
   /* Use the gpg-agent version for the hardware version.. */
-  pInfo->hardwareVersion.major = scute_agent_get_agent_version (&minor);
+  pInfo->hardwareVersion.major = get_gnupg_version (&minor);
   pInfo->hardwareVersion.minor = minor;
 
   /* Use Scute version as Firmware version.  */

@@ -35,6 +35,13 @@
 #include "support.h"
 
 
+/* Malloced string with GnuPG's version.  NULL if gnupg is notproperly
+ * installed.  */
+static char *gnupg_version_string;
+
+
+
+
 #ifndef HAVE_STPCPY
 static char *
 my_stpcpy (char *a, const char *b)
@@ -289,7 +296,111 @@ find_program_at_standard_place (const char *name)
 #endif
 
 
-/* Return the file name of the gpgconf utility.  */
+/* Read a line form the output of COMMAND via popen and return that
+ * line at BUFFER which has been allocated by the caller with BUFSIZE
+ * bytes.  On success BUFFER contains a string with the first line.
+ * Command and buffer may have the same address.  If no output is
+ * expected BUFFER can be given as NULL. */
+gpg_error_t
+read_first_line (const char *command, char *buffer, size_t bufsize)
+{
+  gpg_error_t err;
+  FILE *fp;
+
+  if (buffer && bufsize < 2)
+    return gpg_error (GPG_ERR_BUFFER_TOO_SHORT);
+
+#ifdef HAVE_W32_SYSTEM
+  fp = _popen (command, "r");
+#else
+  fp = popen (command, "r");
+#endif
+  if (fp)
+    {
+      int i, c;
+
+      if (buffer)
+        {
+          for (i=0; i < bufsize - 1 && (c=getc(fp)) != EOF && c != '\n'; i++)
+            buffer[i] = c;
+          buffer [i] = 0;  /* Terminate string.  */
+          if (c == EOF && ferror (fp))
+            err = gpg_error_from_syserror ();    /* Read error.  */
+          else if (!(i < bufsize - 1))
+            err = gpg_error (GPG_ERR_NO_AGENT);  /* Path too long.  */
+          else if (!i || c != '\n')
+            err = gpg_error (GPG_ERR_NO_AGENT);  /* No terminating LF. */
+          else
+            err = 0;
+        }
+      else
+        err = 0;
+      pclose (fp);
+    }
+  else
+    {
+      err = gpg_error_from_syserror ();
+      DEBUG (DBG_CRIT, "popen(%s) failed: %s",
+             command, gpg_strerror (err));
+    }
+
+  return err;
+}
+
+
+
+/* Extract the version string of a program from STRING.  The version
+ * number is expected to be in GNU style format:
+ *
+ *   foo 1.2.3
+ *   foo (bar system) 1.2.3
+ *   foo 1.2.3 cruft
+ *   foo (bar system) 1.2.3 cruft.
+ *
+ * Spaces and tabs are skipped and used as delimiters, a term in
+ * (nested) parenthesis before the version string is skipped, the
+ * version string may consist of any non-space and non-tab characters
+ * but needs to start with a digit.
+ */
+static const char *
+extract_version_string (const char *string, size_t *r_len)
+{
+  const char *s;
+  int count, len;
+
+  for (s=string; *s; s++)
+    if (*s == ' ' || *s == '\t')
+        break;
+  while (*s == ' ' || *s == '\t')
+    s++;
+  if (*s == '(')
+    {
+      for (count=1, s++; count && *s; s++)
+        if (*s == '(')
+          count++;
+        else if (*s == ')')
+          count--;
+    }
+  /* For robustness we look for a digit.  */
+  while ( *s && !(*s >= '0' && *s <= '9') )
+    s++;
+  if (*s >= '0' && *s <= '9')
+    {
+      for (len=0; s[len]; len++)
+        if (s[len] == ' ' || s[len] == '\t')
+          break;
+    }
+  else
+    len = 0;
+
+  *r_len = len;
+  return s;
+}
+
+
+/* Return the file name of the gpgconf utility.  As a side-effect the
+ * version number of gnupg is also figured out the first time this
+ * function is called.  */
 const char *
 get_gpgconf_path (void)
 {
@@ -303,7 +414,82 @@ get_gpgconf_path (void)
 #endif
   if (!pgmname)
     pgmname = "gpgconf";
+  if (!gnupg_version_string)
+    {
+      char buffer[512];
+      const char *s;
+      size_t n;
+
+      snprintf (buffer, sizeof buffer, "%s --version", pgmname);
+      if (!read_first_line (buffer, buffer, sizeof buffer))
+        {
+          s = extract_version_string (buffer, &n);
+          gnupg_version_string = malloc (n+1);
+          if (gnupg_version_string)
+            {
+              memcpy (gnupg_version_string, s, n);
+              gnupg_version_string[n] = 0;
+            }
+        }
+    }
   return pgmname;
+}
+
+
+/* Return the version of GnuPG. */
+int
+get_gnupg_version (int *minor)
+{
+  int major;
+  const char *s;
+
+  if (!gnupg_version_string)
+    {
+      *minor = 0;
+      return 0;
+    }
+
+  major = atoi (gnupg_version_string);
+  s = strchr (gnupg_version_string, '.');
+  *minor = s? atoi (s+1) : 0;
+
+  return major;
+}
+
+
+/* Return true if GnuPG is older than MAJOR.MINOR.MICRO. */
+int
+is_gnupg_older_than (int major, int minor, int micro)
+{
+  int my_major, my_minor, my_micro;
+  const char *s;
+
+  if (!gnupg_version_string)
+    return 1;
+
+  my_minor = my_micro = 0;
+  my_major = atoi (gnupg_version_string);
+  s = strchr (gnupg_version_string, '.');
+  if (s)
+    {
+      my_minor = atoi (++s);
+      s = strchr (s, '.');
+      if (s)
+        my_micro = atoi (++s);
+    }
+  if (my_major < major)
+    return 1;
+  if (my_major > major)
+    return 0;
+
+  if (my_minor < minor)
+    return 1;
+  if (my_minor > minor)
+    return 0;
+
+  if (my_micro < micro)
+    return 1;
+  return 0;
 }
 
 
@@ -315,37 +501,18 @@ get_bindir (void)
   static char *bindir;
   gpg_error_t err = 0;
   char buffer[512];
-  FILE *fp;
 
   if (!bindir)
     {
-      snprintf (buffer, sizeof buffer, "%s --null --list-dirs bindir",
+      snprintf (buffer, sizeof buffer, "%s --list-dirs bindir",
                 get_gpgconf_path ());
-#ifdef HAVE_W32_SYSTEM
-      fp = _popen (buffer, "r");
-#else
-      fp = popen (buffer, "r");
-#endif
-      if (fp)
+      err = read_first_line (buffer, buffer, sizeof buffer);
+      if (!err)
         {
-          int i, c;
-
-          for (i=0; i < sizeof buffer - 1  && (c = getc (fp)) != EOF; i++)
-            buffer[i] = c;
-          if (c == EOF && ferror (fp))
+          bindir = strdup (buffer);
+          if (!bindir)
             err = gpg_error_from_syserror ();
-          else if (!(i < sizeof buffer - 1))
-            err = gpg_error (GPG_ERR_NO_AGENT);  /* Path too long.  */
-          else if (!i || buffer[i-1])
-            err = gpg_error (GPG_ERR_NO_AGENT);  /* No terminating nul. */
-          else if (!(bindir = strdup (buffer)))
-            err = gpg_error_from_syserror ();
-
-          pclose (fp);
         }
-      else
-        err = gpg_error_from_syserror ();
-
       if (err)
         DEBUG (DBG_CRIT, "error locating GnuPG's installation directory: %s",
                gpg_strerror (err));
