@@ -65,7 +65,7 @@ gnupg_allow_set_foregound_window (pid_t pid)
     return;
 #ifdef HAVE_W32_SYSTEM
   else if (!AllowSetForegroundWindow (pid))
-    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %\n",
+    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %u\n",
 	   (unsigned long)pid, (unsigned int)GetLastError ());
 #endif
 }
