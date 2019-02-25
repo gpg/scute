@@ -35,27 +35,6 @@
 
 #include "cert.h"
 
-
-/* An object to store information pertaining to a keypair as stored on
- * a card.  This is commonly used as a linked list of all keys known
- * for a card.  */
-struct key_info_s
-{
-  struct key_info_s *next;
-
-  char grip[41];/* The keygrip as hex encoded string.  */
-
-  unsigned char xflag;   /* Temporary flag to help processing a list. */
-
-  /* The three next items are mostly useful for OpenPGP cards.  */
-  unsigned char fprlen;  /* Use length of the next item.  */
-  unsigned char fpr[32]; /* The binary fingerprint of length FPRLEN.  */
-  unsigned long created; /* The time the key was created.  */
-
-  char keyref[1];        /* String with the keyref (e.g. OPENPGP.1).  */
-};
-typedef struct key_info_s *key_info_t;
-
 
 /* The information structure for a smart card.  */
 struct agent_card_info_s
@@ -131,6 +110,12 @@ key_info_t scute_find_kinfo (agent_card_info_t info, const char *keyref);
 gpg_error_t scute_agent_sign (const char *hexgrip,
                               unsigned char *data, int len,
 			      unsigned char *sig_result, unsigned int *sig_len);
+
+/* Decrypt data.  */
+gpg_error_t scute_agent_decrypt (const char *hexgrip,
+                                 unsigned char *encdata, int encdatalen,
+                                 unsigned char *r_plaindata,
+                                 unsigned int *r_plaindatalen);
 
 /* Determine if FPR is trusted.  */
 gpg_error_t scute_agent_is_trusted (const char *fpr, bool *is_trusted);

@@ -47,7 +47,7 @@ struct search_cb_parm
   cert_get_cb_t cert_get_cb;
   void *hook;
   bool with_chain;
-  const char *grip;
+  key_info_t kinfo;
 };
 
 
@@ -63,7 +63,7 @@ search_cb (void *hook, struct cert *cert)
   /* Add the private key object only once.  */
   if (!ctx->found)
     {
-      err = scute_attr_prv (cert, ctx->grip, &attrp, &attr_countp);
+      err = scute_attr_prv (cert, ctx->kinfo, &attrp, &attr_countp);
       if (err)
 	return err;
 
@@ -85,7 +85,7 @@ search_cb (void *hook, struct cert *cert)
     scute_gpgsm_search_certs (KEYLIST_BY_FPR, cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
-  err = scute_attr_cert (cert, ctx->grip, &attrp, &attr_countp);
+  err = scute_attr_cert (cert, ctx->kinfo->grip, &attrp, &attr_countp);
   if (err)
     return err;
 
@@ -101,9 +101,10 @@ search_cb (void *hook, struct cert *cert)
 
 
 /* Create the attributes required for a new certificate object.  If
- * CERTREF is not NULL it is used to locate the cert directly from the
- * card; if CERTREF is NULL or a cert was not found on the card, GRIP
- * is used to find the certificate in the local key store of gpgsm.
+ * KINFO->KEYREF is not NULL it is used to locate the cert directly
+ * from the card; if KINFO->KEYREF is NULL or a cert was not found on
+ * the card, KINFO->GRIP is used to find the certificate in the local
+ * key store of gpgsm.
  *
  * FIXME: This is all pretty questionable because our input data
  * always comes from the card.
@@ -112,8 +113,7 @@ search_cb (void *hook, struct cert *cert)
  * and ATTR_COUNTP, and for the private key object in PRV_ATTRP and
  * PRV_ATTR_COUNTP.  */
 gpg_error_t
-scute_gpgsm_get_cert (char *grip, const char *certref,
-                      cert_get_cb_t cert_get_cb, void *hook)
+scute_gpgsm_get_cert (key_info_t kinfo, cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search_cb_parm search;
@@ -122,36 +122,25 @@ scute_gpgsm_get_cert (char *grip, const char *certref,
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
   search.with_chain = false;
-  search.grip = grip;
+  search.kinfo = kinfo;
 
-  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: certref='%s'", certref);
+  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: keyref='%s'", kinfo->keyref);
 
   /* If the cert is requested from the card, we try to get it from
    * the card as well.  */
-  if (certref)
+  if (kinfo->keyref)
     {
       struct cert cert;
 
       memset (&cert, '\0', sizeof (cert));
-      err = scute_agent_get_cert (certref, &cert);
-      if (! err)
-	{
-#if 0
-	  /* For now, we don't need no stinking chain.  */
-
-	  /* As we only have the DER certificate from the card, we need to
-	     parse that and fill out the missing info and try to get the
-	     certificate chain from gpgsm.  */
-	  err = scute_cert_from_der (&cert);
-#endif
-	  if (! err)
-	    err = search_cb (&search, &cert);
-	  return err;
-	}
+      err = scute_agent_get_cert (kinfo->keyref, &cert);
+      if (!err)
+        return search_cb (&search, &cert);
     }
 
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
-  err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
+  err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, kinfo->grip,
+                                  search_cb, &search);
   return err;
 }

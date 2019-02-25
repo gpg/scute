@@ -43,11 +43,8 @@ typedef gpg_error_t (*cert_get_cb_t) (void *hook,
 				      CK_ATTRIBUTE_PTR attrp,
 				      CK_ULONG attr_countp);
 
-/* Create the attributes required for a new certificate object.
-   Returns allocated attributes for the certificate object in ATTRP
-   and ATTR_COUNTP, and for the private key object in PRV_ATTRP
-   and PRV_ATTR_COUNTP.  */
-gpg_error_t scute_gpgsm_get_cert (char *grip, const char *certref,
-				  cert_get_cb_t cert_get_cb, void *hook);
+/* Create the attributes required for a new certificate object.  */
+gpg_error_t scute_gpgsm_get_cert (key_info_t kinfo,
+                                  cert_get_cb_t cert_get_cb, void *hook);
 
 #endif	/* GPGSM_H */

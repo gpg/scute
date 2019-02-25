@@ -31,5 +31,9 @@ C_EncryptInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
   (void) hSession;
   (void) pMechanism;
   (void) hKey;
+
+
+
+
   return CKR_FUNCTION_NOT_SUPPORTED;
 }

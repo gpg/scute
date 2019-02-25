@@ -1,5 +1,5 @@
 /* p11-decrypt.c - Cryptoki implementation.
- * Copyright (C) 2006 g10 Code GmbH
+ * Copyright (C) 2006, 2019 g10 Code GmbH
  *
  * This file is part of Scute.
  *
@@ -23,18 +23,47 @@
 #endif
 
 #include "cryptoki.h"
+#include "locking.h"
+#include "slots.h"
 
-
+/* Decrypt the data (ENCDATA,ENCDATALEN) using the information
+ * recorded in HSESSION by C_DecryptInit.  R_DATA is a buffer to
+ * receive the decrypted data.  The length of that buffer must be
+ * stored in a variable to which R_DATALEN points to; on success that
+ * length is updated to the actual length of the decrypted data at
+ * R_DATA.  In-place decryption is supported; that is ENCDATA and
+ * R_DATA may be the same buffer.
+ *
+ * If the function returns CKR_BUFFER_TOO_SMALL no further
+ * C_DecryptInit is required, instead the function can be called again
+ * with a larger buffer.  On all other return codes a new
+ * C_DecryptInit is required.  However, in contrast to the specs the
+ * return code CKR_ARGUMENTS_BAD may not require a new C_DecryptInit
+ * because this can be considered a bug in the caller's code.  In case
+ * the input cannot be decrypted because it has an inappropriate
+ * length, then either CKR_ENCRYPTED_DATA_INVALID or
+ * CKR_ENCRYPTED_DATA_LEN_RANGE may be returned.
+ */
 CK_RV CK_SPEC
-C_Decrypt (CK_SESSION_HANDLE hSession,
-           CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen,
-           CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
+C_Decrypt (CK_SESSION_HANDLE hsession,
+           CK_BYTE *encdata, CK_ULONG encdatalen,
+           CK_BYTE *r_data, CK_ULONG *r_datalen)
 {
-  /* FIXME: Implement this.  */
-  (void) hSession;
-  (void) pEncryptedData;
-  (void) ulEncryptedDataLen;
-  (void) pData;
-  (void) pulDataLen;
-  return CKR_FUNCTION_NOT_SUPPORTED;
+  CK_RV rv;
+  slot_iterator_t slot;
+  session_iterator_t sid;
+
+  if (!hsession || !encdata || !r_datalen)
+    return CKR_ARGUMENTS_BAD;
+
+  rv = scute_global_lock ();
+  if (rv)
+    return rv;
+
+  rv = slots_lookup_session (hsession, &slot, &sid);
+  if (!rv)
+    rv = session_decrypt (slot, sid, encdata, encdatalen, r_data, r_datalen);
+
+  scute_global_unlock ();
+  return rv;
 }

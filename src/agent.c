@@ -1,5 +1,5 @@
 /* agent.c - Talking to gpg-agent.
- * Copyright (C) 2006, 2007, 2008, 2015 g10 Code GmbH
+ * Copyright (C) 2006, 2007, 2008, 2015, 2019 g10 Code GmbH
  *
  * This file is part of Scute.
  *
@@ -65,7 +65,7 @@ gnupg_allow_set_foregound_window (pid_t pid)
     return;
 #ifdef HAVE_W32_SYSTEM
   else if (!AllowSetForegroundWindow (pid))
-    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %u\n",
+    DEBUG (DBG_CRIT, "AllowSetForegroundWindow(%lu) failed: %\n",
 	   (unsigned long)pid, (unsigned int)GetLastError ());
 #endif
 }
@@ -642,15 +642,35 @@ learn_status_cb (void *opaque, const char *line)
   else if (keywordlen == 11 && !memcmp (keyword, "KEYPAIRINFO", keywordlen))
     {
       /* The format of such a line is:
-       *   KEYPARINFO <hexgrip> <keyref>
+       *   KEYPAIRINFO <hexgrip> <keyref> [<usage>]
        */
       const char *hexgrip = line;
+      char *line_buffer, *p;
+      const char *usage;
 
       while (*line && !spacep (line))
         line++;
       while (spacep (line))
         line++;
-      keyref = line;
+
+      p = line_buffer = strdup (line);
+      if (!line_buffer)
+        goto no_core;
+      keyref = line_buffer;
+      while (*p && !spacep (p))
+        p++;
+      if (*p)
+        {
+          *p++ = 0;
+          while (spacep (p))
+            p++;
+          usage = p;
+          while (*p && !spacep (p))
+            p++;
+          *p = 0;
+        }
+      else
+        usage = "";
 
       if (hexgrip_valid_p (hexgrip))
         {
@@ -662,12 +682,26 @@ learn_status_cb (void *opaque, const char *line)
               if (!kinfo)
                 goto no_core;
             }
-          else /* Existing entry - clear the grip.  */
-            *kinfo->grip = 0;
+          else /* Existing entry - clear grip and usage.  */
+            {
+              *kinfo->grip = 0;
+              memset (&kinfo->usage, 0, sizeof kinfo->usage);
+            }
 
           strncpy (kinfo->grip, hexgrip, sizeof kinfo->grip);
           kinfo->grip[sizeof kinfo->grip -1] = 0;
+          for (; *usage; usage++)
+            {
+              switch (*usage)
+                {
+                case 's': kinfo->usage.sign = 1; break;
+                case 'c': kinfo->usage.cert = 1; break;
+                case 'a': kinfo->usage.auth = 1; break;
+                case 'e': kinfo->usage.encr = 1; break;
+                }
+            }
         }
+      free (line_buffer);
     }
   else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
     {
@@ -707,7 +741,7 @@ scute_agent_learn (struct agent_card_info_s *info)
   gpg_error_t err;
 
   memset (info, 0, sizeof (*info));
-  err = assuan_transact (agent_ctx, "LEARN --sendinfo",
+  err = assuan_transact (agent_ctx, "SCD LEARN --force",
 			 NULL, NULL,
                          default_inq_cb, NULL,
 			 learn_status_cb, info);
@@ -720,7 +754,7 @@ scute_agent_learn (struct agent_card_info_s *info)
       if (!err)
         {
           memset (info, 0, sizeof (*info));
-          err = assuan_transact (agent_ctx, "LEARN --sendinfo",
+          err = assuan_transact (agent_ctx, "SCD LEARN --force",
                                  NULL, NULL,
                                  default_inq_cb, NULL,
                                  learn_status_cb, info);
@@ -998,7 +1032,7 @@ decode_hash (const unsigned char *data, int len,
 
 
 /* Call the agent to sign (DATA,LEN) using the key described by
- * HEXGRIP.  Stores the signature in SIG_RESULT and its lengtn at
+ * HEXGRIP.  Stores the signature in SIG_RESULT and its length at
  * SIG_LEN; SIGLEN must initially point to the allocated size of
  * SIG_RESULT.  */
 gpg_error_t
@@ -1056,6 +1090,187 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
     return err;
 
   err = pksign_parse_result (&sig, sig_result, sig_len);
+  return err;
+}
+
+
+
+struct pkdecrypt_parm_s
+{
+  unsigned int len;
+  unsigned char data[512];
+  assuan_context_t ctx;
+  const unsigned char *ciphertext;
+  size_t ciphertextlen;
+};
+
+
+static gpg_error_t
+pkdecrypt_data_cb (void *opaque, const void *buffer, size_t length)
+{
+  struct pkdecrypt_parm_s *parm = opaque;
+
+  if (parm->len + length > sizeof parm->data)
+    {
+      DEBUG (DBG_INFO, "maximum decryption result length exceeded");
+      return gpg_error (GPG_ERR_BAD_DATA);
+    }
+
+  memcpy (parm->data + parm->len, buffer, length);
+  parm->len += length;
+
+  return 0;
+}
+
+
+/* Handle the inquiries from pkdecrypt.  Note, we only send the data,
+ * assuan_transact takes care of flushing and writing the "END".  */
+static gpg_error_t
+pkdecrypt_inq_cb (void *opaque, const char *line)
+{
+  struct pkdecrypt_parm_s *parm = opaque;
+  gpg_error_t err;
+  const char *keyword = line;
+  int keywordlen;
+
+  for (keywordlen = 0; *line && !spacep (line); line++, keywordlen++)
+    ;
+  while (spacep (line))
+    line++;
+
+  if (keywordlen == 10 && !memcmp (keyword, "CIPHERTEXT", 10))
+    err = assuan_send_data (parm->ctx, parm->ciphertext, parm->ciphertextlen);
+  else
+    err = default_inq_cb (NULL, line);
+
+  return err;
+}
+
+
+
+/* Parse the result of a pkdecrypt operation which is an s-expression
+ * in canonical form that looks like
+ * (5:value<NDATA>:<DATA>).
+ *
+ * The raw result is stored in RESULT which has a size of *R_LEN, and
+ * *R_LEN is adjusted to the actual size.  */
+static gpg_error_t
+pkdecrypt_parse_result (struct pkdecrypt_parm_s *ctx,
+                        unsigned char *result, unsigned int *r_len)
+{
+  char *buf = ctx->data;
+  size_t len = ctx->len;
+  char *endp, *raw;
+  size_t n, rawlen;
+
+  if (len < 13 || memcmp (buf, "(5:value", 8) )
+    return gpg_error (GPG_ERR_INV_SEXP);
+  len -= 8;
+  buf += 8;
+
+  n = strtoul (buf, &endp, 10);
+  if (!n || *endp != ':')
+    return gpg_error (GPG_ERR_INV_SEXP);
+  endp++;
+  if ((endp-buf)+n > len)
+    return gpg_error (GPG_ERR_INV_SEXP); /* Oops: Inconsistent S-Exp. */
+
+  /* Let (RAW,RAWLEN) describe the pkcs#1 block and remove that padding.  */
+  raw = endp;
+  rawlen = n;
+
+  if (rawlen < 10)  /* 0x00 + 0x02 + <1_random> + 0x00 + <16-session> */
+    return gpg_error (GPG_ERR_INV_SESSION_KEY);
+
+  if (raw[0] || raw[1] != 2 )  /* Wrong block type version. */
+    return gpg_error (GPG_ERR_INV_SESSION_KEY);
+
+  for (n=2; n < rawlen && raw[n]; n++) /* Skip the random bytes. */
+    ;
+  if (n+1 >= rawlen || raw[n] )
+    return gpg_error (GPG_ERR_INV_SESSION_KEY);
+  n++; /* Skip the zero byte */
+
+  if (*r_len < (rawlen - n))
+    return gpg_error (GPG_ERR_TOO_LARGE);
+  memcpy (result, raw + n, rawlen - n);
+  *r_len = rawlen - n;
+  return 0;
+}
+
+
+/* Call the agent to decrypt (ENCDATA,ENCDATALEN) using the key
+ * described by HEXGRIP.  Stores the plaintext at R_PLAINDATA and its
+ * length at R_PLAINDATALEN; R_PLAINDATALEN must initially point to
+ * the allocated size of R_PLAINDATA and is updated to the actual used
+ * size on return.  */
+gpg_error_t
+scute_agent_decrypt (const char *hexgrip,
+                     unsigned char *encdata, int encdatalen,
+                     unsigned char *r_plaindata, unsigned int *r_plaindatalen)
+{
+  char cmd[150];
+  gpg_error_t err;
+  struct pkdecrypt_parm_s pkdecrypt;
+  char *s_data;
+  size_t s_datalen;
+
+  if (!hexgrip || !encdata || !encdatalen || !r_plaindatalen)
+    return gpg_error (GPG_ERR_INV_ARG);
+
+  if (!r_plaindata)
+    {
+      /* Fixme: We do not return the minimal required length but our
+       * internal buffer size.  */
+      pkdecrypt.len = *r_plaindatalen;
+      *r_plaindatalen = sizeof pkdecrypt.data - 1;
+      if (pkdecrypt.len > sizeof pkdecrypt.data - 1)
+        return gpg_error (GPG_ERR_INV_LENGTH);
+      return 0;
+    }
+
+  snprintf (cmd, sizeof (cmd), "SETKEY %s", hexgrip);
+  err = assuan_transact (agent_ctx, cmd,
+                         NULL, NULL,
+                         default_inq_cb, NULL,
+			 NULL, NULL);
+  if (err)
+    return err;
+
+  /* Convert the input into an appropriate s-expression as expected by
+   * gpg-agent which is:
+   *
+   *  (enc-val
+   *    (flags pkcs1)
+   *    (rsa
+   *      (a VALUE)))
+   *
+   * Out of convenience we append a non-counted extra nul to the
+   * created canonical s-expression.
+   */
+  s_data = malloc (100 + encdatalen);
+  if (!s_data)
+    return gpg_error_from_syserror ();
+  snprintf (s_data, 50, "(7:enc-val(5:flags5:pkcs1)(3:rsa(1:a%d:",
+            encdatalen);
+  s_datalen = strlen (s_data);
+  memcpy (s_data + s_datalen, encdata, encdatalen);
+  s_datalen += encdatalen;
+  memcpy (s_data + s_datalen, ")))", 4);
+  s_datalen += 3;
+
+  pkdecrypt.len = 0;
+  pkdecrypt.ctx = agent_ctx;
+  pkdecrypt.ciphertext = s_data;
+  pkdecrypt.ciphertextlen = s_datalen;
+  err = assuan_transact (agent_ctx, "PKDECRYPT",
+			 pkdecrypt_data_cb, &pkdecrypt,
+                         pkdecrypt_inq_cb, &pkdecrypt,
+                         NULL, NULL);
+  if (!err)
+    err = pkdecrypt_parse_result (&pkdecrypt, r_plaindata, r_plaindatalen);
+
+  free (s_data);
   return err;
 }
 

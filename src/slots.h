@@ -199,12 +199,23 @@ CK_RV session_get_search_result (slot_iterator_t id, session_iterator_t sid,
 				 object_iterator_t **search_result,
 				 int *search_result_len);
 
-/* Set the signing key for session SID in slot ID to KEY.  */
+/* The core of C_SignInit.  */
 CK_RV session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 			       object_iterator_t key);
 
+/* The core of C_Sign.  */
 CK_RV session_sign (slot_iterator_t id, session_iterator_t sid,
 		    CK_BYTE_PTR pData, CK_ULONG ulDataLen,
 		    CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen);
+
+/* The core of C_DecryptInit.  */
+CK_RV session_init_decrypt (slot_iterator_t slotid, session_iterator_t sid,
+                            CK_MECHANISM *mechanism, object_iterator_t key);
+
+/* The core of C_Decrypt.  */
+CK_RV session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
+                       CK_BYTE *encdata, CK_ULONG encdatalen,
+                       CK_BYTE *r_plaindata, CK_ULONG *r_plaindatalen);
+
 
 #endif	/* !SLOTS_H */

@@ -29,7 +29,7 @@
 
 
 /* Sign the data (PDATA,ULDATALEN) using the information recorded in
- * the HSESSION by C_SignInit.  PSIGNAURE is a buffer to receive the
+ * the HSESSION by C_SignInit.  PSIGNATURE is a buffer to receive the
  * signature.  The length of that buffer must be stored in a variable
  * to which PULSIGNATURELEN points to; on success that length is
  * updated to the actual length of the signature in PULSIGNATURE.

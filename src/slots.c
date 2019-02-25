@@ -1,5 +1,5 @@
 /* slots.c - Slot management.
- * Copyright (C) 2006 g10 Code GmbH
+ * Copyright (C) 2006, 2019 g10 Code GmbH
  *
  * This file is part of Scute.
  *
@@ -97,7 +97,11 @@ struct session
 
   /* The signing key.  */
   CK_OBJECT_HANDLE signing_key;
+
+  /* The decryption key.  */
+  CK_OBJECT_HANDLE decryption_key;
 };
+
 
 /* The slot status.  */
 typedef enum
@@ -132,6 +136,7 @@ struct slot
 
 
 /* The slot table.  */
+/* FIXME: That symbol name is pretty short for a global.  */
 static scute_table_t slots;
 
 
@@ -379,7 +384,7 @@ slot_init (slot_iterator_t id)
 
   for (ki = slot->info.kinfo; ki; ki = ki->next)
     {
-      err = scute_gpgsm_get_cert (ki->grip, ki->keyref, add_object, slot);
+      err = scute_gpgsm_get_cert (ki, add_object, slot);
       if (err)
         goto leave;
     }
@@ -799,6 +804,7 @@ slot_create_session (slot_iterator_t id, session_iterator_t *session,
   session_p->search_result = NULL;
   session_p->search_result_len = 0;
   session_p->signing_key = CK_INVALID_HANDLE;
+  session_p->decryption_key = CK_INVALID_HANDLE;
 
   *session = SESSION_BUILD_ID (id, tsid);
 
@@ -1046,9 +1052,6 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   int i;
   const char *keyref;
 
-  if (!pSignature)
-    return CKR_ARGUMENTS_BAD;
-
   if (!session->signing_key)
     return CKR_OPERATION_NOT_INITIALIZED;
 
@@ -1099,9 +1102,139 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     rc = CKR_ARGUMENTS_BAD;
   else
     rc = scute_gpg_err_to_ck (err);
+  /* Return the length.  */
+  if (rc == CKR_OK || rc == CKR_BUFFER_TOO_SMALL)
+    *pulSignatureLen = sig_len;
 
  leave:
   if (rc != CKR_OK && rc != CKR_BUFFER_TOO_SMALL)
     session->signing_key = 0;
   return rc;
+}
+
+
+/* Prepare a decryption for slot with SLOTID and the session SID using
+ * MECHANISM and KEY.  This is the core of C_DecryptInit.  */
+CK_RV
+session_init_decrypt (slot_iterator_t slotid, session_iterator_t sid,
+                      CK_MECHANISM *mechanism, object_iterator_t key)
+{
+  struct slot *slot;
+  struct session *session;
+  CK_RV rv;
+  CK_ATTRIBUTE_PTR attr;
+  CK_ULONG attr_count;
+  CK_OBJECT_CLASS key_class = CKO_PRIVATE_KEY;
+
+  if (mechanism->mechanism != CKM_RSA_PKCS)
+    return CKR_MECHANISM_INVALID;
+
+  slot = scute_table_data (slots, slotid);
+  session = scute_table_data (slot->sessions, sid);
+
+  rv = slot_get_object (slotid, key, &attr, &attr_count);
+  if (rv)
+    return rv;
+
+  /* FIXME: What kind of strange loop is this?  */
+  while (attr_count-- > 0)
+    if (attr->type == CKA_CLASS)
+      break;
+
+  if (attr_count == (CK_ULONG) -1)
+    return CKR_KEY_HANDLE_INVALID;
+
+  if (attr->ulValueLen != sizeof (key_class)
+      || memcmp (attr->pValue, &key_class, sizeof (key_class)))
+    return CKR_KEY_HANDLE_INVALID;
+
+  /* It's the private RSA key object.  */
+  session->decryption_key = key;
+
+  return 0;
+}
+
+
+/* The core of C_Decrypt - see there for a description.  */
+CK_RV
+session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
+                 CK_BYTE *encdata, CK_ULONG encdatalen,
+                 CK_BYTE *r_plaindata, CK_ULONG *r_plaindatalen)
+{
+  CK_RV rv;
+  gpg_error_t err;
+  struct slot *slot;
+  struct session *session;
+  CK_ATTRIBUTE_PTR attr;
+  CK_ULONG attr_count;
+  CK_OBJECT_CLASS key_class = CKO_PRIVATE_KEY;
+  CK_BYTE key_id[100];
+  int i;
+  const char *keyref;
+  unsigned int plaindatalen;
+
+  slot = scute_table_data (slots, slotid);
+  session = scute_table_data (slot->sessions, sid);
+
+  if (!session->decryption_key)
+    return CKR_OPERATION_NOT_INITIALIZED;
+
+  rv = slot_get_object (slotid, session->decryption_key, &attr, &attr_count);
+  if (rv)
+    goto leave;
+  if (attr_count == (CK_ULONG) -1)
+    {
+      rv = CKR_KEY_HANDLE_INVALID;
+      goto leave;
+    }
+  if (attr->ulValueLen != sizeof (key_class)
+      || memcmp (attr->pValue, &key_class, sizeof (key_class)))
+    {
+      rv = CKR_KEY_HANDLE_INVALID;
+      goto leave;
+    }
+
+  /* Find the CKA_ID */
+  for (i = 0; i < attr_count; i++)
+    if (attr[i].type == CKA_ID)
+      break;
+  if (i == attr_count)
+    {
+      rv = CKR_GENERAL_ERROR;
+      goto leave;
+    }
+
+  if (attr[i].ulValueLen >= sizeof key_id - 1)
+    {
+      rv = CKR_GENERAL_ERROR;
+      goto leave;
+    }
+  strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
+  key_id[attr[i].ulValueLen] = 0;
+  DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
+  for (keyref=key_id; *keyref && *keyref != ' '; keyref++)
+    ;
+  if (*keyref)
+    keyref++;  /* Point to the grip.  */
+
+  plaindatalen = *r_plaindatalen;
+  err = scute_agent_decrypt (keyref, encdata, encdatalen,
+                             r_plaindata, &plaindatalen);
+  DEBUG (DBG_INFO, "agent returned gpg error %d datalen=%u", err, plaindatalen);
+  /* Take care of error codes which are not mapped by default.  */
+  if (gpg_err_code (err) == GPG_ERR_INV_LENGTH)
+    rv = CKR_BUFFER_TOO_SMALL;
+  else if (gpg_err_code (err) == GPG_ERR_INV_ARG)
+    rv = CKR_ARGUMENTS_BAD;
+  else
+    rv = scute_gpg_err_to_ck (err);
+  /* Return the length.  */
+  if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
+    *r_plaindatalen = plaindatalen;
+
+ leave:
+  if (rv != CKR_BUFFER_TOO_SMALL)
+    session->decryption_key = 0;
+  DEBUG (DBG_INFO, "leaving decrypt with rv=%lu", rv);
+  return rv;
 }
