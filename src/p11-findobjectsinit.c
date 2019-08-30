@@ -120,6 +120,18 @@ C_FindObjectsInit (CK_SESSION_HANDLE hSession,
       goto out;
     }
 
+  if (!search_result_len)
+    {
+      /* We do not yet known about this object.  If CKA_ISSUER and
+       * CKA_SERIAL_NUMBER was requested, try to look it up via
+       * gpgsm.  The way we can implement this would be a new option to
+       * gpgsm's LISTKEYS, named "--der" which takes the raw DER
+       * encoding of both items.  The advantage of doing this in gpgsm
+       * is that we can use libksba there to build the actual
+       * rfc-2253 search string from the DER. */
+
+    }
+
   err = session_set_search_result (slot, session, search_result,
 				   search_result_len);
 
