@@ -529,7 +529,7 @@ learn_status_cb (void *opaque, const char *line)
     }
   else if (keywordlen == 7 && !memcmp (keyword, "APPTYPE", keywordlen))
     {
-      parm->is_piv = !strcmp (line, "PIV");
+      parm->is_piv = !strcmp (line, "piv");
     }
   else if (keywordlen == 8 && !memcmp (keyword, "CARDTYPE", keywordlen))
     {
