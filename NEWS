@@ -8,7 +8,9 @@ Noteworthy changes in version 1.6.0 (unreleased)
  * License change to LGPL-2.1-or-later.
    (See commit 60a071e3b7b2885ce994667a9186173772f3a647).
 
- * Requires the current stable version of GnuPG (2.2.0)
+ * Requires at a minimum the current stable version of GnuPG (2.2.0)
+   but advanced PIV card support needs the current GnuPG development
+   version.
 
 
 Noteworthy changes in version 1.5.0 (2017-07-14)
