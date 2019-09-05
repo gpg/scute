@@ -427,13 +427,19 @@ slots_update_slot (slot_iterator_t id)
    * Should probably report the error in a better way and use a
    * generic way to identify cards without resorting to special-casing
    * PIV cards. */
-  if (!err && slot->info.is_piv)
-    ; /* Okay, this is a PIV card.  */
-  else if (!err && (!slot->info.serialno
-                    || strncmp (slot->info.serialno, "D27600012401", 12)
-                    || strlen (slot->info.serialno) != 32))
+  if (!err && (slot->info.is_piv || slot->info.is_opgp))
+    ; /* Okay, this card has a usable application.  */
+  else if (!err && (slot->info.serialno
+                    && !strncmp (slot->info.serialno, "D27600012401", 12)
+                    && strlen (slot->info.serialno) == 32))
     {
-      DEBUG (DBG_INFO, "token not an OpenPGP card: %s", slot->info.serialno);
+      /* Kludge to allow for old GnuPG versions.  */
+      slot->info.is_opgp = 1;
+    }
+  else
+    {
+      DEBUG (DBG_INFO, "token not a PIV or OpenPGP card: %s",
+             slot->info.serialno);
       err = gpg_error (GPG_ERR_CARD_NOT_PRESENT);
       scute_agent_release_card_info (&slot->info);
     }
@@ -602,7 +608,9 @@ slot_token_application (slot_iterator_t id)
 
   /* slots_update() makes sure this is correct.  */
 
-  if (slot->info.is_piv)
+  if (slot->info.is_piv && slot->info.is_piv)
+    return "PIV+OpenPGP";
+  else if (slot->info.is_piv)
     return "PIV";
   else
     return "OpenPGP";
@@ -628,6 +636,8 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
   struct slot *slot = scute_table_data (slots, id);
 
   /* slots_update() makes sure serialno is valid.  */
+  /* Fixme: If we have PIV+OpenPGP we do not have the OpenPGP
+   * serialnumber thus we can't take its version number.  */
   if (slot->info.is_piv)
     {
       *hw_major = 0;

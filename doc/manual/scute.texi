@@ -608,7 +608,7 @@ You must first load the Scute module into your mail client.  With
 Mozilla Thunderbird, the procedure is the same as the one described
 above for Mozilla Firefox.
 
-Then, open your accent configuration dialog (@code{Edit->Account
+Then, open your account configuration dialog (@code{Edit->Account
 Settings}), and in the @code{Security} tab, under the section
 @code{Digital Signing}, use the @code{Select...} button to associate
 your card-based certificate with your account.

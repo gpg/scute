@@ -530,6 +530,7 @@ learn_status_cb (void *opaque, const char *line)
   else if (keywordlen == 7 && !memcmp (keyword, "APPTYPE", keywordlen))
     {
       parm->is_piv = !strcmp (line, "piv");
+      parm->is_opgp = !strcmp (line, "openpgp");
     }
   else if (keywordlen == 8 && !memcmp (keyword, "CARDTYPE", keywordlen))
     {
@@ -729,24 +730,44 @@ gpg_error_t
 scute_agent_learn (struct agent_card_info_s *info)
 {
   gpg_error_t err;
+  int has_opt_all = 0;
+
 
   memset (info, 0, sizeof (*info));
   err = ensure_agent_connection ();
+  if (!err && !agent_simple_cmd (agent_ctx,
+                                 "SCD GETINFO cmd_has_option SERIALNO all"))
+    has_opt_all = 1; /* SERIALNO --all and LEARN --multi is okay.  */
+
   if (!err)
-    err = assuan_transact (agent_ctx, "SCD LEARN --force",
-                           NULL, NULL,
-                           default_inq_cb, NULL,
-                           learn_status_cb, info);
+    {
+      /* First do a serialno to reset the card-removed-flag and also
+       * to make sure that additional applications are enabled.  We do
+       * not check the error here as we catch that after the LEARN.  */
+      agent_simple_cmd (agent_ctx, (has_opt_all? "SCD SERIALNO --all"
+                                    /*       */: "SCD SERIALNO"      ));
+      err = assuan_transact (agent_ctx,
+                             (has_opt_all? "SCD LEARN --force --multi"
+                              /*       */: "SCD LEARN --force"),
+                             NULL, NULL,
+                             default_inq_cb, NULL,
+                             learn_status_cb, info);
+    }
+
   if (gpg_err_source(err) == GPG_ERR_SOURCE_SCD
       && gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
     {
-      /* SCD session is in card removed state.  clear that state.  */
+      /* SCD session is in card removed state.  clear that state.
+       * That should have been cleared by the initial SERIALNO but
+       * other processes may race with that.  */
       err = assuan_transact (agent_ctx, "SCD SERIALNO",
                              NULL, NULL, NULL, NULL, NULL, NULL);
       if (!err)
         {
           memset (info, 0, sizeof (*info));
-          err = assuan_transact (agent_ctx, "SCD LEARN --force",
+          err = assuan_transact (agent_ctx,
+                                 (has_opt_all? "SCD LEARN --force --multi"
+                                  /*       */: "SCD LEARN --force"),
                                  NULL, NULL,
                                  default_inq_cb, NULL,
                                  learn_status_cb, info);

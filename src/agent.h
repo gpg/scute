@@ -72,7 +72,10 @@ struct agent_card_info_s
   int chvretry[3];	/* Allowed retries for the CHV; 0 = blocked.  */
   int rng_available;    /* True if the GET CHALLENGE operation
                            is supported. */
-  int is_piv;           /* True if this is a PIV card.  */
+  int is_piv;           /* True if this is a PIV card or has PIV as an
+                         * additional application.  */
+  int is_opgp;          /* True if this is a OpenPGP card or has
+                         * OpenPGP as an additional application.  */
 };
 typedef struct agent_card_info_s *agent_card_info_t;
 
