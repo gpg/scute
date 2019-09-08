@@ -317,7 +317,7 @@ read_first_line (const char *command, char *buffer, size_t bufsize)
 #endif
   if (fp)
     {
-      int i, c;
+      int i, c = 0;
 
       if (buffer)
         {
