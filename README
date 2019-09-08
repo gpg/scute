@@ -40,9 +40,11 @@ For the compilation:
 * libassuan 2.5.0
 
 At runtime:
-* Firefix, Thunderbird or any other supported application using PKCS #11.
+* Firefox, Thunderbird or any other supported application using PKCS #11.
 * GnuPG 2.2
 * Pinentry
+
+(GnuPG 2.2 is also required at build time if the tests are to be run.)
 
 
 Installation
@@ -377,24 +379,20 @@ There is a different, probably more powerful way to debug Mozilla PKCS
 #11 libraries.  However, to be able to use it, you need to configure
 and compile the Mozilla NSS sources with --enable-debug.  Instructions
 can be found at:
-https://www.mozilla.org/projects/security/pki/nss/tech-notes/tn2.html
+https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes/nss_tech_note2
 
-Here are a couple of links to more information about implementing a
-PKCS #11 module for Mozilla:
+More informations about implementing a PKCS #11 module for Mozilla can
+be found on the Mozilla NSS web page:
+https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS#PKCS_11_information
 
-Implementing PKCS #11 for the Netscape Security Library
-(Caution: The content may be out of date)
-https://docs.sun.com/source/816-6150-10/index.htm
-https://docs.sun.com/source/816-6150-10/pkcs.htm
+The following links point to archived pages from the Mozilla
+documentation on that topic (the content may be outdated):
 
 Common PKCS #11 Implementation Problems
-https://www.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
+https://www-archive.mozilla.org/projects/security/pki/pkcs11/netscape/problems.html
 
 PKCS #11 Conformance Testing
-https://www.mozilla.org/projects/security/pki/pkcs11/
-
-And of course the Mozilla NSS web page:
-https://www.mozilla.org/projects/security/pki/nss/
+https://www-archive.mozilla.org/projects/security/pki/pkcs11/
 
 
 Copyright and License

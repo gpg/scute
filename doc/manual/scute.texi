@@ -131,12 +131,12 @@ Internals
 @chapter Introduction
 
 This is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
-Smart Card Daemon.  Currently, only the OpenPGP card is supported.
+Smart Card Daemon.  Currently, OpenPGP and PIV cards are supported.
 
-Scute enables use of the OpenPGP smart card in applications supporting
-PKCS #11 compliant security tokens.  The main application at this time
-is client authentication in Mozilla-based web browsers.  In the future,
-other applications will be supported.
+Scute enables use of the OpenPGP smart card or a PIV smart card in
+applications supporting PKCS #11 compliant security tokens.  The main
+application at this time is client authentication in Mozilla-based web
+browsers.  In the future, other applications will be supported.
 
 
 @menu
@@ -241,12 +241,12 @@ following packages at build time:
 @table @code
 @item libgpg-error
 Scute uses the GnuPG 2 framework for error handling, so it depends on
-the GPG error library.  The minimum version required is 1.14.
+the GPG error library.  The minimum version required is 1.24.
 
 @item libassuan
 Scute uses the GnuPG 2 framework for communication with the GPG Agent,
 so it depends on the Assuan library.  The minimum version required is
-2.0.0.
+2.5.0.
 @end table
 
 At run-time, in addition to the run-time versions of the above
@@ -256,9 +256,7 @@ configured:
 @table @asis
 @item GnuPG
 Scute uses the GnuPG 2 framework to access the OpenPGP card and for
-certificate management.  The minimum version required is 2.0.0 for
-client authentication with TLS 1.0 and 1.1.  Client authentication
-with TLS 1.2, email and document signing require GnuPG 2.1.0.
+certificate management.  The minimum version required is 2.2.0.
 
 @item Pinentry
 Pinentry is a dependency of GnuPG 2, so it also needs to be installed
