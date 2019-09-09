@@ -32,7 +32,11 @@ EXTRA_DIST = clean-socketdir
 TESTS_ENVIRONMENT = GNUPGHOME=`/bin/pwd` GPG_AGENT_INFO= LC_ALL=C
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
+if HAVE_DARWIN_SYSTEM
+LDADD = ../src/libscute.la
+else
 LDADD = ../src/scute.la
+endif
 
 clean-local:
 	$(TESTS_ENVIRONMENT) $(srcdir)/clean-socketdir

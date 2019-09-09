@@ -228,10 +228,14 @@ esac
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
 have_w32_system=no
+have_darwin_system=no
 case "${host}" in
     *-mingw32*)
         # special stuff for Windows NT
 	have_w32_system=yes
+        ;;
+    *-apple-darwin*)
+        have_darwin_system=yes
         ;;
     *)
 	;;
@@ -241,6 +245,7 @@ if test "$have_w32_system" = yes; then
    AC_DEFINE(HAVE_W32_SYSTEM,1, [Defined if we run on a W32 API based system])
 fi
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
+AM_CONDITIONAL(HAVE_DARWIN_SYSTEM, test "$have_darwin_system" = yes)
 
 # Generate values for the DLL version info
 if test "$have_w32_system" = yes; then

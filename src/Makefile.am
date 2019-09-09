@@ -58,7 +58,11 @@ scute_version_script_cmd =
 endif
 
 
+if HAVE_DARWIN_SYSTEM
+lib_LTLIBRARIES = libscute.la
+else
 lib_LTLIBRARIES = scute.la
+endif
 
 if HAVE_W32_SYSTEM
 
@@ -111,6 +115,18 @@ scute_libadd =
 
 endif
 
+if HAVE_DARWIN_SYSTEM
+libscute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) -avoid-version $(export_symbols) \
+	$(scute_version_script_cmd) -version-info \
+	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
+libscute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
+libscute_la_LIBADD = $(scute_libadd) \
+	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+
+libscute_la_CPPFLAGS = -I$(srcdir)/../include \
+	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
+libscute_la_SOURCES = $(sources)
+else
 scute_la_LDFLAGS = $(scute_res_ldflag) $(no_undefined) -module -avoid-version $(export_symbols) \
 	$(scute_version_script_cmd) -version-info \
 	@LIBSCUTE_LT_CURRENT@:@LIBSCUTE_LT_REVISION@:@LIBSCUTE_LT_AGE@
@@ -123,3 +139,4 @@ scute_la_LIBADD = $(scute_libadd) \
 scute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
 scute_la_SOURCES = $(sources)
+endif
