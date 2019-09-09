@@ -53,7 +53,7 @@ Installation
 To install the PKCS #11 Module, follow the generic installation
 instructions in the file INSTALL that accompanies this software.
 
-After installation, you can configure Firefox or Thunderbord to use Scute by
+After installation, you can configure Firefox or Thunderbird to use Scute by
 visiting the preferences dialog in the "advanced" category, under
 "Security Devices".  There you can "load" the module from its
 installed path, e.g. "/usr/lib/scute.so".

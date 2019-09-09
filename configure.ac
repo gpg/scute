@@ -58,7 +58,7 @@ AC_INIT([mym4_package],[mym4_version], [https://bugs.gnupg.org])
 #
 LIBSCUTE_LT_CURRENT=0
 LIBSCUTE_LT_AGE=0
-LIBSCUTE_LT_REVISION=3
+LIBSCUTE_LT_REVISION=4
 
 # Version numbers reported by the PKCS #11 module to its users.
 VERSION_MAJOR=1
