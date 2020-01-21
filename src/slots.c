@@ -568,23 +568,27 @@ slot_token_manufacturer (slot_iterator_t id)
   /* Note:  Make sure that there is no colon or linefeed in the string. */
   switch (uval)
     {
-    case 0x0001:
-      return "PPC Card Systems";
+    case 0x0001: return "PPC Card Systems";
+    case 0x0002: return "Prism";
+    case 0x0003: return "OpenFortress";
+    case 0x0004: return "Wewid";
+    case 0x0005: return "ZeitControl";
+    case 0x0006: return "Yubico";
+    case 0x0007: return "OpenKMS";
+    case 0x0008: return "LogoEmail";
+    case 0x0009: return "Fidesmo";
+    case 0x000A: return "Dangerous Things";
+    case 0x000B: return "Feitian Technologies";
 
-    case 0x0002:
-      return "Prism";
+    case 0x002A: return "Magrathea";
+    case 0x0042: return "GnuPG e.V.";
 
-    case 0x0003:
-      return "OpenFortress";
-
-    case 0x0004:
-      return "Wewid AB";
-
-    case 0x0005:
-      return "ZeitControl";
-
-    case 0x002A:
-      return "Magrathea";
+    case 0x1337: return "Warsaw Hackerspace";
+    case 0x2342: return "warpzone"; /* hackerspace Muenster.  */
+    case 0x4354: return "Confidential Technologies";   /* cotech.de */
+    case 0x63AF: return "Trustica";
+    case 0xBD0E: return "Paranoidlabs";
+    case 0xF517: return "FSIJ";
 
     case 0x0000:
     case 0xffff:
