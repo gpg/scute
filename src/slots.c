@@ -612,7 +612,7 @@ slot_token_application (slot_iterator_t id)
 
   /* slots_update() makes sure this is correct.  */
 
-  if (slot->info.is_piv && slot->info.is_piv)
+  if (slot->info.is_piv && slot->info.is_opgp)
     return "PIV+OpenPGP";
   else if (slot->info.is_piv)
     return "PIV";
