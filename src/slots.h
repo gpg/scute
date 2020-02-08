@@ -66,7 +66,7 @@ void scute_slots_finalize (void);
    Mozilla NSS currently assumes that the slot list never shrinks (see
    TODO file for a discussion).  This is the only function allowed to
    manipulate the slot list.  */
-CK_RV slots_update (void);
+CK_RV slots_update_all (void);
 
 /* Update the slot SLOT.  */
 CK_RV slots_update_slot (slot_iterator_t id);

@@ -464,7 +464,7 @@ slots_update_slot (slot_iterator_t id)
    TODO file for a discussion).  This is the only function allowed to
    manipulate the slot list.  */
 CK_RV
-slots_update (void)
+slots_update_all (void)
 {
   slot_iterator_t id = scute_table_first (slot_table);
 
