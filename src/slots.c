@@ -136,8 +136,7 @@ struct slot
 
 
 /* The slot table.  */
-/* FIXME: That symbol name is pretty short for a global.  */
-static scute_table_t slots;
+static scute_table_t slot_table;
 
 
 /* Deallocator for mechanisms.  */
@@ -301,12 +300,12 @@ scute_slots_initialize (void)
   gpg_error_t err;
   int slot_idx;
 
-  err = scute_table_create (&slots, slot_alloc, slot_dealloc);
+  err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
   if (err)
     return err;
 
   /* Allocate a new slot for authentication.  */
-  err = scute_table_alloc (slots, &slot_idx, NULL, NULL);
+  err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
   if (err)
     scute_slots_finalize ();
 
@@ -320,14 +319,14 @@ scute_slots_initialize (void)
 void
 scute_slots_finalize (void)
 {
-  if (slots == NULL)
+  if (!slot_table)
     return;
 
   /* This recursively releases all slots and any objects associated
      with them.  */
-  scute_table_destroy (slots);
+  scute_table_destroy (slot_table);
 
-  slots = NULL;
+  slot_table = NULL;
 }
 
 
@@ -335,7 +334,7 @@ scute_slots_finalize (void)
 static void
 slot_reset (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   int oid;
 
   /* This also resets the login state.  */
@@ -379,7 +378,7 @@ static gpg_error_t
 slot_init (slot_iterator_t id)
 {
   gpg_error_t err = 0;
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   key_info_t ki;
 
   for (ki = slot->info.kinfo; ki; ki = ki->next)
@@ -401,11 +400,11 @@ slot_init (slot_iterator_t id)
 }
 
 
-/* Update the slot SLOT.  */
+/* Update the slot ID.  */
 CK_RV
 slots_update_slot (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   gpg_error_t err;
 
   if (slot->token_present)
@@ -467,9 +466,9 @@ slots_update_slot (slot_iterator_t id)
 CK_RV
 slots_update (void)
 {
-  slot_iterator_t id = scute_table_first (slots);
+  slot_iterator_t id = scute_table_first (slot_table);
 
-  while (!scute_table_last (slots, id))
+  while (!scute_table_last (slot_table, id))
     {
       CK_RV err;
 
@@ -477,7 +476,7 @@ slots_update (void)
       if (err)
 	return err;
 
-      id = scute_table_next (slots, id);
+      id = scute_table_next (slot_table, id);
     }
 
   return CKR_OK;
@@ -488,7 +487,7 @@ slots_update (void)
 CK_RV
 slots_iterate_first (slot_iterator_t *slot)
 {
-  *slot = scute_table_first (slots);
+  *slot = scute_table_first (slot_table);
 
   return CKR_OK;
 }
@@ -498,7 +497,7 @@ slots_iterate_first (slot_iterator_t *slot)
 CK_RV
 slots_iterate_next (slot_iterator_t *slot)
 {
-  *slot = scute_table_next (slots, *slot);
+  *slot = scute_table_next (slot_table, *slot);
 
   return CKR_OK;
 }
@@ -508,7 +507,7 @@ slots_iterate_next (slot_iterator_t *slot)
 bool
 slots_iterate_last (slot_iterator_t *slot)
 {
-  return scute_table_last (slots, *slot);
+  return scute_table_last (slot_table, *slot);
 }
 
 
@@ -516,7 +515,7 @@ slots_iterate_last (slot_iterator_t *slot)
 CK_RV
 slots_lookup (CK_SLOT_ID id, slot_iterator_t *id_r)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   if (slot == NULL)
     return CKR_SLOT_ID_INVALID;
@@ -532,7 +531,7 @@ slots_lookup (CK_SLOT_ID id, slot_iterator_t *id_r)
 bool
 slot_token_present (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   return slot->token_present;
 }
@@ -551,7 +550,7 @@ slot_token_label (slot_iterator_t id)
 const char *
 slot_token_manufacturer (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   unsigned int uval;
 
   if (slot->info.is_piv)
@@ -605,7 +604,7 @@ slot_token_manufacturer (slot_iterator_t id)
 const char *
 slot_token_application (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   if (!slot)
     return "[ooops]";
@@ -625,7 +624,7 @@ slot_token_application (slot_iterator_t id)
 const char *
 slot_token_serial (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   /* slots_update() makes sure this is valid.  */
   return slot->info.dispserialno? slot->info.dispserialno : slot->info.serialno;
@@ -637,7 +636,7 @@ void
 slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 		    CK_BYTE *fw_major, CK_BYTE *fw_minor)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   /* slots_update() makes sure serialno is valid.  */
   /* Fixme: If we have PIV+OpenPGP we do not have the OpenPGP
@@ -663,7 +662,7 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 void
 slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   /* In version 2 of the OpenPGP card, the second counter is for the
      reset operation, so we only take the first counter.  */
@@ -678,7 +677,7 @@ slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 void
 slot_token_pincount (slot_iterator_t id, int *max, int *len)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *max = 3;
   /* In version 2 of the OpenPGP card, the second counter is for the
@@ -698,7 +697,7 @@ slot_get_id (slot_iterator_t slot)
 bool
 slot_token_has_rng (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   return slot->info.rng_available;
 }
@@ -711,7 +710,7 @@ CK_RV
 mechanisms_iterate_first (slot_iterator_t id,
 			  mechanism_iterator_t *mechanism)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *mechanism = scute_table_first (slot->mechanisms);
 
@@ -723,7 +722,7 @@ mechanisms_iterate_first (slot_iterator_t id,
 CK_RV
 mechanisms_iterate_next (slot_iterator_t id, mechanism_iterator_t *mechanism)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *mechanism = scute_table_next (slot->mechanisms, *mechanism);
 
@@ -735,7 +734,7 @@ mechanisms_iterate_next (slot_iterator_t id, mechanism_iterator_t *mechanism)
 bool
 mechanisms_iterate_last (slot_iterator_t id, mechanism_iterator_t *mechanism)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   return scute_table_last (slot->mechanisms, *mechanism);
 }
@@ -746,7 +745,7 @@ CK_RV
 mechanisms_lookup (slot_iterator_t id,  mechanism_iterator_t *mid_r,
 		   CK_MECHANISM_TYPE type)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   int mid = scute_table_first (slot->mechanisms);
 
   while (!scute_table_last (slot->mechanisms, mid))
@@ -770,7 +769,7 @@ mechanisms_lookup (slot_iterator_t id,  mechanism_iterator_t *mid_r,
 CK_MECHANISM_TYPE
 mechanism_get_type (slot_iterator_t id, mechanism_iterator_t mid)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct mechanism *mechanism = scute_table_data (slot->mechanisms, mid);
 
   return mechanism->type;
@@ -781,7 +780,7 @@ mechanism_get_type (slot_iterator_t id, mechanism_iterator_t mid)
 CK_MECHANISM_INFO_PTR
 mechanism_get_info (slot_iterator_t id, mechanism_iterator_t mid)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct mechanism *mechanism = scute_table_data (slot->mechanisms, mid);
 
   return &mechanism->info;
@@ -796,7 +795,7 @@ slot_create_session (slot_iterator_t id, session_iterator_t *session,
 		     bool rw)
 {
   int err;
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   unsigned int tsid;
   void *rawp;
   struct session *session_p;
@@ -843,7 +842,7 @@ slots_lookup_session (CK_SESSION_HANDLE sid, slot_iterator_t *id,
   *session_id = session_idx;
 
   /* Verify the session.  */
-  slot = scute_table_data (slots, idx);
+  slot = scute_table_data (slot_table, idx);
   if (!scute_table_data (slot->sessions, session_idx))
     return CKR_SESSION_HANDLE_INVALID;
 
@@ -854,7 +853,7 @@ slots_lookup_session (CK_SESSION_HANDLE sid, slot_iterator_t *id,
 CK_RV
 slot_close_session (slot_iterator_t id, session_iterator_t sid)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   scute_table_dealloc (slot->sessions, &sid);
 
@@ -870,7 +869,7 @@ slot_close_session (slot_iterator_t id, session_iterator_t sid)
 CK_RV
 slot_close_all_sessions (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   int sid = scute_table_first (slot->sessions);
 
   while (!scute_table_last (slot->sessions, sid))
@@ -890,7 +889,7 @@ slot_close_all_sessions (slot_iterator_t id)
 bool
 session_get_rw (slot_iterator_t id, session_iterator_t sid)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
 
   return session->rw;
@@ -901,7 +900,7 @@ session_get_rw (slot_iterator_t id, session_iterator_t sid)
 slot_login_t
 slot_get_status (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   return slot->status;
 }
@@ -913,7 +912,7 @@ slot_get_status (slot_iterator_t id)
 CK_RV
 objects_iterate_first (slot_iterator_t id, object_iterator_t *object)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *object = scute_table_first (slot->objects);
 
@@ -925,7 +924,7 @@ objects_iterate_first (slot_iterator_t id, object_iterator_t *object)
 CK_RV
 objects_iterate_next (slot_iterator_t id, object_iterator_t *object)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *object = scute_table_next (slot->objects, *object);
 
@@ -937,7 +936,7 @@ objects_iterate_next (slot_iterator_t id, object_iterator_t *object)
 bool
 objects_iterate_last (slot_iterator_t id, object_iterator_t *object)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   return scute_table_last (slot->objects, *object);
 }
@@ -948,7 +947,7 @@ objects_iterate_last (slot_iterator_t id, object_iterator_t *object)
 CK_RV
 slot_get_object_count (slot_iterator_t id, int *nr)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
 
   *nr = scute_table_used (slot->objects);
 
@@ -960,7 +959,7 @@ CK_RV
 slot_get_object (slot_iterator_t id, object_iterator_t oid,
 		 CK_ATTRIBUTE_PTR *obj, CK_ULONG *obj_count)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct object *object = scute_table_data (slot->objects, oid);
 
   if (!object)
@@ -980,7 +979,7 @@ session_set_search_result (slot_iterator_t id, session_iterator_t sid,
 			   object_iterator_t *search_result,
 			   int search_result_len)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
 
   if (session->search_result && session->search_result != search_result)
@@ -999,7 +998,7 @@ session_get_search_result (slot_iterator_t id, session_iterator_t sid,
 			   object_iterator_t **search_result,
 			   int *search_result_len)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
 
   assert (search_result);
@@ -1018,7 +1017,7 @@ CK_RV
 session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 			 object_iterator_t key)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
   CK_RV err;
   CK_ATTRIBUTE_PTR attr;
@@ -1054,7 +1053,7 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
 	      CK_BYTE_PTR pData, CK_ULONG ulDataLen,
 	      CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
-  struct slot *slot = scute_table_data (slots, id);
+  struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
   int rc;
   gpg_error_t err;
@@ -1143,7 +1142,7 @@ session_init_decrypt (slot_iterator_t slotid, session_iterator_t sid,
   if (mechanism->mechanism != CKM_RSA_PKCS)
     return CKR_MECHANISM_INVALID;
 
-  slot = scute_table_data (slots, slotid);
+  slot = scute_table_data (slot_table, slotid);
   session = scute_table_data (slot->sessions, sid);
 
   rv = slot_get_object (slotid, key, &attr, &attr_count);
@@ -1187,7 +1186,7 @@ session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
   const char *keyref;
   unsigned int plaindatalen;
 
-  slot = scute_table_data (slots, slotid);
+  slot = scute_table_data (slot_table, slotid);
   session = scute_table_data (slot->sessions, sid);
 
   if (!session->decryption_key)
