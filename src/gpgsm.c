@@ -106,9 +106,6 @@ search_cb (void *hook, struct cert *cert)
  * the card, KINFO->GRIP is used to find the certificate in the local
  * key store of gpgsm.
  *
- * FIXME: This is all pretty questionable because our input data
- * always comes from the card.
- *
  * Returns allocated attributes for the certificate object in ATTRP
  * and ATTR_COUNTP, and for the private key object in PRV_ATTRP and
  * PRV_ATTR_COUNTP.  */

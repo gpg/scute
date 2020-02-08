@@ -31,6 +31,7 @@
 #include "locking.h"
 #include "error-mapping.h"
 #include "slots.h"
+#include "debug.h"
 
 
 CK_RV CK_SPEC
@@ -85,7 +86,7 @@ C_FindObjectsInit (CK_SESSION_HANDLE hSession,
 	  CK_ULONG count = ulCount;
 
 	  /* For each template attribute, check if it matches the
-	     object.  */
+	   * object.  */
 	  while (count--)
 	    {
 	      CK_ULONG i;
@@ -123,12 +124,21 @@ C_FindObjectsInit (CK_SESSION_HANDLE hSession,
   if (!search_result_len)
     {
       /* We do not yet known about this object.  If CKA_ISSUER and
-       * CKA_SERIAL_NUMBER was requested, try to look it up via
-       * gpgsm.  The way we can implement this would be a new option to
-       * gpgsm's LISTKEYS, named "--der" which takes the raw DER
-       * encoding of both items.  The advantage of doing this in gpgsm
-       * is that we can use libksba there to build the actual
-       * rfc-2253 search string from the DER. */
+       * CKA_SERIAL_NUMBER was requested, try to look it up via gpgsm.  */
+      int i, issuer_idx, serialno_idx;
+
+      issuer_idx = serialno_idx = -1;
+      for (i=0; i < ulCount; i++)
+        {
+          if (pTemplate[i].type == CKA_ISSUER)
+            issuer_idx = i;
+          else if (pTemplate[i].type == CKA_SERIAL_NUMBER)
+            serialno_idx = i;
+        }
+      if (ulCount == 2 && issuer_idx >= 0 && serialno_idx >= 0)
+        {
+          DEBUG (DBG_INFO, "Nothing found - should try sn+issuer");
+        }
 
     }
 

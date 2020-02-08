@@ -31,7 +31,7 @@
 /* Return the list of available slots.  With TOKENPRESENT set only
  * slots with a present tokens are returned.  If PSLOTLIST is NULL the
  * function only counts the number of slots and stores that number at
- * PULCOUNT.  Further this also updates the inetrnal state and thus
+ * PULCOUNT.  Further this also updates the internal state and thus
  * this needs to be called to check for new devices.  If PSLOTLIST is
  * not NULL it must point to an array which receives the slot
  * information.  PULCOUNT must point to a variable which initially

@@ -760,7 +760,8 @@ scute_agent_learn (struct agent_card_info_s *info)
       /* SCD session is in card removed state.  clear that state.
        * That should have been cleared by the initial SERIALNO but
        * other processes may race with that.  */
-      err = assuan_transact (agent_ctx, "SCD SERIALNO",
+      err = assuan_transact (agent_ctx, (has_opt_all? "SCD SERIALNO --all"
+                                         /*       */: "SCD SERIALNO"),
                              NULL, NULL, NULL, NULL, NULL, NULL);
       if (!err)
         {
