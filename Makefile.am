@@ -30,7 +30,13 @@ else
 tests =
 endif
 
-SUBDIRS = m4 src ${tests} doc
+if BUILD_DOC
+doc = doc
+else
+doc =
+endif
+
+SUBDIRS = m4 src ${tests} ${doc}
 
 dist-hook: gen-ChangeLog
 
