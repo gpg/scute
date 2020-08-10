@@ -76,11 +76,16 @@ agent_connect (assuan_context_t *ctx_r)
   assuan_context_t ctx = NULL;
   char buffer[512];
 
+  DEBUG (DBG_INFO, "agent_connect: uid=%lu euid=%lu",
+         (unsigned long)getuid (), (unsigned long)geteuid ());
   /* Use gpgconf to make sure that gpg-agent is started and to obtain
    * the socket name.  For older version of gnupg we will fallback to
    * using two gpgconf commands with the same effect.  */
-  snprintf (buffer, sizeof buffer, "%s --show-socket --launch gpg-agent",
-            get_gpgconf_path ());
+  /* FIXME: We should make sure that USER has no spaces.  */
+  snprintf (buffer, sizeof buffer, "%s %s%s --show-socket --launch gpg-agent",
+            get_gpgconf_path (),
+            _scute_opt.user? "--chuid=":"",
+            _scute_opt.user? _scute_opt.user:"");
   err = read_first_line (buffer, buffer, sizeof buffer);
   if (gpg_err_code (err) == GPG_ERR_NO_AGENT && is_gnupg_older_than (2, 2, 14))
     {
@@ -94,6 +99,7 @@ agent_connect (assuan_context_t *ctx_r)
           err = read_first_line (buffer, buffer, sizeof buffer);
         }
     }
+  DEBUG (DBG_INFO, "agent_connect: agent socket is '%s'", buffer);
 
   /* Then connect to the socket we got. */
   if (!err)
@@ -121,17 +127,40 @@ agent_connect (assuan_context_t *ctx_r)
   return err;
 }
 
+/*
+ * Check whether STRING starts with KEYWORD.  The keyword is
+ * delimited by end of string, a space or a tab.  Returns NULL if not
+ * found or a pointer into STRING to the next non-space character
+ * after the KEYWORD (which may be end of string).
+ */
+static char *
+has_leading_keyword (const char *string, const char *keyword)
+{
+  size_t n = strlen (keyword);
+
+  if (!strncmp (string, keyword, n)
+      && (!string[n] || string[n] == ' ' || string[n] == '\t'))
+    {
+      string += n;
+      while (*string == ' ' || *string == '\t')
+        string++;
+      return (char*)string;
+    }
+  return NULL;
+}
+
 
 /* This is the default inquiry callback.  It mainly handles the
    Pinentry notifications.  */
 static gpg_error_t
 default_inq_cb (void *opaque, const char *line)
 {
+  const char *s;
   (void)opaque;
 
-  if (!strncmp (line, "PINENTRY_LAUNCHED", 17) && (line[17]==' '||!line[17]))
+  if ((s = has_leading_keyword (line, "PINENTRY_LAUNCHED")))
     {
-      gnupg_allow_set_foregound_window ((pid_t)strtoul (line+17, NULL, 10));
+      gnupg_allow_set_foregound_window ((pid_t)strtoul (s, NULL, 10));
       /* We do not pass errors to avoid breaking other code.  */
     }
   else
@@ -732,7 +761,6 @@ scute_agent_learn (struct agent_card_info_s *info)
   gpg_error_t err;
   int has_opt_all = 0;
 
-
   memset (info, 0, sizeof (*info));
   err = ensure_agent_connection ();
   if (!err && !agent_simple_cmd (agent_ctx,
@@ -1052,12 +1080,38 @@ decode_hash (const unsigned char *data, int len,
 }
 
 
+struct sethash_inq_parm_s
+{
+  assuan_context_t ctx;
+  const void *data;
+  size_t datalen;
+};
+
+
+/* This is the inquiry callback required by the SETHASH command.  */
+static gpg_error_t
+sethash_inq_cb (void *opaque, const char *line)
+{
+  gpg_error_t err = 0;
+  struct sethash_inq_parm_s *parm = opaque;
+
+  if (has_leading_keyword (line, "TBSDATA"))
+    {
+      err = assuan_send_data (parm->ctx, parm->data, parm->datalen);
+    }
+  else
+    err = default_inq_cb (opaque, line);
+
+  return err;
+}
+
 /* Call the agent to sign (DATA,LEN) using the key described by
  * HEXGRIP.  Stores the signature in SIG_RESULT and its length at
  * SIG_LEN; SIGLEN must initially point to the allocated size of
  * SIG_RESULT.  */
 gpg_error_t
-scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
+scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
+                  unsigned char *data, int len,
 		  unsigned char *sig_result, unsigned int *sig_len)
 {
   char cmd[150];
@@ -1069,15 +1123,25 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
   struct signature sig;
+  int nopadding = (mechtype == CKM_RSA_X_509);
 
   sig.len = 0;
 
   if (sig_len == NULL)
     return gpg_error (GPG_ERR_INV_ARG);
 
-  err = decode_hash (data, len, &raw_data, &raw_len, &hash);
-  if (err)
-    return err;
+  if (nopadding)
+    {
+      raw_data = data;
+      raw_len = len;
+      hash = NULL;
+    }
+  else
+    {
+      err = decode_hash (data, len, &raw_data, &raw_len, &hash);
+      if (err)
+        return err;
+    }
 
   if (sig_result == NULL)
     {
@@ -1099,13 +1163,27 @@ scute_agent_sign (const char *hexgrip, unsigned char *data, int len,
   if (err)
     return err;
 
-  for (i = 0; i < raw_len; i++)
-    snprintf (&pretty_data[2 * i], 3, "%02X", raw_data[i]);
-  pretty_data[2 * raw_len] = '\0';
+  if (nopadding)
+    {
+      struct sethash_inq_parm_s parm;
 
-  snprintf (cmd, sizeof (cmd), "SETHASH --hash=%s %s", hash, pretty_data);
-  err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
-			 NULL, NULL, NULL);
+      parm.ctx = agent_ctx;
+      parm.data = raw_data;
+      parm.datalen = raw_len;
+      snprintf (cmd, sizeof (cmd), "SETHASH %s --inquire",
+                (raw_len && raw_data[raw_len -1] == 0xBC)? "--pss":"");
+      err = assuan_transact (agent_ctx, cmd, NULL, NULL,
+                             sethash_inq_cb, &parm, NULL, NULL);
+    }
+  else
+    {
+      for (i = 0; i < raw_len; i++)
+        snprintf (&pretty_data[2 * i], 3, "%02X", raw_data[i]);
+      pretty_data[2 * raw_len] = '\0';
+      snprintf (cmd, sizeof (cmd), "SETHASH --hash=%s %s", hash, pretty_data);
+      err = assuan_transact (agent_ctx, cmd, NULL, NULL, default_inq_cb,
+                             NULL, NULL, NULL);
+    }
   err = check_broken_pipe (err);
   if (err)
     return err;

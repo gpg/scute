@@ -201,7 +201,8 @@ CK_RV session_get_search_result (slot_iterator_t id, session_iterator_t sid,
 
 /* The core of C_SignInit.  */
 CK_RV session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
-			       object_iterator_t key);
+			       object_iterator_t key,
+                               CK_MECHANISM_TYPE mechanism_type);
 
 /* The core of C_Sign.  */
 CK_RV session_sign (slot_iterator_t id, session_iterator_t sid,

@@ -107,7 +107,7 @@ key_info_t scute_find_kinfo (agent_card_info_t info, const char *keyref);
 
 /* Sign the data DATA of length LEN with the key HEXGRIP and return
  * the signature in SIG_RESULT and SIG_LEN.  */
-gpg_error_t scute_agent_sign (const char *hexgrip,
+gpg_error_t scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
                               unsigned char *data, int len,
 			      unsigned char *sig_result, unsigned int *sig_len);
 

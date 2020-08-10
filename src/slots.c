@@ -98,6 +98,9 @@ struct session
   /* The signing key.  */
   CK_OBJECT_HANDLE signing_key;
 
+  /* The signing mechanism type.  */
+  CK_MECHANISM_TYPE signing_mechanism_type;
+
   /* The decryption key.  */
   CK_OBJECT_HANDLE decryption_key;
 };
@@ -1015,7 +1018,8 @@ session_get_search_result (slot_iterator_t id, session_iterator_t sid,
  * core of C_SignInit.  */
 CK_RV
 session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
-			 object_iterator_t key)
+			 object_iterator_t key,
+                         CK_MECHANISM_TYPE mechanism_type)
 {
   struct slot *slot = scute_table_data (slot_table, id);
   struct session *session = scute_table_data (slot->sessions, sid);
@@ -1028,7 +1032,6 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
   if (err)
     return err;
 
-  /* FIXME: What kind of strange loop is this?  */
   while (attr_count-- > 0)
     if (attr->type == CKA_CLASS)
       break;
@@ -1042,6 +1045,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
 
   /* It's the private RSA key object.  */
   session->signing_key = key;
+  session->signing_mechanism_type = mechanism_type;
 
   return 0;
 }
@@ -1107,7 +1111,8 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     keyref++;  /* Point to the grip.  */
 
   sig_len = *pulSignatureLen;
-  err = scute_agent_sign (keyref, pData, ulDataLen, pSignature, &sig_len);
+  err = scute_agent_sign (keyref, session->signing_mechanism_type,
+                          pData, ulDataLen, pSignature, &sig_len);
   /* Take care of error codes which are not mapped by default.  */
   if (gpg_err_code (err) == GPG_ERR_INV_LENGTH)
     rc = CKR_BUFFER_TOO_SMALL;
