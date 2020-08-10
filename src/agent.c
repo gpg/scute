@@ -105,7 +105,7 @@ agent_connect (assuan_context_t *ctx_r)
           if (!err)
             {
               *ctx_r = ctx;
-              if (_scute_debug_flags & DBG_ASSUAN)
+              if (_scute_opt.debug_flags & DBG_ASSUAN)
                 assuan_set_log_stream (*ctx_r, _scute_debug_stream);
             }
           else

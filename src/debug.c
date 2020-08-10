@@ -35,7 +35,6 @@
 
 FILE *_scute_debug_stream;
 
-unsigned int _scute_debug_flags;
 
 
 #ifdef HAVE_W32_SYSTEM
@@ -90,7 +89,7 @@ _scute_debug_init (void)
       stream = stderr;
       if (e)
 	{
-	  _scute_debug_flags = atoi (e);
+	  _scute_opt.debug_flags = atoi (e);
 	  s1 = strchr (e, PATHSEP_C);
 	  if (s1)
 	    {
@@ -124,8 +123,8 @@ _scute_debug_init (void)
 	    }
         }
 
-      if (_scute_debug_flags > 0)
-        fprintf (stream, "scute debug init: flags=0x%x\n", _scute_debug_flags);
+      if (_scute_opt.debug_flags > 0)
+        fprintf (stream, "scute debug init: flags=0x%x\n", _scute_opt.debug_flags);
 
       assuan_set_assuan_log_prefix ("scute-assuan");
       _scute_debug_stream = stream;

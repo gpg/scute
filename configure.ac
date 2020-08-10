@@ -64,7 +64,7 @@ LIBSCUTE_LT_REVISION=4
 VERSION_MAJOR=1
 VERSION_MINOR=0
 
-NEED_GPG_ERROR_VERSION=1.24
+NEED_GPG_ERROR_VERSION=1.38
 NEED_LIBASSUAN_VERSION=2.5.0
 
 # Some status variables to give feedback at the end of a configure run.

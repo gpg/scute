@@ -1,5 +1,5 @@
-/* debug.c - Debug interface.
- * Copyright (C) 2006, 2008 g10 Code GmbH
+/* options.h - Global options.
+ * Copyright (C) 2020 g10 Code GmbH
  *
  * This file is part of Scute.
  *
@@ -18,30 +18,18 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef DEBUG_H
-#define DEBUG_H	1
+#ifndef OPTIONS_H
+#define OPTIONS_H 1
 
-#include <stdio.h>
-#include "options.h"
-
-#define DEBUG_PREFIX "scute: "
-
-#define DBG_CRIT 0
-#define DBG_INFO (1 << 0)
-#define DBG_ASSUAN (1 << 1)
-
-extern FILE *_scute_debug_stream;
-
-#define DEBUG(flag, format, ...)  \
-  do \
-    { \
-      if ((_scute_opt.debug_flags & (flag)) || flag == DBG_CRIT)        \
-        fprintf (_scute_debug_stream, DEBUG_PREFIX "%s:%d: " format "\n", \
-                 __func__, __LINE__, ##__VA_ARGS__);                    \
-    } \
-  while (0)
-
-void _scute_debug_init (void);
+/* Global options.  */
+struct {
+  char *user;
+  int debug_flags;
+} _scute_opt;
 
 
-#endif /* !DEBUG_H */
+/*-- readconf.c --*/
+void _scute_read_conf (void);
+
+
+#endif /*OPTIONS_H*/

@@ -41,6 +41,7 @@
 #include "error-mapping.h"
 #include "slots.h"
 #include "debug.h"
+#include "options.h"
 
 
 CK_RV CK_SPEC
@@ -60,6 +61,7 @@ C_Initialize (CK_VOID_PTR pInitArgs)
   assuan_set_gpg_err_source (GPG_ERR_SOURCE_ANY);
 
   _scute_debug_init ();
+  _scute_read_conf ();
 
   /* Check the threading configuration.  */
   if (pInitArgs != NULL_PTR)
