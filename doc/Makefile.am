@@ -47,11 +47,44 @@ BUILT_SOURCES = $(images_eps)
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = lesser.texi
 
+YAT2M = yat2m
+YAT2M_OPTIONS = -I $(srcdir) \
+	--release "Scute @PACKAGE_VERSION@" --source "Scute"
+
+myman_sources = scute.texi
+myman_pages   = scute.7
+
+man_MANS = $(myman_pages)
+
+
 .png.eps:
 	$(CONVERT) `test -f '$<' || echo '$(srcdir)/'`$< $@
 
 .png.pdf:
 	$(CONVERT) `test -f '$<' || echo '$(srcdir)/'`$< $@
+
+yat2m-stamp: $(myman_sources)
+	@rm -f yat2m-stamp.tmp
+	@touch yat2m-stamp.tmp
+	for file in $(myman_sources) ; do \
+            $(YAT2M) $(YAT2M_OPTIONS) --store \
+	          `test -f '$$file' || echo '$(srcdir)/'`$$file ; done
+	@mv -f yat2m-stamp.tmp $@
+
+$(myman_pages) : yat2m-stamp
+	@if test -f $@; then :; else \
+            trap 'rm -rf yat2m-stamp yat2m-lock' 1 2 13 15; \
+               if mkdir yat2m-lock 2>/dev/null; then \
+                 rm -f yat2m-stamp; \
+                 $(MAKE) $(AM_MAKEFLAGS) yat2m-stamp; \
+                 rmdir yat2m-lock; \
+               else \
+                 while test -d yat2m-lock; do sleep 1; done; \
+                 test -f yat2m-stamp; exit $$?; \
+               fi; \
+             fi
+
+
 
 
 # Do not include the generated EPS files.
@@ -64,3 +97,17 @@ dist-hook:
 # updates the release date.
 scute.texi : $(scute_TEXINFOS) $(images)
 	touch $(srcdir)/scute.texi
+
+
+online: scute.html scute.pdf
+	set -e; \
+	echo "Uploading current manuals to www.gnupg.org ..."; \
+	for f in $(images); do \
+          cp $(srcdir)/$$f scute.html/; \
+	done ; \
+        user=werner ; webhost="ftp.gnupg.org"; \
+	rsync -v scute.pdf \
+              $${user}@$${webhost}:webspace/manuals/ ; \
+	cd scute.html ; \
+        rsync -vr -C .  \
+              $${user}@$${webhost}:webspace/manuals/scute/
