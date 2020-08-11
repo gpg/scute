@@ -4,10 +4,9 @@ autom4te.cache/
 config.h.in
 configure
 doc/Makefile.in
-doc/manual/Makefile.in
-doc/manual/scute.info
-doc/manual/stamp-vti
-doc/manual/version.texi
+doc/scute.info
+doc/stamp-vti
+doc/version.texi
 m4/Makefile.in
 obj/
 src/Makefile.in
