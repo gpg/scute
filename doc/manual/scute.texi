@@ -14,13 +14,11 @@
 @syncodeindex pg fn
 
 @ifinfo
-This file documents the Scute module.
+This is @cite{The Scute Manual} for Scute version @value{VERSION} and was
+last updated @value{UPDATED}.
 
-This is Edition @value{EDITION}, last updated @value{UPDATED}, of
-@cite{The Scute Manual}, for Version @value{VERSION}.
-
-@c NOTE: Don't forget to update the year for the TeX version, too.
-Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
+Copyright @copyright{} 2006, 2007, 2008, 2009, 2010, 2017, 2019, 2020
+g10 Code GmbH.
 
 The Scute Manual is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public License as
@@ -41,14 +39,14 @@ General Public License for more details.
 @titlepage
 @center @titlefont{The Scute Manual}
 @sp 6
-@center Edition @value{EDITION}
+@center for version @value{VERSION}
 @sp 1
 @center last updated @value{UPDATED}
 @sp 1
-@center for version @value{VERSION}
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007 g10 Code GmbH.
+Copyright @copyright{} 2006, 2007, 2008, 2009, 2010, 2017, 2019, 2020
+g10 Code GmbH.
 
 
 The Scute Manual is free software; you can redistribute it and/or
@@ -67,9 +65,8 @@ lesser General Public License for more details.
 @ifnottex
 @node Top
 @top Main Menu
-This is Edition @value{EDITION}, last updated @value{UPDATED}, of
-@cite{The Scute Manual}, for Version @value{VERSION} of the Scute
-module.
+This is version @value{VERSION} of the @cite{The Scute Manual}, last
+updated @value{UPDATED}.
 @end ifnottex
 
 @menu
@@ -241,12 +238,12 @@ following packages at build time:
 @table @code
 @item libgpg-error
 Scute uses the GnuPG 2 framework for error handling, so it depends on
-the GPG error library.  The minimum version required is 1.24.
+the GPG error library.  The minimum version required is 1.38.
 
 @item libassuan
-Scute uses the GnuPG 2 framework for communication with the GPG Agent,
-so it depends on the Assuan library.  The minimum version required is
-2.5.0.
+Scute uses the GnuPG  framework for communication with the GPG
+Agent, so it also depends on the Assuan library.  The minimum version
+required is 2.5.0.
 @end table
 
 At run-time, in addition to the run-time versions of the above
@@ -256,7 +253,9 @@ configured:
 @table @asis
 @item GnuPG
 Scute uses the GnuPG 2 framework to access the OpenPGP card and for
-certificate management.  The minimum version required is 2.2.0.
+certificate management.  The minimum version required is 2.2.0.  For
+full functionality, in particular for use with the OpenVPN software,
+GnuPG version 2.3 is required.
 
 @item Pinentry
 Pinentry is a dependency of GnuPG 2, so it also needs to be installed
