@@ -19,7 +19,7 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
+AC_PREREQ([2.61])
 min_automake_version="1.14"
 
 # To build a release you need to create a tag with the version number
@@ -48,7 +48,7 @@ m4_define([mym4_version],      m4_argn(4, mym4_verslist))
 m4_define([mym4_revision],     m4_argn(7, mym4_verslist))
 m4_define([mym4_revision_dec], m4_argn(8, mym4_verslist))
 m4_esyscmd([echo ]mym4_version[>VERSION])
-AC_INIT([mym4_package],[mym4_version], [https://bugs.gnupg.org])
+AC_INIT([mym4_package],[mym4_version],[https://bugs.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -92,7 +92,7 @@ AC_CANONICAL_HOST
 AB_INIT
 
 # Enable GNU extensions on systems that have them.
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 
 AH_VERBATIM([_REENTRANT],
 [/* To allow the use of scute in multithreaded programs we have to use
@@ -180,7 +180,7 @@ if test "$GCC" = yes; then
 fi
 
 AC_ARG_ENABLE(optimization,
-   AC_HELP_STRING([--disable-optimization],
+   AS_HELP_STRING([--disable-optimization],
                   [disable compiler optimization]),
                   [if test $enableval = no ; then
                       CFLAGS=`echo $CFLAGS | sed 's/-O[[0-9]]//'`
@@ -190,7 +190,7 @@ AC_ARG_ENABLE(optimization,
 # Option to disable building of doc file
 #
 build_doc=yes
-AC_ARG_ENABLE([doc], AC_HELP_STRING([--disable-doc],
+AC_ARG_ENABLE([doc], AS_HELP_STRING([--disable-doc],
                                     [do not build the documentation]),
                      build_doc=$enableval, build_doc=yes)
 AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno])
@@ -316,7 +316,7 @@ if test "$have_gpg_error" = "no"; then
    AC_MSG_NOTICE([[
 ***
 *** You need libgpg-error to build this program.
-**  This library is for example available at
+*** This library is for example available at
 ***   ftp://ftp.gnupg.org/pub/gcrypt/libgpg-error
 *** (at least version $NEED_GPG_ERROR_VERSION is required.)
 ***]])
