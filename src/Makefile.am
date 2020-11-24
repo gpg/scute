@@ -93,6 +93,8 @@ scute_deps = $(scute_res) scute.def libgpg-error.a libassuan.a
 
 scute_libadd = -L.
 
+scute_w32_extra_libs = -lws2_32
+
 libgpg-error.a:
 	ln -sf $$($(GPG_ERROR_CONFIG) --prefix)/lib/libgpg-error.a .
 
@@ -135,7 +137,7 @@ scute_la_DEPENDENCIES = @LTLIBOBJS@ $(srcdir)/libscute.vers $(scute_deps)
 # scute_libadd must come BEFORE libassuan and gpg-error, because we
 # override it on Windows targets.
 scute_la_LIBADD = $(scute_libadd) \
-	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@
+	@LTLIBOBJS@ @LIBASSUAN_LIBS@ @GPG_ERROR_LIBS@ $(scute_w32_extra_libs)
 
 scute_la_CPPFLAGS = -I$(srcdir)/../include \
 	@LIBASSUAN_CFLAGS@ @GPG_ERROR_CFLAGS@
