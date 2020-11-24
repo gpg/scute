@@ -76,8 +76,10 @@ agent_connect (assuan_context_t *ctx_r)
   assuan_context_t ctx = NULL;
   char buffer[512];
 
+#ifndef HAVE_W32_SYSTEM
   DEBUG (DBG_INFO, "agent_connect: uid=%lu euid=%lu",
          (unsigned long)getuid (), (unsigned long)geteuid ());
+#endif
   /* Use gpgconf to make sure that gpg-agent is started and to obtain
    * the socket name.  For older version of gnupg we will fallback to
    * using two gpgconf commands with the same effect.  */
