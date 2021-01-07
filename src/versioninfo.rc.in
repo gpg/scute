@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", "SCUTE - The GnuPG PKCS#11 interface\0"
             VALUE "FileVersion", "@LIBSCUTE_LT_CURRENT@.@LIBSCUTE_LT_AGE@.@LIBSCUTE_LT_REVISION@.@BUILD_REVISION@\0"
             VALUE "InternalName", "scute\0"
-            VALUE "LegalCopyright", "Copyright © 2005, 2008, 2009 g10 Code GmbH\0"
+            VALUE "LegalCopyright", "Copyright © 2005, 2008, 2009, 2020 g10 Code GmbH\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "scute.dll\0"
             VALUE "PrivateBuild", "\0"

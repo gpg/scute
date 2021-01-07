@@ -1,5 +1,15 @@
-Noteworthy changes in version 1.6.1 (unreleased)
+Noteworthy changes in version 1.7.0 (2021-01-07)
 ------------------------------------------------
+
+ * Support pre-formatted PSS signatures to work with OpenVPN.
+
+ * Support for a global config file.
+
+ * A minimal man page is provided.
+
+ * Windows build problems have been fixed.
+
+ Release-info: https://dev.gnupg.org/T5224
 
 
 Noteworthy changes in version 1.6.0 (2019-09-11)

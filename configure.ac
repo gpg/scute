@@ -28,8 +28,8 @@ min_automake_version="1.14"
 # another commit and push so that the git magic is able to work.
 m4_define([mym4_package],[scute])
 m4_define([mym4_major], [1])
-m4_define([mym4_minor], [6])
-m4_define([mym4_micro], [1])
+m4_define([mym4_minor], [7])
+m4_define([mym4_micro], [0])
 
 # To start a new development series, i.e a new major or minor number
 # you need to mark an arbitrary commit before the first beta release
@@ -58,7 +58,7 @@ AC_INIT([mym4_package],[mym4_version],[https://bugs.gnupg.org])
 #
 LIBSCUTE_LT_CURRENT=0
 LIBSCUTE_LT_AGE=0
-LIBSCUTE_LT_REVISION=4
+LIBSCUTE_LT_REVISION=5
 
 # Version numbers reported by the PKCS #11 module to its users.
 VERSION_MAJOR=1
