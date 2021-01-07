@@ -40,7 +40,8 @@ images_eps = firefox-cm.eps firefox-cm-view-detail.eps firefox-cm-view.eps \
 EXTRA_DIST = $(images)
 
 CLEANFILES =  $(images_eps)
-DISTCLEANFILES = scute.tmp
+DISTCLEANFILES = scute.tmp yat2m-stamp.tmp yat2m-stamp $(myman_pages)
+
 
 BUILT_SOURCES = $(images_eps)
 

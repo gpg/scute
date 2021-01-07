@@ -33,7 +33,7 @@ General Public License for more details.
 
 @dircategory GnuPG
 @direntry
-* Scute: (scute).          PKCS #11 module for GnuPG supported tokens.
+* Scute: (scute).          PKCS#11 module for GnuPG supported tokens.
 @end direntry
 
 @c A couple of macros with no effect on texinfo
@@ -160,16 +160,16 @@ Internals
 .B scute.so
 @end ifset
 @mansect description
-Scute is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
+Scute is a PKCS#11 implementation for the GnuPG Agent using the GnuPG
 Smart Card Daemon.  Currently, OpenPGP and PIV cards are supported.
 
 Scute enables the use of the OpenPGP smart card or a PIV smart card in
-applications supporting PKCS #11 compliant security tokens.  The main
+applications supporting PKCS#11 compliant security tokens.  The main
 application at this time is client authentication in Mozilla-based web
 browsers.  In the future, other applications will be supported.
 
 To prepare your application for use with Scute, you have to load the
-Scute module as a PKCS #11 module into the application.  See below for
+Scute module as a PKCS#11 module into the application.  See below for
 notes on how to do that with Firefox.
 
 @mansect options
@@ -217,8 +217,8 @@ From the menu choose @code{Edit->Preferences}.  In the preferences
 configuration dialog, you then select the @code{Advanced}
 configuration section, then the @code{Security} tab, and then select
 @code{Security Devices} in the category @code{Certificates}.  In the
-devices manager dialog, you can select @code{Load} to load a new PKCS
-#11 device.  In the pop-up dialog that follows, you can give a module
+devices manager dialog, you can select @code{Load} to load a new
+PKCS#11 device.  In the pop-up dialog that follows, you can give a module
 name (e.g. ``@code{Scute}'') and a module filename.  The latter should
 correspond to the full file name of the installed Scute module file
 @file{scute.so}.
@@ -234,9 +234,9 @@ should confirm that the module was successfully loaded, and an entry for
 the security device should appear in the device manager list of
 
 @mansect environment
-The environment variable @code{SCUTE_DEBUG} gives the same debug
-flags as described above.  This numerically value may be followed by
-collon and a log filename.  The global options will override these
+The environment variable @code{SCUTE_DEBUG} gives the same debug flags
+as described above.  This numerically value may be followed by a colon
+and the name for the log file.  The global options will override these
 values once they have been parsed.
 
 @mansect see also
@@ -254,11 +254,11 @@ values once they have been parsed.
 @node Introduction
 @chapter Introduction
 
-Scute is a PKCS #11 implementation for the GnuPG Agent using the GnuPG
+Scute is a PKCS#11 implementation for the GnuPG Agent using the GnuPG
 Smart Card Daemon.  Currently, OpenPGP and PIV cards are supported.
 
 Scute enables the use of the OpenPGP smart card or a PIV smart card in
-applications supporting PKCS #11 compliant security tokens.  The main
+applications supporting PKCS#11 compliant security tokens.  The main
 application at this time is client authentication in Mozilla-based web
 browsers.  In the future, other applications will be supported.
 
@@ -293,7 +293,7 @@ module.
 @node Features
 @section Features
 
-Scute is currently the only implementation of PKCS #11 for the OpenPGP
+Scute is currently the only implementation of PKCS#11 for the OpenPGP
 smart card.  Apart from that, it offers a couple of other benefits:
 
 @table @asis
@@ -317,8 +317,8 @@ of Scute into the application is seamless.
 @node Overview
 @section Overview
 
-Scute is a security device that implements the PKCS #11 interface for
-security tokens.  Applications which know how to use the PKCS #11
+Scute is a security device that implements the PKCS#11 interface for
+security tokens.  Applications which know how to use the PKCS#11
 interface to access security tokens for cryptographic operations can use
 Scute to access the OpenPGP smart card.  An important example of such an
 application is the Firefox web browser by the Mozilla project, which
@@ -634,7 +634,7 @@ gpg/card> quit
 Scute allows you to authenticate yourself to a website securely without
 entering a username or password by simply using your OpenPGP card.
 Currently, only Mozilla-based browsers like Firefox are supported,
-although other applications using Mozilla NSS or supporting PKCS #11
+although other applications using Mozilla NSS or supporting PKCS#11
 modules may work.
 
 
@@ -642,7 +642,7 @@ modules may work.
 @section Application Configuration
 
 To prepare your application for use with Scute, you have to load the
-Scute module as a PKCS #11 module into the application.  With Firefox,
+Scute module as a PKCS#11 module into the application.  With Firefox,
 this can be done by choosing @code{Edit->Preferences} in the menu.  In
 the preferences configuration dialog, you should select the
 @code{Advanced} configuration section, then the @code{Security} tab, and
