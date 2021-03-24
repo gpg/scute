@@ -104,6 +104,14 @@ AH_VERBATIM([_REENTRANT],
 # Checks for programs.
 AC_PROG_CC
 
+# Check for programs needed for the manual.
+AC_CHECK_PROG(CONVERT, convert, convert)
+AC_CHECK_PROG(YAT2M, yat2m, yat2m)
+have_doc_tools=no
+if test -n "$ac_cv_prog_CONVERT" && test -n "$ac_cv_prog_YAT2M" ; then
+    have_doc_tools=yes
+fi
+
 # Note: A suitable gitlog-to-changelog script can be found in GnuPG master.
 AC_CHECK_PROGS(GITLOG_TO_CHANGELOG, gitlog-to-changelog, [gitlog-to-changelog])
 
@@ -193,7 +201,7 @@ build_doc=yes
 AC_ARG_ENABLE([doc], AS_HELP_STRING([--disable-doc],
                                     [do not build the documentation]),
                      build_doc=$enableval, build_doc=yes)
-AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno])
+AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno && test "x$have_doc_tools" = xyes])
 
 
 
@@ -291,10 +299,6 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_CHECK_FUNCS([ttyname localtime_r timegm stpcpy])
-
-# Check for programs needed for the manual.
-AC_CHECK_PROG(CONVERT, convert, convert)
-AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 
 # Test if tests can be run
 ok=yes

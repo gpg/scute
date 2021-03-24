@@ -39,6 +39,10 @@ For the compilation:
 * libgpg-error 1.24
 * libassuan 2.5.0
 
+Building the documentation also requires:
+* convert (ImageMagick)
+* yat2m (libgpg-error)
+
 At runtime:
 * Firefox, Thunderbird or any other supported application using PKCS #11.
 * GnuPG 2.2
