@@ -105,10 +105,9 @@ AH_VERBATIM([_REENTRANT],
 AC_PROG_CC
 
 # Check for programs needed for the manual.
-AC_CHECK_PROG(CONVERT, convert, convert)
 AC_CHECK_PROG(YAT2M, yat2m, yat2m)
 have_doc_tools=no
-if test -n "$ac_cv_prog_CONVERT" && test -n "$ac_cv_prog_YAT2M" ; then
+if test -n "$ac_cv_prog_YAT2M" ; then
     have_doc_tools=yes
 fi
 

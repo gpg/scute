@@ -40,7 +40,6 @@ For the compilation:
 * libassuan 2.5.0
 
 Building the documentation also requires:
-* convert (ImageMagick)
 * yat2m (libgpg-error)
 
 At runtime:

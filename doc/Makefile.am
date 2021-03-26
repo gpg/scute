@@ -27,23 +27,10 @@ images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
 	libreoffice-certificate-selection.png \
 	libreoffice-digital-signatures.png libreoffice-pdf-signature.png
 
-# The same as images but eps suffix.
-images_eps = firefox-cm.eps firefox-cm-view-detail.eps firefox-cm-view.eps \
-	firefox-dm-load-after.eps firefox-dm-load-before.eps \
-	firefox-dm-load.eps firefox-dm-token-present.eps firefox-pref.eps \
-	firefox-pref-view.eps firefox-bad-pin.eps \
-	thunderbird-account-settings.eps thunderbird-smime-button.eps \
-	libreoffice-certificate-selection.eps \
-	libreoffice-digital-signatures.eps libreoffice-pdf-signature.eps
-
-
 EXTRA_DIST = $(images)
 
-CLEANFILES =  $(images_eps)
 DISTCLEANFILES = scute.tmp yat2m-stamp.tmp yat2m-stamp $(myman_pages)
 
-
-BUILT_SOURCES = $(images_eps)
 
 info_TEXINFOS = scute.texi
 scute_TEXINFOS = lesser.texi
@@ -57,12 +44,6 @@ myman_pages   = scute.7
 
 man_MANS = $(myman_pages)
 
-
-.png.eps:
-	$(CONVERT) `test -f '$<' || echo '$(srcdir)/'`$< $@
-
-.png.pdf:
-	$(CONVERT) `test -f '$<' || echo '$(srcdir)/'`$< $@
 
 yat2m-stamp: $(myman_sources)
 	@rm -f yat2m-stamp.tmp
@@ -84,13 +65,6 @@ $(myman_pages) : yat2m-stamp
                  test -f yat2m-stamp; exit $$?; \
                fi; \
              fi
-
-
-
-
-# Do not include the generated EPS files.
-dist-hook:
-	cd $(distdir) && rm -f $(images_eps)
 
 
 # Make sure that scute.texi is touched if any other source file has
