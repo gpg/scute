@@ -19,6 +19,8 @@
 
 ## Process this file with automake to produce Makefile.in
 
+AM_DISTCHECK_DVI_TARGET = pdf
+
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
