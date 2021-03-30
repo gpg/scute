@@ -22,10 +22,12 @@
 #define OPTIONS_H 1
 
 /* Global options.  */
-struct {
+typedef struct {
   char *user;
   int debug_flags;
-} _scute_opt;
+} _scute_opt_t;
+
+extern _scute_opt_t _scute_opt;
 
 
 /*-- readconf.c --*/

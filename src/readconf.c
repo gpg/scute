@@ -31,6 +31,8 @@
 
 #include "options.h"
 
+_scute_opt_t _scute_opt;
+
 static const char *
 my_strusage (int level)
 {
