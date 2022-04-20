@@ -97,7 +97,8 @@ C_Initialize (CK_VOID_PTR pInitArgs)
       /* FIXME: At this point, we do not support using the native
 	 thread package.  */
       if (!callbacks && (args->flags & CKF_OS_LOCKING_OK))
-	return CKR_CANT_LOCK;
+        if (!_scute_opt.assume_single_threaded)
+          return CKR_CANT_LOCK;
     }
 
   err = scute_locking_initialize (pInitArgs);

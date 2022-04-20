@@ -208,6 +208,13 @@ This has currently no effect but will in a future version write the
 log to @var{file}.  Writing to a socket will be possible by prefixing
 the @var{file} with the string @code{socket://}.
 
+@item assume-single-threaded
+@opindex assume-single-threaded
+This is a hack to ignore a request to use native threads instead of
+user provided callbacks.  Should only be used with caution if there is
+no easy way to fix the caller or until we have fixed Scute.
+
+
 @end table
 
 @mansect notes (Firefox)

@@ -53,12 +53,13 @@ my_strusage (int level)
 void
 _scute_read_conf (void)
 {
-  enum { oNull = 500, oUser, oDebug, oLogfile };
+  enum { oNull = 500, oUser, oDebug, oLogfile, oAssumeSingleThreaded };
   gpgrt_opt_t opts[] =
     {
      ARGPARSE_s_s(oUser, "user", NULL ),
      ARGPARSE_s_s(oDebug, "debug", NULL),
      ARGPARSE_s_s(oLogfile, "log-file", NULL),
+     ARGPARSE_s_n(oAssumeSingleThreaded, "assume-single-threaded", NULL),
      ARGPARSE_end()
     };
   int dummy_argc = 0;
@@ -78,6 +79,9 @@ _scute_read_conf (void)
           break;
         case oDebug: _scute_opt.debug_flags = 1; break;
         case oLogfile: break;
+        case oAssumeSingleThreaded:
+          _scute_opt.assume_single_threaded = 1;
+          break;
         case ARGPARSE_CONFFILE: break;
         default : pargs.err = ARGPARSE_PRINT_WARNING; break;
 	}
