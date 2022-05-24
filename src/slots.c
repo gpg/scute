@@ -37,6 +37,8 @@
 
 #include "debug.h"
 
+/* Maximum slots supported.  */
+#define MAX_SLOTS 4
 
 /* A session is just a slot identifier with a per-slot session
    identifier.  */
@@ -302,15 +304,19 @@ scute_slots_initialize (void)
 {
   gpg_error_t err;
   int slot_idx;
+  int i;
 
   err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
   if (err)
     return err;
 
-  /* Allocate a new slot for authentication.  */
-  err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
-  if (err)
-    scute_slots_finalize ();
+  /* Allocate new slots for authentication.  */
+  for (i = 0; i < MAX_SLOTS; i++)
+    {
+      err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
+      if (err)
+        scute_slots_finalize ();
+    }
 
   /* FIXME: Allocate a new slot for signing and decryption of
      email.  */
