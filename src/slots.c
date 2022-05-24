@@ -420,12 +420,25 @@ slots_update_slot (slot_iterator_t id)
     {
       err = scute_agent_check_status ();
       if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
-	slot_reset (id);
+        {
+          slot_reset (id);
+          return CKR_TOKEN_NOT_PRESENT;
+        }
       else if (err)
 	return scute_gpg_err_to_ck (err);
       else
 	return 0;
     }
+
+  return CKR_TOKEN_NOT_PRESENT;
+}
+
+/* Update the slot ID.  */
+static CK_RV
+slots_detect_slot (slot_iterator_t id)
+{
+  struct slot *slot = scute_table_data (slot_table, id);
+  gpg_error_t err;
 
   /* At this point, the card was or is removed, and we need to reopen
      the session, if possible.  */
@@ -482,8 +495,10 @@ slots_update_all (void)
       CK_RV err;
 
       err = slots_update_slot (id);
-      if (err)
-	return err;
+
+      /* FIXME: Only use the first slot for now.  */
+      if (id == 1 && err == CKR_TOKEN_NOT_PRESENT)
+        err = slots_detect_slot (id);
 
       id = scute_table_next (slot_table, id);
     }
