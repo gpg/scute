@@ -590,7 +590,7 @@ scute_attr_cert (struct cert *cert, const char *grip,
 
 
 gpg_error_t
-scute_attr_prv (struct cert *cert, key_info_t kinfo,
+scute_attr_prv (struct cert *cert, const char *grip,
                 CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp)
 {
   CK_RV err = 0;
@@ -627,12 +627,7 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
   CK_BBOOL obj_wrap_with_trusted = CK_FALSE;
   CK_BBOOL obj_always_authenticate = CK_FALSE;
 
-  if (kinfo->usage.sign || kinfo->usage.cert || kinfo->usage.auth)
-    obj_sign = CK_TRUE;
-
-  if (kinfo->usage.encr)
-    obj_decrypt = CK_TRUE;
-
+  obj_sign = CK_TRUE;
 
   err = asn1_get_subject (cert->cert_der, cert->cert_der_len,
 			  &subject_start, &subject_len);
@@ -702,7 +697,7 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
 
       snprintf (cka_id_buffer, sizeof cka_id_buffer, "%s %s",
                 *cert->certref ? cert->certref:"-",
-                kinfo->grip && *kinfo->grip? kinfo->grip : "?" );
+                grip && *grip? grip : "?" );
       err = attr_one (attr, &attr_count, CKA_ID,
                       cka_id_buffer, strlen (cka_id_buffer));
     }

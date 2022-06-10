@@ -44,7 +44,7 @@ typedef gpg_error_t (*cert_get_cb_t) (void *hook,
 				      CK_ULONG attr_countp);
 
 /* Create the attributes required for a new certificate object.  */
-gpg_error_t scute_gpgsm_get_cert (key_info_t kinfo,
+gpg_error_t scute_gpgsm_get_cert (const char *grip,
                                   cert_get_cb_t cert_get_cb, void *hook);
 
 #endif	/* GPGSM_H */

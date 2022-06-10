@@ -365,8 +365,184 @@ scute_agent_initialize (void)
 
   return err;
 }
+
+struct keyinfo_parm {
+  int is_scd;
+  gpg_error_t error;
+  struct keyinfo *list;
+};
+
+/* Callback function for agent_card_keylist.  */
+static gpg_error_t
+keyinfo_list_cb (void *opaque, const char *line)
+{
+  gpg_error_t err = 0;
+  struct keyinfo_parm *parm = opaque;
+  const char *keyword = line;
+  int keywordlen;
+  struct keyinfo *keyinfo = NULL;
+
+  for (keywordlen=0; *line && !spacep (line); line++, keywordlen++)
+    ;
+  while (spacep (line))
+    line++;
+
+  if (keywordlen == 7 && !memcmp (keyword, "KEYINFO", keywordlen))
+    {
+      const char *s;
+      int n;
+      struct keyinfo **l_p = &parm->list;
+
+      /* It's going to append the information at the end.  */
+      while ((*l_p))
+        l_p = &(*l_p)->next;
+
+      keyinfo = calloc (1, sizeof *keyinfo);
+      if (!keyinfo)
+        goto alloc_error;
+
+      for (n=0,s=line; hexdigitp (s); s++, n++)
+        ;
+
+      if (n != 40)
+        goto parm_error;
+
+      memcpy (keyinfo->grip, line, 40);
+      keyinfo->grip[40] = 0;
+
+      line = s;
+
+      if (!*line)
+        goto parm_error;
+
+      while (spacep (line))
+        line++;
+
+      if (*line++ != 'T')
+        {
+          if (!parm->is_scd)
+            {
+              /* It's not on card, skip the status line.  */
+              free (keyinfo);
+              return 0;
+            }
+          else
+            goto parm_error;
+        }
+
+      if (!*line)
+        goto parm_error;
+
+      while (spacep (line))
+        line++;
+
+      for (n=0,s=line; hexdigitp (s); s++, n++)
+        ;
+
+      if (!n)
+        goto skip;
+
+      keyinfo->serialno = malloc (n+1);
+      if (!keyinfo->serialno)
+        goto alloc_error;
+
+      memcpy (keyinfo->serialno, line, n);
+      keyinfo->serialno[n] = 0;
+
+      line = s;
+
+      if (!*line)
+        goto skip;
+
+      while (spacep (line))
+        line++;
+
+      if (!*line)
+        goto skip;
+
+      for (s = line; *s && !spacep (s); s++)
+        ;
+
+      keyinfo->keyref = malloc (s - line + 1);
+      if (!keyinfo->keyref)
+        goto alloc_error;
+      memcpy (keyinfo->keyref, line, s - line);
+      keyinfo->keyref[s - line] = 0;
+
+      while (spacep (s))
+        s++;
+
+      if (!*s || !parm->is_scd)
+        goto skip;
+
+      keyinfo->usage = strdup (s);
+      if (!keyinfo->usage)
+        goto alloc_error;
+
+    skip:
+      *l_p = keyinfo;
+    }
+
+  return err;
+
+ alloc_error:
+  free (keyinfo->serialno);
+  free (keyinfo->keyref);
+  free (keyinfo);
+  if (!parm->error)
+    parm->error = gpg_error_from_syserror ();
+  return 0;
+
+ parm_error:
+  free (keyinfo);
+  if (!parm->error)
+    parm->error = gpg_error (GPG_ERR_ASS_PARAMETER);
+  return 0;
+}
 
 
+void
+scute_agent_free_keyinfo (struct keyinfo *l)
+{
+  struct keyinfo *l_next;
+
+  for (; l; l = l_next)
+    {
+      l_next = l->next;
+      free (l->serialno);
+      free (l->keyref);
+      free (l->usage);
+      free (l);
+    }
+}
+
+gpg_error_t
+scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
+{
+  gpg_error_t err;
+
+  err = ensure_agent_connection ();
+  if (!err)
+    {
+      struct keyinfo_parm parm;
+
+      parm.is_scd = 0;
+      parm.error = 0;
+      parm.list = NULL;
+
+      err = assuan_transact (agent_ctx, "KEYINFO --list",
+                             NULL, NULL, /* No data call back    */
+                             NULL, NULL, /* No inquiry call back */
+                             keyinfo_list_cb, &parm);
+      if (!err && parm.error)
+        err = parm.error;
+      if (!err)
+        *keyinfo_p = parm.list;
+      else
+        scute_agent_free_keyinfo (parm.list);
+    }
+  return err;
+}
 
 /* Return a new malloced string by unescaping the string S.  Escaping
    is percent escaping and '+'/space mapping.  A binary nul will
@@ -481,53 +657,8 @@ scute_agent_release_card_info (struct agent_card_info_s *info)
   free (info->disp_lang);
   free (info->pubkey_url);
   free (info->login_data);
-  while (info->kinfo)
-    {
-      key_info_t ki = info->kinfo->next;
-      free (info->kinfo);
-      info->kinfo = ki;
-    }
 
   memset (info, 0, sizeof (*info));
-}
-
-
-/* Return the key info object for the key KEYREF.  If it is not found
- * NULL is returned.  */
-key_info_t
-scute_find_kinfo (agent_card_info_t info, const char *keyref)
-{
-  key_info_t kinfo;
-
-  for (kinfo = info->kinfo; kinfo; kinfo = kinfo->next)
-    if (!strcmp (kinfo->keyref, keyref))
-      return kinfo;
-  return NULL;
-}
-
-
-/* Create a new key info object with KEYREF.  All fields but the
- * keyref are zeroed out.  The created object is appended to the list
- * at INFO. */
-static key_info_t
-create_kinfo (agent_card_info_t info, const char *keyref)
-{
-  key_info_t kinfo, ki;
-
-  kinfo = calloc (1, sizeof *kinfo + strlen (keyref));
-  if (!kinfo)
-    return NULL;
-  strcpy (kinfo->keyref, keyref);
-
-  if (!info->kinfo)
-    info->kinfo = kinfo;
-  else
-    {
-      for (ki=info->kinfo; ki->next; ki = ki->next)
-        ;
-      ki->next = kinfo;
-    }
-  return kinfo;
 }
 
 
@@ -538,7 +669,6 @@ learn_status_cb (void *opaque, const char *line)
   agent_card_info_t parm = opaque;
   const char *keyword = line;
   int keywordlen;
-  key_info_t kinfo;
   const char *keyref;
   int i;
 
@@ -688,35 +818,6 @@ learn_status_cb (void *opaque, const char *line)
       else
         usage = "";
 
-      if (hexgrip_valid_p (hexgrip))
-        {
-          /* Check whether we already have an item for the keyref.  */
-          kinfo = scute_find_kinfo (parm, keyref);
-          if (!kinfo)  /* New entry.  */
-            {
-              kinfo = create_kinfo (parm, keyref);
-              if (!kinfo)
-                goto no_core;
-            }
-          else /* Existing entry - clear grip and usage.  */
-            {
-              *kinfo->grip = 0;
-              memset (&kinfo->usage, 0, sizeof kinfo->usage);
-            }
-
-          strncpy (kinfo->grip, hexgrip, sizeof kinfo->grip);
-          kinfo->grip[sizeof kinfo->grip -1] = 0;
-          for (; *usage; usage++)
-            {
-              switch (*usage)
-                {
-                case 's': kinfo->usage.sign = 1; break;
-                case 'c': kinfo->usage.cert = 1; break;
-                case 'a': kinfo->usage.auth = 1; break;
-                case 'e': kinfo->usage.encr = 1; break;
-                }
-            }
-        }
       free (line_buffer);
     }
   else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
@@ -752,7 +853,7 @@ learn_status_cb (void *opaque, const char *line)
 
 /* Call the agent to learn about a smartcard.  */
 gpg_error_t
-scute_agent_learn (struct agent_card_info_s *info)
+scute_agent_learn (const char *grip, struct agent_card_info_s *info)
 {
   gpg_error_t err;
   int has_opt_all = 0;
@@ -853,7 +954,7 @@ read_status_cb (void *opaque, const void *buffer, size_t length)
    GPG_ERR_CARD_REMOVED if no token is present, and an error code
    otherwise.  */
 gpg_error_t
-scute_agent_check_status (void)
+scute_agent_check_status (const char *grip)
 {
   static char last_flag;
   gpg_error_t err;
@@ -863,6 +964,8 @@ scute_agent_check_status (void)
   err = ensure_agent_connection ();
   if (err)
     return err;
+
+  /* FIXME:  use "SCD KEYINFO <GRIP>" to see it's available.  */
 
   /* First we look at the eventcounter to see if anything happened at
      all.  This is a low overhead function which won't even clutter a

@@ -80,6 +80,15 @@ typedef struct agent_card_info_s *agent_card_info_t;
 
 
 
+struct keyinfo
+{
+  struct keyinfo *next;
+  char grip[41];
+  char *serialno;
+  char *keyref;
+  char *usage; /* only available from "SCD KEYINFO" not "KEYINFO" */
+};
+
 /* Try to connect to the agent via socket.  Handle the server's
    initial greeting.  */
 gpg_error_t scute_agent_initialize (void);
@@ -88,21 +97,21 @@ gpg_error_t scute_agent_initialize (void);
    resources.  */
 void scute_agent_finalize (void);
 
+gpg_error_t scute_agent_keyinfo_list (struct keyinfo **l_p);
+void scute_agent_free_keyinfo (struct keyinfo *l);
 
 /* Check the agent status.  This returns 0 if a token is present,
    GPG_ERR_CARD_REMOVED if no token is present, and an error code
    otherwise.  */
-gpg_error_t scute_agent_check_status (void);
+gpg_error_t scute_agent_check_status (const char *grip);
 
 
 /* Call the agent to learn about a smartcard.  */
-gpg_error_t scute_agent_learn (struct agent_card_info_s *info);
+gpg_error_t scute_agent_learn (const char *grip,
+                               struct agent_card_info_s *info);
 
 /* Release the card info structure INFO.  */
 void scute_agent_release_card_info (struct agent_card_info_s *info);
-
-key_info_t scute_find_kinfo (agent_card_info_t info, const char *keyref);
-
 
 /* Sign the data DATA of length LEN with the key HEXGRIP and return
  * the signature in SIG_RESULT and SIG_LEN.  */
@@ -120,7 +129,7 @@ gpg_error_t scute_agent_decrypt (const char *hexgrip,
 gpg_error_t scute_agent_is_trusted (const char *fpr, bool *is_trusted);
 
 /* Try to get certificate for key numer NO.  */
-gpg_error_t scute_agent_get_cert (const char *certref, struct cert *cert);
+gpg_error_t scute_agent_get_cert (const char *grip, struct cert *cert);
 
 /* Get random bytes from the card. */
 gpg_error_t scute_agent_get_random (unsigned char *data, size_t len);

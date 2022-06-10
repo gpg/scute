@@ -47,7 +47,7 @@ struct search_cb_parm
   cert_get_cb_t cert_get_cb;
   void *hook;
   bool with_chain;
-  key_info_t kinfo;
+  const char *grip;
 };
 
 
@@ -63,7 +63,7 @@ search_cb (void *hook, struct cert *cert)
   /* Add the private key object only once.  */
   if (!ctx->found)
     {
-      err = scute_attr_prv (cert, ctx->kinfo, &attrp, &attr_countp);
+      err = scute_attr_prv (cert, ctx->grip, &attrp, &attr_countp);
       if (err)
 	return err;
 
@@ -85,7 +85,7 @@ search_cb (void *hook, struct cert *cert)
     scute_gpgsm_search_certs (KEYLIST_BY_FPR, cert->chain_id, search_cb, ctx);
 
   /* Turn this certificate into a certificate object.  */
-  err = scute_attr_cert (cert, ctx->kinfo->grip, &attrp, &attr_countp);
+  err = scute_attr_cert (cert, ctx->grip, &attrp, &attr_countp);
   if (err)
     return err;
 
@@ -110,34 +110,28 @@ search_cb (void *hook, struct cert *cert)
  * and ATTR_COUNTP, and for the private key object in PRV_ATTRP and
  * PRV_ATTR_COUNTP.  */
 gpg_error_t
-scute_gpgsm_get_cert (key_info_t kinfo, cert_get_cb_t cert_get_cb, void *hook)
+scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search_cb_parm search;
+  struct cert cert;
 
   search.found = false;
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
   search.with_chain = false;
-  search.kinfo = kinfo;
+  search.grip = grip;
 
-  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: keyref='%s'", kinfo->keyref);
+  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: grip='%s'", grip);
 
-  /* If the cert is requested from the card, we try to get it from
-   * the card as well.  */
-  if (kinfo->keyref)
-    {
-      struct cert cert;
 
-      memset (&cert, '\0', sizeof (cert));
-      err = scute_agent_get_cert (kinfo->keyref, &cert);
-      if (!err)
-        return search_cb (&search, &cert);
-    }
+  memset (&cert, '\0', sizeof (cert));
+  err = scute_agent_get_cert (grip, &cert);
+  if (!err)
+    return search_cb (&search, &cert);
 
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
-  err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, kinfo->grip,
-                                  search_cb, &search);
+  err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
   return err;
 }
