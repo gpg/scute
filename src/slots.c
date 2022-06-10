@@ -651,7 +651,7 @@ slot_token_serial (slot_iterator_t id)
   struct slot *slot = scute_table_data (slot_table, id);
 
   /* slots_update() makes sure this is valid.  */
-  return slot->info.dispserialno? slot->info.dispserialno : slot->info.serialno;
+  return slot->info.serialno;
 }
 
 

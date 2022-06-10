@@ -476,7 +476,6 @@ scute_agent_release_card_info (struct agent_card_info_s *info)
     return;
 
   free (info->serialno);
-  free (info->dispserialno);
   free (info->cardtype);
   free (info->disp_name);
   free (info->disp_lang);
@@ -552,11 +551,6 @@ learn_status_cb (void *opaque, const char *line)
     {
       free (parm->serialno);
       parm->serialno = store_serialno (line);
-    }
-  else if (keywordlen == 13 && !memcmp (keyword, "$DISPSERIALNO", keywordlen))
-    {
-      free (parm->dispserialno);
-      parm->dispserialno = unescape_status_string (line);
     }
   else if (keywordlen == 7 && !memcmp (keyword, "APPTYPE", keywordlen))
     {
@@ -803,17 +797,6 @@ scute_agent_learn (struct agent_card_info_s *info)
                                  default_inq_cb, NULL,
                                  learn_status_cb, info);
         }
-    }
-  if (!err)
-    {
-      /* Also try to get the human readable serial number.  */
-      err = assuan_transact (agent_ctx, "SCD GETATTR $DISPSERIALNO",
-                             NULL, NULL,
-                             default_inq_cb, NULL,
-                             learn_status_cb, info);
-      if (gpg_err_code (err) == GPG_ERR_INV_NAME
-          || gpg_err_code (err) == GPG_ERR_UNSUPPORTED_OPERATION)
-        err = 0; /* Not implemented or GETATTR not supported.  */
     }
 
   return check_broken_pipe (err);
