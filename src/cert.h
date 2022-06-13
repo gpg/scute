@@ -74,11 +74,10 @@ struct cert
   /* True if we started to fill in a certificate.  */
   bool valid;
 
-  /* The certifciate reference if retrieved from a card or an empty
-   * string if not known.  Example value: "OPENPGP.3".  This is
-   * required because we do not always have access to a corresponding
-   * key_info_t object.  */
-  char certref[25];
+  /* The keygrip if retrieved from a card or an empty string if not
+   * known.  This is required because we do not always have access to
+   * a corresponding key_info_t object.  */
+  char grip[41];
 
 #if 1
   /* We disable some elements, because they are easy to get from gpgsm
