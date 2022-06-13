@@ -1546,9 +1546,9 @@ get_cert_data_cb (void *opaque, const void *data, size_t data_len)
 }
 
 
-/* Try to get certificate for CERTREF.  */
+/* Try to get certificate for GRIP.  */
 gpg_error_t
-scute_agent_get_cert (const char *certref, struct cert *cert)
+scute_agent_get_cert (const char *grip, struct cert *cert)
 {
   gpg_error_t err;
   char cmd[150];
@@ -1562,7 +1562,7 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
   if (err)
     return err;
 
-  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", certref);
+  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", grip);
   err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
 			 NULL, NULL, NULL, NULL);
   err = check_broken_pipe (err);
@@ -1584,8 +1584,7 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
 
   cert->cert_der = cert_s.cert_der;
   cert->cert_der_len = cert_s.cert_der_len;
-  strncpy (cert->certref, certref, sizeof cert->certref -1);
-  cert->certref[sizeof cert->certref - 1] = 0;
+  strncpy (cert->grip, grip, sizeof cert->grip);
 
   return 0;
 }
