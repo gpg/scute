@@ -1027,7 +1027,6 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   unsigned int sig_len;
   CK_BYTE key_id[100];
   int i;
-  const char *keyref;
 
   if (!session->signing_key)
     return CKR_OPERATION_NOT_INITIALIZED;
@@ -1065,13 +1064,9 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
   key_id[attr[i].ulValueLen] = 0;
   DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
-  for (keyref=key_id; *keyref && *keyref != ' '; keyref++)
-    ;
-  if (*keyref)
-    keyref++;  /* Point to the grip.  */
 
   sig_len = *pulSignatureLen;
-  err = scute_agent_sign (keyref, session->signing_mechanism_type,
+  err = scute_agent_sign (key_id, session->signing_mechanism_type,
                           pData, ulDataLen, pSignature, &sig_len);
   /* Take care of error codes which are not mapped by default.  */
   if (gpg_err_code (err) == GPG_ERR_INV_LENGTH)
@@ -1148,7 +1143,6 @@ session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
   CK_OBJECT_CLASS key_class = CKO_PRIVATE_KEY;
   CK_BYTE key_id[100];
   int i;
-  const char *keyref;
   unsigned int plaindatalen;
 
   slot = scute_table_data (slot_table, slotid);
@@ -1190,13 +1184,9 @@ session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
   strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
   key_id[attr[i].ulValueLen] = 0;
   DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
-  for (keyref=key_id; *keyref && *keyref != ' '; keyref++)
-    ;
-  if (*keyref)
-    keyref++;  /* Point to the grip.  */
 
   plaindatalen = *r_plaindatalen;
-  err = scute_agent_decrypt (keyref, encdata, encdatalen,
+  err = scute_agent_decrypt (key_id, encdata, encdatalen,
                              r_plaindata, &plaindatalen);
   DEBUG (DBG_INFO, "agent returned gpg error %d datalen=%u", err, plaindatalen);
   /* Take care of error codes which are not mapped by default.  */
