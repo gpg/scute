@@ -491,9 +491,7 @@ slots_update_all (void)
   scute_agent_serialno ();      /* Rescan the devices.  */
   while (!scute_table_last (slot_table, id))
     {
-      CK_RV err;
-
-      err = slots_update_slot (id);
+      slots_update_slot (id);
       id = scute_table_next (slot_table, id);
     }
 
@@ -570,6 +568,7 @@ const char *
 slot_token_manufacturer (slot_iterator_t id)
 {
   /* FIXME */
+  (void)id;
   return "test_card";
 }
 
@@ -605,6 +604,7 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 		    CK_BYTE *fw_major, CK_BYTE *fw_minor)
 {
   /* FIXME */
+  (void)id;
   *hw_major = 0;
   *hw_minor = 0;
   *fw_major = 0;
@@ -617,6 +617,8 @@ void
 slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 {
   /* FIXME */
+  (void)id;
+
   *max = 31;
 
   /* FIXME: This is true at least for the user pin (CHV1 and CHV2).  */
@@ -628,6 +630,8 @@ slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 void
 slot_token_pincount (slot_iterator_t id, int *max, int *len)
 {
+  (void)id;
+
   *max = 3;
   /* FIXME */
   *len = 1;
@@ -646,6 +650,8 @@ bool
 slot_token_has_rng (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
+
+  (void)slot;
 
   /* FIXME */
   return 1;

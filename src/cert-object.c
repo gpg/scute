@@ -366,7 +366,7 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
 
 static gpg_error_t
 attr_one (CK_ATTRIBUTE_PTR attr, CK_ULONG *attr_count,
-	  CK_ATTRIBUTE_TYPE type, const CK_VOID_PTR val, CK_ULONG size)
+	  CK_ATTRIBUTE_TYPE type, CK_VOID_PTR val, CK_ULONG size)
 {
   CK_ULONG i = *attr_count;
   attr[i].type = type;
@@ -481,7 +481,7 @@ scute_attr_cert (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_ID, grip, strlen (grip));
+    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_CERTIFICATE_TYPE,
@@ -656,7 +656,7 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_ID, grip, strlen (grip));
+    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_KEY_TYPE,

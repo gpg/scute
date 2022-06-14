@@ -34,51 +34,6 @@
 #include <stdbool.h>
 
 #include "cert.h"
-
-
-/* The information structure for a smart card.  */
-struct agent_card_info_s
-{
-  char *serialno;	/* Malloced hex string.  */
-  char *cardtype;       /* Null or malloced string with the card type.  */
-  char *disp_name;	/* Malloced.  */
-  char *disp_lang;	/* Malloced.  */
-  int  disp_sex;	/* 0 = unspecified, 1 = male, 2 = female.  */
-  char *pubkey_url;	/* Malloced.  */
-  char *login_data;	/* Malloced.  */
-  char *private_do[4];	/* Malloced.  */
-  char cafpr1valid;
-  char cafpr2valid;
-  char cafpr3valid;
-  char cafpr1[20];
-  char cafpr2[20];
-  char cafpr3[20];
-  key_info_t kinfo;     /* Linked list with all keypair related data.  */
-  char fpr1valid;       /* Duplicated info for the legacy parts of the code. */
-  char fpr2valid;
-  char fpr3valid;
-  char fpr1[20];
-  char fpr2[20];
-  char fpr3[20];
-  unsigned int fpr1time;
-  unsigned int fpr2time;
-  unsigned int fpr3time;
-  unsigned long sig_counter;
-  int chv1_cached;	/* True if a PIN is not required for each
-			   signing.  Note that the gpg-agent might
-			   cache it anyway.  */
-  int chvmaxlen[3];	/* Maximum allowed length of a CHV.  */
-  int chvretry[3];	/* Allowed retries for the CHV; 0 = blocked.  */
-  int rng_available;    /* True if the GET CHALLENGE operation
-                           is supported. */
-  int is_piv;           /* True if this is a PIV card or has PIV as an
-                         * additional application.  */
-  int is_opgp;          /* True if this is a OpenPGP card or has
-                         * OpenPGP as an additional application.  */
-};
-typedef struct agent_card_info_s *agent_card_info_t;
-
-
 
 struct keyinfo
 {
@@ -100,19 +55,6 @@ void scute_agent_finalize (void);
 gpg_error_t scute_agent_keyinfo_list (struct keyinfo **l_p);
 void scute_agent_free_keyinfo (struct keyinfo *l);
 
-/* Check the agent status.  This returns 0 if a token is present,
-   GPG_ERR_CARD_REMOVED if no token is present, and an error code
-   otherwise.  */
-gpg_error_t scute_agent_check_status (const char *grip);
-
-
-/* Call the agent to learn about a smartcard.  */
-gpg_error_t scute_agent_learn (const char *grip,
-                               struct agent_card_info_s *info);
-
-/* Release the card info structure INFO.  */
-void scute_agent_release_card_info (struct agent_card_info_s *info);
-
 /* Sign the data DATA of length LEN with the key HEXGRIP and return
  * the signature in SIG_RESULT and SIG_LEN.  */
 gpg_error_t scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
@@ -133,5 +75,11 @@ gpg_error_t scute_agent_get_cert (const char *grip, struct cert *cert);
 
 /* Get random bytes from the card. */
 gpg_error_t scute_agent_get_random (unsigned char *data, size_t len);
+
+gpg_error_t scute_agent_keyinfo_list (struct keyinfo **keyinfo_p);
+
+gpg_error_t scute_agent_keyinfo (const char *grip, struct keyinfo **keyinfo_p);
+
+gpg_error_t scute_agent_serialno (void);
 
 #endif	/* AGENT_H */

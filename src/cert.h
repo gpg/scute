@@ -74,11 +74,6 @@ struct cert
   /* True if we started to fill in a certificate.  */
   bool valid;
 
-  /* The keygrip if retrieved from a card or an empty string if not
-   * known.  This is required because we do not always have access to
-   * a corresponding key_info_t object.  */
-  char grip[41];
-
 #if 1
   /* We disable some elements, because they are easy to get from gpgsm
      but hard to get from the card directly.  These fields are only
