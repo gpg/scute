@@ -1,4 +1,0 @@
-@set UPDATED 11 August 2020
-@set UPDATED-MONTH August 2020
-@set EDITION 1.6.1-beta10
-@set VERSION 1.6.1-beta10
