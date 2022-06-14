@@ -436,7 +436,7 @@ keyinfo_list_cb (void *opaque, const char *line)
 
       if (*line++ != 'T')
         {
-          if (!parm->require_card)
+          if (parm->require_card)
             {
               /* It's not on card, skip the status line.  */
               free (keyinfo);
