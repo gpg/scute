@@ -135,8 +135,8 @@ struct slot
   /* The keygrip to the key in hex string.  */
   char grip[41];
 
-  /* FIXME depricating. The info about the current token.  */
-  struct agent_card_info_s info;
+  /* The serial number.  */
+  char serialno[33];
 };
 
 
@@ -325,7 +325,21 @@ scute_slots_initialize (void)
       err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
         scute_slots_finalize ();
-      memcpy (slot->grip, ki->grip, 41);
+      else
+        {
+          memset (slot->serialno, 0, sizeof (slot->serialno));
+          if (ki->serialno)
+            {
+              int len;
+
+              len = strlen (ki->serialno);
+              if (len >= 32)
+                memcpy (slot->serialno, &ki->serialno[len-32], 32);
+              else
+                memcpy (slot->serialno, ki->serialno, len);
+            }
+          memcpy (slot->grip, ki->grip, 41);
+        }
     }
 
   /* FIXME: Allocate a new slot for signing and decryption of
@@ -531,7 +545,7 @@ const char *
 slot_token_label (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
-  return slot->grip;
+  return slot->serialno;
 }
 
 
@@ -540,7 +554,7 @@ const char *
 slot_token_manufacturer (slot_iterator_t id)
 {
   /* FIXME */
-  return "test card";
+  return "test_card";
 }
 
 
@@ -560,12 +574,12 @@ slot_token_application (slot_iterator_t id)
 }
 
 
-/* Get the serial number of the token.  */
+/* Get the LSB of serial number of the token.  */
 const char *
 slot_token_serial (slot_iterator_t id)
 {
-  /* FIXME */
-  return "D276000124010200F517000000010000";
+  struct slot *slot = scute_table_data (slot_table, id);
+  return &slot->serialno[16];
 }
 
 
