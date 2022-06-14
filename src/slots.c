@@ -298,6 +298,9 @@ slot_alloc (void **data_r, void *hook)
 }
 
 
+static gpg_error_t add_object (void *hook, CK_ATTRIBUTE_PTR attrp,
+			       CK_ULONG attr_countp);
+
 /* Initialize the slot list.  */
 CK_RV
 scute_slots_initialize (void)
@@ -327,7 +330,10 @@ scute_slots_initialize (void)
 
       err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
-        scute_slots_finalize ();
+	{
+	  scute_slots_finalize ();
+	  break;
+	}
       else
         {
           memset (slot->serialno, 0, sizeof (slot->serialno));
@@ -342,6 +348,13 @@ scute_slots_initialize (void)
                 memcpy (slot->serialno, ki->serialno, len);
             }
           memcpy (slot->grip, ki->grip, 41);
+
+	  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
+	  if (err)
+	    {
+	      scute_table_dealloc (slot_table, &slot_idx);
+	      err = 0;
+	    }
         }
     }
 
@@ -415,15 +428,10 @@ slot_init (slot_iterator_t id)
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slot_table, id);
 
-  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
-  if (err)
-    goto leave;
-
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
 
- leave:
   if (err)
     slot_reset (id);
 
