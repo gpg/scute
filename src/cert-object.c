@@ -656,11 +656,12 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
-
+    err = attr_one (attr, &attr_count, CKA_LABEL, "OPENPGP.3", 9);
   if (!err)
     err = attr_one (attr, &attr_count, CKA_KEY_TYPE,
                     &obj_key_type, sizeof obj_key_type);
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
 
 #if 0
   /* For now, we disable these fields.  We can parse them from the
