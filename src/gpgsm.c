@@ -133,5 +133,10 @@ scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
   err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
+  if (!err)
+    {
+      if (!search.found)
+        err = gpg_error (GPG_ERR_NOT_FOUND);
+    }
   return err;
 }

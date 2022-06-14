@@ -322,6 +322,9 @@ scute_slots_initialize (void)
       struct slot *slot;
       int slot_idx;
 
+      if (strcmp (ki->keyref, "OPENPGP.3"))
+        continue;
+
       err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
         scute_slots_finalize ();
@@ -436,6 +439,9 @@ slots_update_slot (slot_iterator_t id)
   struct slot *slot = scute_table_data (slot_table, id);
   struct keyinfo *keyinfo = NULL;
 
+  if (slot->status == SLOT_STATUS_DEAD)
+    return CKR_TOKEN_NOT_PRESENT;
+
   err = scute_agent_keyinfo (slot->grip, &keyinfo);
   if (slot->token_present)
     {
@@ -455,8 +461,18 @@ slots_update_slot (slot_iterator_t id)
       scute_agent_free_keyinfo (keyinfo);
       if (!err)
         {
-          slot_init (id);
-          return 0;
+          err = slot_init (id);
+          if (!err)
+            {
+              DEBUG (DBG_INFO, "Found a key '%s'", slot->grip);
+              return 0;
+            }
+          else
+            {
+              /* Key is available, but no cert.  No way to use.  */
+              slot->status = SLOT_STATUS_DEAD;
+              return CKR_TOKEN_NOT_PRESENT;
+            }
         }
       else
         return CKR_TOKEN_NOT_PRESENT;

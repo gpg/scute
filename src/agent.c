@@ -397,7 +397,7 @@ scute_agent_serialno (void)
   if (err)
     return err;
 
-  err = assuan_transact (agent_ctx, "SERIALNO --all",
+  err = assuan_transact (agent_ctx, "SCD SERIALNO --all",
                          NULL, NULL, NULL, NULL,
                          get_serialno_cb, NULL);
   return err;
@@ -587,7 +587,7 @@ scute_agent_keyinfo (const char *grip, struct keyinfo **keyinfo_p)
   gpg_error_t err;
   char cmd[150];
 
-  snprintf (cmd, sizeof (cmd), "KEYINFO %s", grip);
+  snprintf (cmd, sizeof (cmd), "SCD KEYINFO %s", grip);
 
   err = ensure_agent_connection ();
   if (!err)
