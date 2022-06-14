@@ -366,8 +366,45 @@ scute_agent_initialize (void)
   return err;
 }
 
+static gpg_error_t
+get_serialno_cb (void *opaque, const char *line)
+{
+  gpg_error_t err = 0;
+  const char *keyword = line;
+  int keywordlen;
+
+  (void)opaque;
+  for (keywordlen=0; *line && !spacep (line); line++, keywordlen++)
+    ;
+  while (spacep (line))
+    line++;
+
+  if (keywordlen == 8 && !memcmp (keyword, "SERIALNO", keywordlen))
+    ;
+  else if (keywordlen == 12 && !memcmp (keyword, "PINCACHE_PUT", keywordlen))
+    ;
+
+  return err;
+}
+
+/* Call the agent to get the list of devices.  */
+gpg_error_t
+scute_agent_serialno (void)
+{
+  gpg_error_t err = 0;
+
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
+  err = assuan_transact (agent_ctx, "SERIALNO --all",
+                         NULL, NULL, NULL, NULL,
+                         get_serialno_cb, NULL);
+  return err;
+}
+
 struct keyinfo_parm {
-  int is_scd;
+  int require_card;
   gpg_error_t error;
   struct keyinfo *list;
 };
@@ -420,7 +457,7 @@ keyinfo_list_cb (void *opaque, const char *line)
 
       if (*line++ != 'T')
         {
-          if (!parm->is_scd)
+          if (!parm->require_card)
             {
               /* It's not on card, skip the status line.  */
               free (keyinfo);
@@ -472,7 +509,7 @@ keyinfo_list_cb (void *opaque, const char *line)
       while (spacep (s))
         s++;
 
-      if (!*s || !parm->is_scd)
+      if (!*s || !parm->require_card)
         goto skip;
 
       keyinfo->usage = strdup (s);
@@ -526,11 +563,42 @@ scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
     {
       struct keyinfo_parm parm;
 
-      parm.is_scd = 0;
+      parm.require_card = 1;
       parm.error = 0;
       parm.list = NULL;
 
       err = assuan_transact (agent_ctx, "KEYINFO --list",
+                             NULL, NULL, /* No data call back    */
+                             NULL, NULL, /* No inquiry call back */
+                             keyinfo_list_cb, &parm);
+      if (!err && parm.error)
+        err = parm.error;
+      if (!err)
+        *keyinfo_p = parm.list;
+      else
+        scute_agent_free_keyinfo (parm.list);
+    }
+  return err;
+}
+
+gpg_error_t
+scute_agent_keyinfo (const char *grip, struct keyinfo **keyinfo_p)
+{
+  gpg_error_t err;
+  char cmd[150];
+
+  snprintf (cmd, sizeof (cmd), "KEYINFO %s", grip);
+
+  err = ensure_agent_connection ();
+  if (!err)
+    {
+      struct keyinfo_parm parm;
+
+      parm.require_card = 1;
+      parm.error = 0;
+      parm.list = NULL;
+
+      err = assuan_transact (agent_ctx, cmd,
                              NULL, NULL, /* No data call back    */
                              NULL, NULL, /* No inquiry call back */
                              keyinfo_list_cb, &parm);

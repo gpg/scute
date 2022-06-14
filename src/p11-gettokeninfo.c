@@ -52,7 +52,7 @@ C_GetTokenInfo (CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
       goto out;
     }
 
-  scute_copy_string (pInfo->label, slot_token_label (slot), 32);
+  scute_copy_string (pInfo->label, slot_token_label (slot), 41);
   scute_copy_string (pInfo->manufacturerID,
 		     slot_token_manufacturer (slot), 32);
   scute_copy_string (pInfo->model, slot_token_application (slot), 16);
