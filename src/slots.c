@@ -300,6 +300,8 @@ slot_alloc (void **data_r, void *hook)
 
 static gpg_error_t add_object (void *hook, CK_ATTRIBUTE_PTR attrp,
 			       CK_ULONG attr_countp);
+static gpg_error_t slot_init (slot_iterator_t id);
+
 
 /* Initialize the slot list.  */
 CK_RV
@@ -350,6 +352,8 @@ scute_slots_initialize (void)
           memcpy (slot->grip, ki->grip, 41);
 
 	  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
+          if (!err)
+            err = slot_init (slot_idx);
 	  if (err)
 	    {
 	      scute_table_dealloc (slot_table, &slot_idx);
@@ -437,75 +441,6 @@ slot_init (slot_iterator_t id)
 
   return err;
 }
-
-
-/* Update the slot ID.  */
-CK_RV
-slots_update_slot (slot_iterator_t id)
-{
-  gpg_error_t err;
-  struct slot *slot = scute_table_data (slot_table, id);
-  struct keyinfo *keyinfo = NULL;
-
-  if (slot->status == SLOT_STATUS_DEAD)
-    return CKR_TOKEN_NOT_PRESENT;
-
-  err = scute_agent_keyinfo (slot->grip, &keyinfo);
-  if (slot->token_present)
-    {
-      scute_agent_free_keyinfo (keyinfo);
-      if (gpg_err_code (err) == GPG_ERR_NOT_FOUND)
-        {
-          slot_reset (id);
-          return CKR_TOKEN_NOT_PRESENT;
-        }
-      else if (err)
-	return scute_gpg_err_to_ck (err);
-      else
-	return 0;
-    }
-  else
-    {
-      scute_agent_free_keyinfo (keyinfo);
-      if (!err)
-        {
-          err = slot_init (id);
-          if (!err)
-            {
-              DEBUG (DBG_INFO, "Found a key '%s'", slot->grip);
-              return 0;
-            }
-          else
-            {
-              /* Key is available, but no cert.  No way to use.  */
-              slot->status = SLOT_STATUS_DEAD;
-              return CKR_TOKEN_NOT_PRESENT;
-            }
-        }
-      else
-        return CKR_TOKEN_NOT_PRESENT;
-    }
-}
-
-/* Update the slot list by finding new devices.  Please note that
-   Mozilla NSS currently assumes that the slot list never shrinks (see
-   TODO file for a discussion).  This is the only function allowed to
-   manipulate the slot list.  */
-CK_RV
-slots_update_all (void)
-{
-  slot_iterator_t id = scute_table_first (slot_table);
-
-  scute_agent_serialno ();      /* Rescan the devices.  */
-  while (!scute_table_last (slot_table, id))
-    {
-      slots_update_slot (id);
-      id = scute_table_next (slot_table, id);
-    }
-
-  return CKR_OK;
-}
-
 
 /* Begin iterating over the list of slots.  */
 CK_RV

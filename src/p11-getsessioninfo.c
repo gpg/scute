@@ -49,10 +49,6 @@ C_GetSessionInfo (CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
   if (err)
     goto out;
 
-  err = slots_update_slot (slot);
-  if (err)
-    goto out;
-
   /* We have to re-lookup the session handle, as it might just have
      become invalid.  */
   err = slots_lookup_session (hSession, &slot, &session);

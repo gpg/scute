@@ -55,7 +55,8 @@ C_GetSlotList (CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList,
 
   if (pSlotList == NULL_PTR)
     {
-      err = slots_update_all ();
+      scute_slots_finalize ();
+      err = scute_slots_initialize ();
       if (err)
 	goto out;
     }

@@ -112,13 +112,5 @@ C_Initialize (CK_VOID_PTR pInitArgs)
       return scute_gpg_err_to_ck (err);
     }
 
-  err = scute_slots_initialize ();
-  if (err)
-    {
-      scute_agent_finalize ();
-      scute_locking_finalize ();
-      return err;
-    }
-
   return err;
 }
