@@ -681,6 +681,7 @@ mechanism_get_info (slot_iterator_t id, mechanism_iterator_t mid)
 
 
 /* Session management.  */
+static int active_sessions;
 
 /* Create a new session.  */
 CK_RV
@@ -713,6 +714,7 @@ slot_create_session (slot_iterator_t id, session_iterator_t *session,
   session_p->decryption_key = CK_INVALID_HANDLE;
 
   *session = SESSION_BUILD_ID (id, tsid);
+  active_sessions++;
 
   return CKR_OK;
 }
@@ -754,6 +756,7 @@ slot_close_session (slot_iterator_t id, session_iterator_t sid)
   if (!scute_table_used (slot->sessions))
     slot->login = SLOT_LOGIN_PUBLIC;
 
+  active_sessions--;
   return CKR_OK;
 }
 
@@ -1135,4 +1138,15 @@ session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
     session->decryption_key = 0;
   DEBUG (DBG_INFO, "leaving decrypt with rv=%lu", rv);
   return rv;
+}
+
+CK_RV
+scute_slots_rescan_if_no_sessions (void)
+{
+  if (active_sessions == 0)
+    {
+      scute_slots_finalize ();
+      scute_slots_initialize ();
+    }
+  return CKR_OK;
 }
