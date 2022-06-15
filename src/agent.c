@@ -559,37 +559,6 @@ scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
     }
   return err;
 }
-
-gpg_error_t
-scute_agent_keyinfo (const char *grip, struct keyinfo **keyinfo_p)
-{
-  gpg_error_t err;
-  char cmd[150];
-
-  snprintf (cmd, sizeof (cmd), "SCD KEYINFO %s", grip);
-
-  err = ensure_agent_connection ();
-  if (!err)
-    {
-      struct keyinfo_parm parm;
-
-      parm.require_card = 1;
-      parm.error = 0;
-      parm.list = NULL;
-
-      err = assuan_transact (agent_ctx, cmd,
-                             NULL, NULL, /* No data call back    */
-                             NULL, NULL, /* No inquiry call back */
-                             keyinfo_list_cb, &parm);
-      if (!err && parm.error)
-        err = parm.error;
-      if (!err)
-        *keyinfo_p = parm.list;
-      else
-        scute_agent_free_keyinfo (parm.list);
-    }
-  return err;
-}
 
 /* Return a new malloced string by unescaping the string S.  Escaping
    is percent escaping and '+'/space mapping.  A binary nul will
@@ -1255,7 +1224,6 @@ scute_agent_get_random (unsigned char *data, size_t len)
     err = check_broken_pipe (err);
     return err;
 }
-
 
 void
 scute_agent_finalize (void)

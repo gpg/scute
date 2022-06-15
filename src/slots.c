@@ -311,24 +311,22 @@ scute_slots_initialize (void)
   struct keyinfo *keyinfo = NULL;
   struct keyinfo *ki;
 
-  err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
+  err = scute_agent_serialno ();
   if (err)
-    return err;
+    return scute_gpg_err_to_ck (err);
 
   err = scute_agent_keyinfo_list (&keyinfo);
   if (err)
-    {
-      scute_slots_finalize ();
-      return scute_gpg_err_to_ck (err);
-    }
+    return scute_gpg_err_to_ck (err);
+
+  err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
+  if (err)
+    return err;
 
   for (ki = keyinfo; ki; ki = ki->next)
     {
       struct slot *slot;
       int slot_idx;
-
-      if (strcmp (ki->keyref, "OPENPGP.3"))
-        continue;
 
       err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
@@ -361,9 +359,6 @@ scute_slots_initialize (void)
 	    }
         }
     }
-
-  /* FIXME: Allocate a new slot for signing and decryption of
-     email.  */
 
   scute_agent_free_keyinfo (keyinfo);
   return scute_gpg_err_to_ck (err);
@@ -512,7 +507,7 @@ slot_token_manufacturer (slot_iterator_t id)
 {
   /* FIXME */
   (void)id;
-  return "test_card";
+  return "scdaemon";
 }
 
 
@@ -528,7 +523,7 @@ slot_token_application (slot_iterator_t id)
   /* slots_update() makes sure this is correct.  */
 
   /* FIXME */
-  return "OpenPGP";
+  return "gpg-agent";
 }
 
 
@@ -796,7 +791,7 @@ session_get_rw (slot_iterator_t id, session_iterator_t sid)
 
 /* Get the login state from the slot ID.  */
 slot_login_t
-slot_get_status (slot_iterator_t id)
+slot_get_login_status (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
 

@@ -481,7 +481,7 @@ scute_attr_cert (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_LABEL, "OPENPGP.3", 9);
+    err = attr_one (attr, &attr_count, CKA_LABEL, "Scute", 5);
   if (!err)
     err = attr_one (attr, &attr_count, CKA_CERTIFICATE_TYPE,
                     &obj_cert_type, sizeof obj_cert_type);
@@ -658,7 +658,7 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    err = attr_one (attr, &attr_count, CKA_LABEL, "OPENPGP.3", 9);
+    err = attr_one (attr, &attr_count, CKA_LABEL, "Scute", 5);
   if (!err)
     err = attr_one (attr, &attr_count, CKA_KEY_TYPE,
                     &obj_key_type, sizeof obj_key_type);

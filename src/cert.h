@@ -40,33 +40,6 @@
 
 
 
-/* An object to store information pertaining to a keypair as stored on
- * a card.  This is commonly used as a linked list of all keys known
- * for a card.  */
-struct key_info_s
-{
-  struct key_info_s *next;
-
-  char grip[41];/* The keygrip as hex encoded string.  */
-
-  unsigned char xflag;   /* Temporary flag to help processing a list. */
-
-  /* The three next items are mostly useful for OpenPGP cards.  */
-  unsigned char fprlen;  /* Use length of the next item.  */
-  unsigned char fpr[32]; /* The binary fingerprint of length FPRLEN.  */
-  unsigned long created; /* The time the key was created.  */
-  struct {
-    unsigned int sign:1;
-    unsigned int cert:1;
-    unsigned int auth:1;
-    unsigned int encr:1;
-  } usage;
-
-  char keyref[1];        /* String with the keyref (e.g. OPENPGP.1).  */
-};
-typedef struct key_info_s *key_info_t;
-
-
 /* A certificate structure holds all information of a certificate
    during a certificate search.  */
 struct cert

@@ -62,15 +62,6 @@ CK_RV scute_slots_initialize (void);
 /* Finalize the slot list.  */
 void scute_slots_finalize (void);
 
-/* Update the slot list by finding new devices.  Please note that
-   Mozilla NSS currently assumes that the slot list never shrinks (see
-   TODO file for a discussion).  This is the only function allowed to
-   manipulate the slot list.  */
-CK_RV slots_update_all (void);
-
-/* Update the slot SLOT.  */
-CK_RV slots_update_slot (slot_iterator_t id);
-
 /* Begin iterating over the list of slots.  If succeeds, will be
    followed up by a slot_iterate_end.  */
 CK_RV slots_iterate_first (slot_iterator_t *slot);
@@ -166,7 +157,7 @@ CK_RV slot_close_all_sessions (slot_iterator_t id);
 bool session_get_rw (slot_iterator_t id, session_iterator_t sid);
 
 /* Get the login state from the slot ID.  */
-slot_login_t slot_get_status (slot_iterator_t id);
+slot_login_t slot_get_login_status (slot_iterator_t id);
 
 
 

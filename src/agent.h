@@ -78,8 +78,6 @@ gpg_error_t scute_agent_get_random (unsigned char *data, size_t len);
 
 gpg_error_t scute_agent_keyinfo_list (struct keyinfo **keyinfo_p);
 
-gpg_error_t scute_agent_keyinfo (const char *grip, struct keyinfo **keyinfo_p);
-
 gpg_error_t scute_agent_serialno (void);
 
 #endif	/* AGENT_H */
