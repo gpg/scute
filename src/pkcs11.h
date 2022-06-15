@@ -665,6 +665,7 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_ECDH1_DERIVE		(0x1050UL)
 #define CKM_ECDH1_COFACTOR_DERIVE	(0x1051UL)
 #define CKM_ECMQV_DERIVE		(0x1052UL)
+#define CKM_EDDSA			(0x1057UL)
 #define CKM_JUNIPER_KEY_GEN		(0x1060UL)
 #define CKM_JUNIPER_ECB128		(0x1061UL)
 #define CKM_JUNIPER_CBC128		(0x1062UL)
@@ -716,6 +717,13 @@ struct ck_mechanism_info
 #define CKF_WRAP		(1UL << 17)
 #define CKF_UNWRAP		(1UL << 18)
 #define CKF_DERIVE		(1UL << 19)
+#define CKF_EC_F_P		(1UL << 20)
+#define CKF_EC_F_2M		(1UL << 21)
+#define CKF_EC_PARAMETERS	(1UL << 22)
+#define CKF_EC_OID		(1UL << 23)
+#define CKF_EC_UNCOMPRESS	(1UL << 24)
+#define CKF_EC_COMPRESS		(1UL << 25)
+#define CKF_EC_CURVENAME	(1UL << 26)
 #define CKF_EXTENSION		(1UL << 31)
 
 
