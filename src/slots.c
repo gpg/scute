@@ -313,7 +313,10 @@ scute_slots_initialize (void)
 
   err = scute_agent_serialno ();
   if (err)
-    return scute_gpg_err_to_ck (err);
+    {
+      if (gpg_err_code (err) != GPG_ERR_ENODEV)
+	return scute_gpg_err_to_ck (err);
+    }
 
   err = scute_agent_keyinfo_list (&keyinfo);
   if (err)
