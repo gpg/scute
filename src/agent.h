@@ -40,8 +40,6 @@ struct keyinfo
   struct keyinfo *next;
   char grip[41];
   char *serialno;
-  char *keyref;
-  char *usage; /* only available from "SCD KEYINFO" not "KEYINFO" */
 };
 
 /* Try to connect to the agent via socket.  Handle the server's

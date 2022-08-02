@@ -100,11 +100,9 @@ search_cb (void *hook, struct cert *cert)
 }
 
 
-/* Create the attributes required for a new certificate object.  If
- * KINFO->KEYREF is not NULL it is used to locate the cert directly
- * from the card; if KINFO->KEYREF is NULL or a cert was not found on
- * the card, KINFO->GRIP is used to find the certificate in the local
- * key store of gpgsm.
+/* Create the attributes required for a new certificate object.
+ * KINFO->GRIP is used to find the certificate in the local key store
+ * of gpgsm.
  *
  * Returns allocated attributes for the certificate object in ATTRP
  * and ATTR_COUNTP, and for the private key object in PRV_ATTRP and
@@ -114,7 +112,6 @@ scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
 {
   gpg_error_t err;
   struct search_cb_parm search;
-  struct cert cert;
 
   search.found = false;
   search.cert_get_cb = cert_get_cb;
@@ -124,13 +121,6 @@ scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
 
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: grip='%s'", grip);
 
-
-  memset (&cert, '\0', sizeof (cert));
-  err = scute_agent_get_cert (grip, &cert);
-  if (!err)
-    return search_cb (&search, &cert);
-
-  DEBUG (DBG_INFO, "scute_gpgsm_get_cert: falling back to gpgsm");
   search.with_chain = true;
   err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
   if (!err)
