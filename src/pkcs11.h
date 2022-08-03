@@ -339,7 +339,6 @@ typedef unsigned long ck_key_type_t;
 #define CKK_RSA			(0UL)
 #define CKK_DSA			(1UL)
 #define CKK_DH			(2UL)
-#define CKK_ECDSA		(3UL)
 #define CKK_EC			(3UL)
 #define CKK_X9_42_DH		(4UL)
 #define CKK_KEA			(5UL)
@@ -362,6 +361,8 @@ typedef unsigned long ck_key_type_t;
 #define CKK_BLOWFISH		(0x20UL)
 #define CKK_TWOFISH		(0x21UL)
 #define CKK_GOSTR3410		(0x30UL)
+#define CKK_EC_EDWARDS          (0x40UL)
+#define CKK_EC_MONTGOMERY       (0x41UL)
 #define CKK_VENDOR_DEFINED	(1UL << 31)
 
 
@@ -662,6 +663,9 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_EC_KEY_PAIR_GEN		(0x1040UL)
 #define CKM_ECDSA			(0x1041UL)
 #define CKM_ECDSA_SHA1			(0x1042UL)
+#define CKM_ECDSA_SHA256		(0x1044UL)
+#define CKM_ECDSA_SHA384		(0x1045UL)
+#define CKM_ECDSA_SHA512		(0x1046UL)
 #define CKM_ECDH1_DERIVE		(0x1050UL)
 #define CKM_ECDH1_COFACTOR_DERIVE	(0x1051UL)
 #define CKM_ECMQV_DERIVE		(0x1052UL)
