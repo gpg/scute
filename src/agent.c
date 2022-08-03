@@ -597,6 +597,7 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
   return 0;
 }
 
+/* FIXME: Support ECC */
 /* Parse the result of an pksign operation which is a s-expression in
    canonical form that looks like (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>))).
    The raw result is stored in RESULT of size *LEN, and *LEN is
@@ -760,6 +761,7 @@ sethash_inq_cb (void *opaque, const char *line)
   return err;
 }
 
+/* FIXME: Support ECC */
 /* Call the agent to sign (DATA,LEN) using the key described by
  * HEXGRIP.  Stores the signature in SIG_RESULT and its length at
  * SIG_LEN; SIGLEN must initially point to the allocated size of
@@ -852,8 +854,6 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   err = pksign_parse_result (&sig, sig_result, sig_len);
   return err;
 }
-
-
 
 struct pkdecrypt_parm_s
 {

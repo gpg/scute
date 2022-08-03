@@ -595,6 +595,11 @@ scute_attr_prv (struct cert *cert, const char *grip,
   CK_DATE obj_end_date;
   CK_BBOOL obj_derive = CK_FALSE;
   CK_BBOOL obj_local = CK_FALSE;	/* FIXME: Unknown.  */
+  /* FIXME: appropriate machanism should be chosen.  */
+  /* FIXME: CKM_EC_KEY_PAIR_GEN
+     CKM_EC_EDWARDS_KEY_PAIR_GEN
+     CKM_EC_MONTGOMERY_KEY_PAIR_GEN
+  */
   CK_MECHANISM_TYPE obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
   CK_MECHANISM_TYPE obj_mechanisms[] = { CKM_RSA_PKCS };
 
@@ -749,6 +754,8 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_ALWAYS_AUTHENTICATE,
                     &obj_always_authenticate, sizeof obj_always_authenticate);
 
+  /* FIXME: appropriate objects should be provided.  */
+  /* FIXME: CKA_EC_POINT, CKA_EC_PARAMS */
   if (!err)
     err = attr_one (attr, &attr_count, CKA_MODULUS,
                     modulus_start, modulus_len);

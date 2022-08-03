@@ -46,6 +46,7 @@ C_SignInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
   if (hKey == CK_INVALID_HANDLE)
     return CKR_ARGUMENTS_BAD;
 
+  /* FIXME */
   if (pMechanism->mechanism != CKM_RSA_PKCS
       && pMechanism->mechanism != CKM_RSA_X_509)
     return CKR_MECHANISM_INVALID;

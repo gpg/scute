@@ -158,17 +158,20 @@ static gpg_error_t
 mechanism_alloc (void **data_r, void *hook)
 {
   struct mechanism *mechanism;
-  CK_FLAGS *flags = hook;
+  struct slot *slot = hook;
 
   mechanism = calloc (1, sizeof (*mechanism));
   if (mechanism == NULL)
     return gpg_error_from_syserror ();
 
-  /* Set some default values.  */
+  /* Register the signing mechanism.  */
+  /* FIXME: examine slot->objects to setup the mechanism.  */
+  (void)slot;
+
   mechanism->type = CKM_RSA_PKCS;
   mechanism->info.ulMinKeySize = 1024;
   mechanism->info.ulMaxKeySize = 4096;
-  mechanism->info.flags = CKF_HW | (*flags);
+  mechanism->info.flags = CKF_HW | CKF_SIGN;
 
   *data_r = mechanism;
 
@@ -256,8 +259,6 @@ slot_alloc (void **data_r, void *hook)
 {
   gpg_error_t err;
   struct slot *slot;
-  int idx;
-  CK_FLAGS flags;
 
   (void) hook;
 
@@ -267,12 +268,6 @@ slot_alloc (void **data_r, void *hook)
 
   err = scute_table_create (&slot->mechanisms, mechanism_alloc,
 			    mechanism_dealloc);
-  if (err)
-    goto slot_alloc_out;
-
-  /* Register the signing mechanism.  */
-  flags = CKF_SIGN;
-  err = scute_table_alloc (slot->mechanisms, &idx, NULL, &flags);
   if (err)
     goto slot_alloc_out;
 
@@ -429,10 +424,13 @@ slot_init (slot_iterator_t id)
 {
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slot_table, id);
+  int idx;
 
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
+
+  err = scute_table_alloc (slot->mechanisms, &idx, NULL, slot);
 
   if (err)
     slot_reset (id);
