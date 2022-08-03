@@ -761,7 +761,6 @@ sethash_inq_cb (void *opaque, const char *line)
   return err;
 }
 
-/* FIXME: Support ECC */
 /* Call the agent to sign (DATA,LEN) using the key described by
  * HEXGRIP.  Stores the signature in SIG_RESULT and its length at
  * SIG_LEN; SIGLEN must initially point to the allocated size of
@@ -780,8 +779,7 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
   struct signature sig;
-  int nopadding = (mechtype == CKM_RSA_X_509);
-
+  int nopadding = (mechtype != CKM_RSA_PKCS);
   sig.len = 0;
 
   if (sig_len == NULL)
@@ -823,12 +821,17 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   if (nopadding)
     {
       struct sethash_inq_parm_s parm;
+      const char more_option = "";
 
       parm.ctx = agent_ctx;
       parm.data = raw_data;
       parm.datalen = raw_len;
-      snprintf (cmd, sizeof (cmd), "SETHASH %s --inquire",
-                (raw_len && raw_data[raw_len -1] == 0xBC)? "--pss":"");
+
+      if (mechtype == CKM_RSA_X_509
+          && raw_len && raw_data[raw_len -1] == 0xBC)
+        more_option = "--pss";
+
+      snprintf (cmd, sizeof (cmd), "SETHASH %s --inquire", more_option);
       err = assuan_transact (agent_ctx, cmd, NULL, NULL,
                              sethash_inq_cb, &parm, NULL, NULL);
     }

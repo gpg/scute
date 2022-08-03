@@ -980,7 +980,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
       || memcmp (attr->pValue, &key_class, sizeof (key_class)))
     return CKR_KEY_HANDLE_INVALID;
 
-  /* It's the private RSA key object.  */
+  /* It's the private key object.  */
   session->signing_key = key;
   session->signing_mechanism_type = mechanism_type;
 
