@@ -595,14 +595,8 @@ scute_attr_prv (struct cert *cert, const char *grip,
   CK_DATE obj_end_date;
   CK_BBOOL obj_derive = CK_FALSE;
   CK_BBOOL obj_local = CK_FALSE;	/* FIXME: Unknown.  */
-  /* FIXME: appropriate machanism should be chosen.  */
-  /* FIXME: CKM_EC_KEY_PAIR_GEN
-     CKM_EC_EDWARDS_KEY_PAIR_GEN
-     CKM_EC_MONTGOMERY_KEY_PAIR_GEN
-  */
-  CK_MECHANISM_TYPE obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
-  CK_MECHANISM_TYPE obj_mechanisms[] = { CKM_RSA_PKCS };
-
+  CK_MECHANISM_TYPE obj_key_gen;
+  CK_MECHANISM_TYPE obj_mechanisms[1];
   CK_BBOOL obj_sensitive = CK_TRUE;
   CK_BBOOL obj_decrypt = CK_FALSE;      /* Updated below.  */
   CK_BBOOL obj_sign = CK_FALSE;         /* Updated below.  */
@@ -613,6 +607,27 @@ scute_attr_prv (struct cert *cert, const char *grip,
   CK_BBOOL obj_never_extractable = CK_TRUE;
   CK_BBOOL obj_wrap_with_trusted = CK_FALSE;
   CK_BBOOL obj_always_authenticate = CK_FALSE;
+
+  if (cert->pubkey_algo == 1)  /* GCRY_PK_RSA==1 from gpgsm */
+    {
+      obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
+      obj_mechanisms[0] = CKM_RSA_PKCS;
+    }
+  else if (cert->pubkey_algo == 18)  /* GCRY_PK_ECC==18 from gpgsm */
+    {
+      obj_key_gen = CKM_EC_KEY_PAIR_GEN;
+      if (cert->length == 256)
+        obj_mechanisms[0] = CKM_ECDSA_SHA256;
+      else if (cert->length == 384)
+        obj_mechanisms[0] = CKM_ECDSA_SHA384;
+      else /* if (cert->length == 512) */
+        obj_mechanisms[0] = CKM_ECDSA_SHA512;
+    }
+  else
+    {
+      obj_key_gen = CKM_EC_EDWARDS_KEY_PAIR_GEN;
+      obj_mechanisms[0] = CKM_EDDSA;
+    }
 
   obj_sign = CK_TRUE;
 
@@ -755,13 +770,16 @@ scute_attr_prv (struct cert *cert, const char *grip,
                     &obj_always_authenticate, sizeof obj_always_authenticate);
 
   /* FIXME: appropriate objects should be provided.  */
+  if (cert->pubkey_algo == 1)
+    {
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_MODULUS,
+                        modulus_start, modulus_len);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
+                        public_exp_start, public_exp_len);
+    }
   /* FIXME: CKA_EC_POINT, CKA_EC_PARAMS */
-  if (!err)
-    err = attr_one (attr, &attr_count, CKA_MODULUS,
-                    modulus_start, modulus_len);
-  if (!err)
-    err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
-                    public_exp_start, public_exp_len);
 
   if (err)
     {
@@ -771,8 +789,10 @@ scute_attr_prv (struct cert *cert, const char *grip,
       return err;
     }
 
+#if 0
   /* FIXME: Not completely safe.  */
   assert (NR_ATTR_PRV >= attr_count);
+#endif
 
   *attrp = attr;
   *attr_countp = attr_count;

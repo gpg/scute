@@ -159,18 +159,61 @@ mechanism_alloc (void **data_r, void *hook)
 {
   struct mechanism *mechanism;
   struct slot *slot = hook;
+  int oid;
+  CK_MECHANISM_TYPE m = CKM_VENDOR_DEFINED;
+
+  /* Register the signing mechanism.  */
+
+  oid = scute_table_first (slot->objects);
+  while (!scute_table_last (slot->objects, oid))
+    {
+      struct object *object;
+      CK_ATTRIBUTE_PTR attr;
+      CK_ULONG attr_count;
+      CK_ULONG i;
+
+      object = scute_table_data (slot->objects, oid);
+      if (!object)
+        {
+          attr = NULL;
+          break;
+        }
+
+      attr = object->attributes;
+      attr_count = object->attributes_count;
+
+      for (i = 0; i < attr_count; i++)
+        if (attr[i].type == CKA_ALLOWED_MECHANISMS)
+          break;
+
+      if (i != attr_count)
+        {
+          if (attr[i].ulValueLen == sizeof (CK_MECHANISM_TYPE))
+            memcpy (&m, attr[i].pValue, attr[i].ulValueLen);
+          break;
+        }
+
+      oid = scute_table_next (slot->objects, oid);
+    }
+
+  if (m == CKM_VENDOR_DEFINED)
+    return gpg_error (GPG_ERR_BAD_DATA);
 
   mechanism = calloc (1, sizeof (*mechanism));
   if (mechanism == NULL)
     return gpg_error_from_syserror ();
 
-  /* Register the signing mechanism.  */
-  /* FIXME: examine slot->objects to setup the mechanism.  */
-  (void)slot;
-
-  mechanism->type = CKM_RSA_PKCS;
-  mechanism->info.ulMinKeySize = 1024;
-  mechanism->info.ulMaxKeySize = 4096;
+  mechanism->type = m;
+  if (m == CKM_RSA_PKCS)
+    {
+      mechanism->info.ulMinKeySize = 1024;
+      mechanism->info.ulMaxKeySize = 4096;
+    }
+  else
+    {
+      mechanism->info.ulMinKeySize = 256;
+      mechanism->info.ulMaxKeySize = 512;
+    }
   mechanism->info.flags = CKF_HW | CKF_SIGN;
 
   *data_r = mechanism;
