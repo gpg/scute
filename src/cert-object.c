@@ -363,6 +363,37 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
   return 0;
 }
 
+/* Get the OID of the curve.  */
+static gpg_error_t
+asn1_get_ec_params (unsigned char *cert, int cert_len,
+                    unsigned char **sub_start, int *sub_len)
+{
+  gpg_error_t err;
+  struct asn1_path path[] = { { '\x30', true }, { '\x30', true },
+			      { '\xa0', false }, { '\x02', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', true }, { '\x30', true },
+			      { '\x06', false }, { '\x06', false } };
+
+  /* The path to the params entry in the DER file.  This is
+     Sequence->Sequence->Version,Serial,AlgID,Issuer,Time,Subject,
+     Sequence->Sequence->Sequence->OID,OID  */
+
+  err = asn1_get_element (cert, cert_len, sub_start, sub_len,
+			  path, DIM (path));
+  if (err)
+    return err;
+
+  if (*sub_len < 1)
+    {
+      DEBUG (DBG_INFO, "params too short");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
+
+  return 0;
+}
+
 
 static gpg_error_t
 attr_one (CK_ATTRIBUTE_PTR attr, CK_ULONG *attr_count,
@@ -585,6 +616,8 @@ scute_attr_prv (struct cert *cert, const char *grip,
   int modulus_len;
   unsigned char *public_exp_start;
   int public_exp_len;
+  unsigned char *ec_params_start;
+  int ec_params_len;
 
   CK_OBJECT_CLASS obj_class = CKO_PRIVATE_KEY;
   CK_BBOOL obj_token = CK_TRUE;
@@ -657,6 +690,17 @@ scute_attr_prv (struct cert *cert, const char *grip,
       if (err)
         {
           DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
+                 gpg_strerror (err));
+          return err;
+        }
+    }
+  else if (cert->pubkey_algo == 18)
+    {
+      err = asn1_get_ec_params (cert->cert_der, cert->cert_der_len,
+                                &ec_params_start, &ec_params_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get params: %s",
                  gpg_strerror (err));
           return err;
         }
@@ -775,7 +819,6 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_ALWAYS_AUTHENTICATE,
                     &obj_always_authenticate, sizeof obj_always_authenticate);
 
-  /* FIXME: appropriate objects should be provided.  */
   if (cert->pubkey_algo == 1)
     {
       if (!err)
@@ -785,7 +828,12 @@ scute_attr_prv (struct cert *cert, const char *grip,
         err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
                         public_exp_start, public_exp_len);
     }
-  /* FIXME: CKA_EC_POINT, CKA_EC_PARAMS */
+  else if (cert->pubkey_algo == 18)
+    {
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_EC_PARAMS,
+                        ec_params_start, ec_params_len);
+    }
 
   if (err)
     {
