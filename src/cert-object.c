@@ -590,7 +590,7 @@ scute_attr_prv (struct cert *cert, const char *grip,
   CK_BBOOL obj_token = CK_TRUE;
   CK_BBOOL obj_private = CK_FALSE;
   CK_BBOOL obj_modifiable = CK_FALSE;
-  CK_KEY_TYPE obj_key_type = CKK_RSA;
+  CK_KEY_TYPE obj_key_type;
   CK_DATE obj_start_date;
   CK_DATE obj_end_date;
   CK_BBOOL obj_derive = CK_FALSE;
@@ -610,11 +610,13 @@ scute_attr_prv (struct cert *cert, const char *grip,
 
   if (cert->pubkey_algo == 1)  /* GCRY_PK_RSA==1 from gpgsm */
     {
+      obj_key_type = CKK_RSA;
       obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
       obj_mechanisms[0] = CKM_RSA_PKCS;
     }
   else if (cert->pubkey_algo == 18)  /* GCRY_PK_ECC==18 from gpgsm */
     {
+      obj_key_type = CKK_EC;
       obj_key_gen = CKM_EC_KEY_PAIR_GEN;
       if (cert->length == 256)
         obj_mechanisms[0] = CKM_ECDSA_SHA256;
@@ -625,6 +627,7 @@ scute_attr_prv (struct cert *cert, const char *grip,
     }
   else
     {
+      obj_key_type = CKK_EC_EDWARDS;
       obj_key_gen = CKM_EC_EDWARDS_KEY_PAIR_GEN;
       obj_mechanisms[0] = CKM_EDDSA;
     }
@@ -639,21 +642,24 @@ scute_attr_prv (struct cert *cert, const char *grip,
 	     gpg_strerror (err));
       return err;
     }
-  err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
-			  &modulus_start, &modulus_len);
-  if (err)
+  if (cert->pubkey_algo == 1)
     {
-      DEBUG (DBG_INFO, "rejecting certificate: could not get modulus: %s",
-	     gpg_strerror (err));
-      return err;
-    }
-  err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
-			     &public_exp_start, &public_exp_len);
-  if (err)
-    {
-      DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
-	     gpg_strerror (err));
-      return err;
+      err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
+                              &modulus_start, &modulus_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get modulus: %s",
+                 gpg_strerror (err));
+          return err;
+        }
+      err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
+                                 &public_exp_start, &public_exp_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
+                 gpg_strerror (err));
+          return err;
+        }
     }
 
 #define NR_ATTR_PRV 27

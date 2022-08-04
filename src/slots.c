@@ -137,6 +137,9 @@ struct slot
 
   /* The serial number.  */
   char serialno[33];
+
+  /* Private data.  */
+  CK_MECHANISM_TYPE key_type;
 };
 
 
@@ -203,7 +206,7 @@ mechanism_alloc (void **data_r, void *hook)
   if (mechanism == NULL)
     return gpg_error_from_syserror ();
 
-  mechanism->type = m;
+  slot->key_type = mechanism->type = m;
   if (m == CKM_RSA_PKCS)
     {
       mechanism->info.ulMinKeySize = 1024;
@@ -1041,6 +1044,27 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
   strncpy (key_id, attr[i].pValue, attr[i].ulValueLen);
   key_id[attr[i].ulValueLen] = 0;
   DEBUG (DBG_INFO, "Found CKA_ID '%s'", key_id);
+
+  /* It asks the length of signature.  */
+  if (pSignature == NULL)
+    {
+      switch (slot->key_type)
+        {
+        case CKM_ECDSA_SHA256:
+          *pulSignatureLen = 32 * 2;
+          break;
+        case CKM_ECDSA_SHA384:
+          *pulSignatureLen = 64 * 2;
+          break;
+        case CKM_ECDSA_SHA512:
+          *pulSignatureLen = 48 * 2;
+          break;
+        case CKM_RSA_PKCS:
+        default:
+          return CKR_GENERAL_ERROR;
+        }
+      return CKR_OK;
+    }
 
   sig_len = *pulSignatureLen;
   err = scute_agent_sign (key_id, session->signing_mechanism_type,
