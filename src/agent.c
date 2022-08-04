@@ -664,7 +664,7 @@ pksign_parse_result (const struct signature *sig,
 
       /* Add possibly removed zero bytes by gpg-agent, to be fixed-size. */
       memset (result, 0, *len);
-      memcpy (result, s + (*len)/2 - n, n);
+      memcpy (result + (*len)/2 - n, s, n);
       s += n;
 
       depth = 1;
@@ -690,7 +690,7 @@ pksign_parse_result (const struct signature *sig,
         return gpg_error (GPG_ERR_INV_LENGTH);
 
       /* Add possibly removed zero byte, to be fixed-size. */
-      memcpy (result, s + (*len) - n, n);
+      memcpy (result + (*len) - n, s, n);
       s += n;
     }
   else
