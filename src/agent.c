@@ -515,7 +515,10 @@ scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
       parm.error = 0;
       parm.list = NULL;
 
-      err = assuan_transact (agent_ctx, "KEYINFO --list",
+      err = assuan_transact (agent_ctx,
+                             (_scute_opt.only_marked?
+                              "KEYINFO --list --need-attr=Use-for-p11":
+                              "KEYINFO --list"),
                              NULL, NULL, /* No data call back    */
                              NULL, NULL, /* No inquiry call back */
                              keyinfo_list_cb, &parm);

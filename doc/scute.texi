@@ -187,6 +187,12 @@ does; thus for the meta commands please consult the GnuPG description.
 Here is the short list of supported keywords:
 @table @gnupgtabopt
 
+@item only-marked
+@opindex only-marked
+Scute consideres only keys having the @code{Use-for-p11} as part of
+their meta data.
+
+
 @item user @var{name}
 @opindex user
 If Scute is running with root permission and this option is used it

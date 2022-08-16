@@ -25,6 +25,7 @@
 typedef struct {
   char *user;
   int debug_flags;
+  int only_marked;
   int assume_single_threaded;
 } _scute_opt_t;
 
