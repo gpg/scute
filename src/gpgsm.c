@@ -91,11 +91,10 @@ search_cb (void *hook, struct cert *cert)
 
   err = (*ctx->cert_get_cb) (ctx->hook, attrp, attr_countp);
   if (err)
-    {
-      scute_attr_free (attrp, attr_countp);
-      return err;
-    }
+    scute_attr_free (attrp, attr_countp);
 
+  /* DEBUG (DBG_INFO, "scute_gpgsm_get_cert[%lu]: search_cb result=%d", */
+  /*        (unsigned long)getpid(), err); */
   return err;
 }
 
