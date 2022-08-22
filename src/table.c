@@ -252,7 +252,7 @@ scute_table_dealloc (scute_table_t table, int *index)
 int
 scute_table_first (scute_table_t table)
 {
-  if (table->used)
+  if (table && table->used)
     {
       if (table->data[0] != NULL)
 	return INDEX_COPY_OUT (0);

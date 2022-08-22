@@ -306,6 +306,7 @@ keylist_cb_line (struct keylist_ctx *ctx)
 	}
 
       cert->valid = true;
+      cert->has_private = (rectype == RT_CRS);
 
 #if 0
       /* Field 2 has the trust info.  */
