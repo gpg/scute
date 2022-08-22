@@ -44,6 +44,7 @@
 struct search_cb_parm
 {
   bool found;    /* Set to true if a private key object was found.  */
+  int depth;     /* To track the recursion.  */
   cert_get_cb_t cert_get_cb;
   void *hook;
   bool with_chain;
@@ -82,7 +83,15 @@ search_cb (void *hook, struct cert *cert)
      might still be able to proceed, for example with client
      authentication.  */
   if (ctx->with_chain && strcmp (cert->chain_id, cert->fpr))
-    scute_gpgsm_search_certs (KEYLIST_BY_FPR, cert->chain_id, search_cb, ctx);
+    {
+      ctx->depth++;
+      if (ctx->depth > 7)
+        {
+          DEBUG (DBG_INFO, "search_cb: certificate chain too long\n");
+          return gpg_error (GPG_ERR_BAD_CERT_CHAIN);
+        }
+      scute_gpgsm_search_certs (KEYLIST_BY_FPR, cert->chain_id, search_cb, ctx);
+    }
 
   /* Turn this certificate into a certificate object.  */
   err = scute_attr_cert (cert, ctx->grip, &attrp, &attr_countp);
@@ -113,6 +122,7 @@ scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
   struct search_cb_parm search;
 
   search.found = false;
+  search.depth = 0;
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
   search.with_chain = false;
