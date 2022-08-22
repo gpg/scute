@@ -62,7 +62,7 @@ search_cb (void *hook, struct cert *cert)
   CK_ULONG attr_countp;
 
   /* Add the private key object only once.  */
-  if (!ctx->found)
+  if (!ctx->found && cert->has_private)
     {
       err = scute_attr_prv (cert, ctx->grip, &attrp, &attr_countp);
       if (err)
