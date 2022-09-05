@@ -220,8 +220,14 @@ This is a hack to ignore a request to use native threads instead of
 user provided callbacks.  Should only be used with caution if there is
 no easy way to fix the caller or until we have fixed Scute.
 
-
 @end table
+
+In addition to the above configuration file, Scute also reads GnuPG´s
+@file{common.conf} in the same way GnuPG does.  This way the
+@option{no-autostart} option is detected and Scute will not try to
+launch gpg-agent, which it usually does.  The important use-case here
+is running Scute on a server with the gpg-agent on a desktop box.
+
 
 @mansect notes (Firefox)
 To use Scute with Firefox or Thunderbird, follow these instructions:
