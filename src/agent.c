@@ -82,23 +82,39 @@ agent_connect (assuan_context_t *ctx_r)
 #endif
   /* Use gpgconf to make sure that gpg-agent is started and to obtain
    * the socket name.  For older version of gnupg we will fallback to
-   * using two gpgconf commands with the same effect.  */
-  /* FIXME: We should make sure that USER has no spaces.  */
-  snprintf (buffer, sizeof buffer, "%s %s%s --show-socket --launch gpg-agent",
-            get_gpgconf_path (),
-            _scute_opt.user? "--chuid=":"",
-            _scute_opt.user? _scute_opt.user:"");
-  err = read_first_line (buffer, buffer, sizeof buffer);
-  if (gpg_err_code (err) == GPG_ERR_NO_AGENT && is_gnupg_older_than (2, 2, 14))
+   * using two gpgconf commands with the same effect.  If GnuPG has
+   * been configured not to autostart the agent by using the
+   * common.conf mechanism we don't do this either.  This is so that
+   * Scute won't start an gpg-agent on a server with the agent running
+   * on the desktop. */
+  if (_scute_opt.no_autostart && !is_gnupg_older_than (2, 3, 8))
     {
-      snprintf (buffer, sizeof buffer, "%s --launch gpg-agent",
+      DEBUG (DBG_INFO, "agent_connect: note: no-autostart option found");
+      snprintf (buffer, sizeof buffer, "%s --list-dirs agent-socket",
                 get_gpgconf_path ());
-      err = read_first_line (buffer, NULL, 0);
-      if (!err)
+      err = read_first_line (buffer, buffer, sizeof buffer);
+    }
+  else
+    {
+      /* FIXME: We should make sure that USER has no spaces.  */
+      snprintf (buffer, sizeof buffer,
+                "%s %s%s --show-socket --launch gpg-agent",
+                get_gpgconf_path (),
+                _scute_opt.user? "--chuid=":"",
+                _scute_opt.user? _scute_opt.user:"");
+      err = read_first_line (buffer, buffer, sizeof buffer);
+      if (gpg_err_code (err) == GPG_ERR_NO_AGENT
+          && is_gnupg_older_than (2, 2, 14))
         {
-          snprintf (buffer, sizeof buffer, "%s --list-dirs agent-socket",
+          snprintf (buffer, sizeof buffer, "%s --launch gpg-agent",
                     get_gpgconf_path ());
-          err = read_first_line (buffer, buffer, sizeof buffer);
+          err = read_first_line (buffer, NULL, 0);
+          if (!err)
+            {
+              snprintf (buffer, sizeof buffer, "%s --list-dirs agent-socket",
+                        get_gpgconf_path ());
+              err = read_first_line (buffer, buffer, sizeof buffer);
+            }
         }
     }
   DEBUG (DBG_INFO, "agent_connect: agent socket is '%s'", buffer);

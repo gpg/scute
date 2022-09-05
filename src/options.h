@@ -27,6 +27,7 @@ typedef struct {
   int debug_flags;
   int only_marked;
   int assume_single_threaded;
+  int no_autostart;  /* Do not autostart gpg-agent.  */
 } _scute_opt_t;
 
 extern _scute_opt_t _scute_opt;

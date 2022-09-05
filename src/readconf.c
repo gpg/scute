@@ -54,7 +54,7 @@ void
 _scute_read_conf (void)
 {
   enum { oNull = 500, oUser, oDebug, oLogfile, oOnlyMarked,
-         oAssumeSingleThreaded };
+         oAssumeSingleThreaded, oNoAutostart };
   gpgrt_opt_t opts[] =
     {
      ARGPARSE_s_s(oUser, "user", NULL ),
@@ -62,6 +62,11 @@ _scute_read_conf (void)
      ARGPARSE_s_s(oLogfile, "log-file", NULL),
      ARGPARSE_s_n(oOnlyMarked, "only-marked", NULL),
      ARGPARSE_s_n(oAssumeSingleThreaded, "assume-single-threaded", NULL),
+     ARGPARSE_end()
+    };
+  gpgrt_opt_t commonopts[] =
+    {
+     ARGPARSE_s_s(oNoAutostart, "no-autostart", NULL ),
      ARGPARSE_end()
     };
   int dummy_argc = 0;
@@ -91,5 +96,19 @@ _scute_read_conf (void)
     }
 
   gpgrt_argparse (NULL, &pargs, NULL);
+
+  pargs.flags = (ARGPARSE_FLAG_NOVERSION
+                 | ARGPARSE_FLAG_SYS
+                 | ARGPARSE_FLAG_USER
+                 );
+  while (gpgrt_argparser  (&pargs, commonopts, "common.conf"))
+    {
+      if (pargs.r_opt == oNoAutostart)
+        _scute_opt.no_autostart = 1;
+    }
+
+  gpgrt_argparse (NULL, &pargs, NULL);
+
+
 
 }
