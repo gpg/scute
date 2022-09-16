@@ -125,12 +125,11 @@ scute_gpgsm_get_cert (const char *grip, cert_get_cb_t cert_get_cb, void *hook)
   search.depth = 0;
   search.cert_get_cb = cert_get_cb;
   search.hook = hook;
-  search.with_chain = false;
+  search.with_chain = !_scute_opt.no_chain;
   search.grip = grip;
 
   DEBUG (DBG_INFO, "scute_gpgsm_get_cert: grip='%s'", grip);
 
-  search.with_chain = true;
   err = scute_gpgsm_search_certs (KEYLIST_BY_GRIP, grip, search_cb, &search);
   if (!err)
     {

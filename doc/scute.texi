@@ -220,6 +220,12 @@ This is a hack to ignore a request to use native threads instead of
 user provided callbacks.  Should only be used with caution if there is
 no easy way to fix the caller or until we have fixed Scute.
 
+@item no-chain
+@opindex no-chain
+By default, when Scute is asked for a certificate, it returns the
+requested certificate along with the chain of signing certificates.
+This option makes Scute return only the leaf certificate.
+
 @end table
 
 In addition to the above configuration file, Scute also reads GnuPG´s
