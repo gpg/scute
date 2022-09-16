@@ -28,6 +28,7 @@ typedef struct {
   int only_marked;
   int assume_single_threaded;
   int no_autostart;  /* Do not autostart gpg-agent.  */
+  int no_chain;
 } _scute_opt_t;
 
 extern _scute_opt_t _scute_opt;
