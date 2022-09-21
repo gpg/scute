@@ -46,10 +46,6 @@ C_SignInit (CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
   if (hKey == CK_INVALID_HANDLE)
     return CKR_ARGUMENTS_BAD;
 
-  if (pMechanism->mechanism != CKM_RSA_PKCS
-      && pMechanism->mechanism != CKM_RSA_X_509)
-    return CKR_MECHANISM_INVALID;
-
   err = scute_global_lock ();
   if (err)
     return err;

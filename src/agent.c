@@ -945,9 +945,12 @@ pksign_cb (void *opaque, const void *buffer, size_t length)
 }
 
 /* Parse the result of an pksign operation which is a s-expression in
-   canonical form that looks like (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>))).
-   The raw result is stored in RESULT of size *LEN, and *LEN is
-   adjusted to the actual size.  */
+   canonical form that looks like:
+       RSA     (7:sig-val(3:rsa(1:s<LENGTH>:<DATA>)))
+       ECDSA   (7:sig-val(5:ecdsa(1:r<LENGTH>:<DATA>)(1:s<LENGTH>:<DATA>)))
+       EDDSA   (7:sig-val(5:eddsa(1:r<LENGTH>:<DATA>)(1:s<LENGTH>:<DATA>)))
+   The raw result is stored in RESULT of size *LEN.
+   For RSA, *LEN is adjusted to the actual size.  */
 static gpg_error_t
 pksign_parse_result (const struct signature *sig,
                      unsigned char *result, unsigned int *len)
@@ -956,6 +959,7 @@ pksign_parse_result (const struct signature *sig,
   const unsigned char *s = sig->data;
   size_t n;
   int depth;
+  int is_ecc;
 
   if (*s++ != '(')
     gpg_error (GPG_ERR_INV_SEXP);
@@ -972,7 +976,13 @@ pksign_parse_result (const struct signature *sig,
   n = snext (&s);
   if (! n)
     return gpg_error (GPG_ERR_INV_SEXP);
-  if (! smatch (&s, n, "rsa"))
+  if (smatch (&s, n, "rsa"))
+    is_ecc = 0;
+  else if (smatch (&s, n, "ecdsa"))
+    is_ecc = 1;
+  else if (smatch (&s, n, "eddsa"))
+    is_ecc = 1;
+  else
     return gpg_error (GPG_ERR_UNKNOWN_SEXP);
 
   if (*s++ != '(')
@@ -981,26 +991,76 @@ pksign_parse_result (const struct signature *sig,
   n = snext (&s);
   if (! n)
     return gpg_error (GPG_ERR_INV_SEXP);
-  if (! smatch (&s, n, "s"))
-    return gpg_error (GPG_ERR_UNKNOWN_SEXP);
-
-  n = snext (&s);
-  if (! n)
-    return gpg_error (GPG_ERR_INV_SEXP);
-
-  /* Remove a possible prepended zero byte. */
-  if (!*s && n > 1)
+  if (is_ecc)
     {
-      n -= 1;
-      s += 1;
+      if (! smatch (&s, n, "r"))
+        return gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+      n = snext (&s);
+      if (! n)
+        return gpg_error (GPG_ERR_INV_SEXP);
+
+      if ((*len)/2 < (unsigned int) n)
+        return gpg_error (GPG_ERR_INV_LENGTH);
+
+      /* Fixup for EdDSA, removing the prefix.  */
+      if (n == (*len)/2 + 1)
+        s++;
+
+      /* Add possibly removed zero bytes by gpg-agent, to be fixed-size. */
+      memset (result, 0, *len);
+      memcpy (result + (*len)/2 - n, s, n);
+      s += n;
+
+      depth = 1;
+      err = sskip (&s, &depth);
+      if (err)
+        return err;
+
+      if (*s++ != '(')
+        gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+      n = snext (&s);
+      if (! n)
+        return gpg_error (GPG_ERR_INV_SEXP);
+
+      if (! smatch (&s, n, "s"))
+        return gpg_error (GPG_ERR_UNKNOWN_SEXP);
+
+      n = snext (&s);
+      if (! n)
+        return gpg_error (GPG_ERR_INV_SEXP);
+
+      if ((*len)/2 < (unsigned int) n)
+        return gpg_error (GPG_ERR_INV_LENGTH);
+
+      /* Add possibly removed zero byte, to be fixed-size. */
+      memcpy (result + (*len) - n, s, n);
+      s += n;
     }
+  else
+    {                           /* RSA */
+      if (! smatch (&s, n, "s"))
+        return gpg_error (GPG_ERR_UNKNOWN_SEXP);
 
-  if (*len < (unsigned int) n)
-    return gpg_error (GPG_ERR_INV_LENGTH);
+      n = snext (&s);
+      if (! n)
+        return gpg_error (GPG_ERR_INV_SEXP);
 
-  *len = (unsigned int) n;
-  memcpy (result, s, n);
-  s += n;
+      /* Remove a possible prepended zero byte. */
+      if (!*s && n > 1)
+        {
+          n -= 1;
+          s += 1;
+        }
+
+      if (*len < (unsigned int) n)
+        return gpg_error (GPG_ERR_INV_LENGTH);
+
+      *len = (unsigned int) n;
+      memcpy (result, s, n);
+      s += n;
+    }
 
   depth = 3;
   err = sskip (&s, &depth);
@@ -1125,7 +1185,7 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   unsigned char pretty_data[2 * MAX_DATA_LEN + 1];
   int i;
   struct signature sig;
-  int nopadding = (mechtype == CKM_RSA_X_509);
+  int nopadding = (mechtype != CKM_RSA_PKCS);
 
   sig.len = 0;
 
@@ -1145,12 +1205,6 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
         return err;
     }
 
-  if (sig_result == NULL)
-    {
-      *sig_len = raw_len;
-      return 0;
-    }
-
   if (!hexgrip || !sig_result)
     return gpg_error (GPG_ERR_INV_ARG);
 
@@ -1168,17 +1222,48 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   if (nopadding)
     {
       struct sethash_inq_parm_s parm;
+      const char *more_option = "";
 
       parm.ctx = agent_ctx;
       parm.data = raw_data;
       parm.datalen = raw_len;
-      snprintf (cmd, sizeof (cmd), "SETHASH %s --inquire",
-                (raw_len && raw_data[raw_len -1] == 0xBC)? "--pss":"");
+
+      if (mechtype == CKM_RSA_X_509)
+        {
+          if (raw_len && raw_data[raw_len -1] == 0xBC)
+            more_option = "--pss";
+        }
+      else if (mechtype == CKM_ECDSA)
+        {
+          /* Determine the hash by the length of input data.  */
+          if (len == 20)
+            hash = "sha1";
+          else if (len == 32)
+            hash = "sha256";
+          else if (len == 48)
+            hash = "sha384";
+          else if (len == 64)
+            hash = "sha512";
+        }
+      else if (mechtype == CKM_ECDSA_SHA1)
+        hash = "sha1";
+      else if (mechtype == CKM_ECDSA_SHA256)
+        hash = "sha256";
+      else if (mechtype == CKM_ECDSA_SHA384)
+        hash = "sha384";
+      else if (mechtype == CKM_ECDSA_SHA512)
+        hash = "sha512";
+
+      if (hash)
+        goto with_hash;
+
+      snprintf (cmd, sizeof (cmd), "SETHASH %s --inquire", more_option);
       err = assuan_transact (agent_ctx, cmd, NULL, NULL,
                              sethash_inq_cb, &parm, NULL, NULL);
     }
   else
     {
+    with_hash:
       for (i = 0; i < raw_len; i++)
         snprintf (&pretty_data[2 * i], 3, "%02X", raw_data[i]);
       pretty_data[2 * raw_len] = '\0';

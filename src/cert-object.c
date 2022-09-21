@@ -363,6 +363,37 @@ asn1_get_public_exp (unsigned char *cert, int cert_len,
   return 0;
 }
 
+/* Get the OID of the curve.  */
+static gpg_error_t
+asn1_get_ec_params (unsigned char *cert, int cert_len,
+                    unsigned char **sub_start, int *sub_len)
+{
+  gpg_error_t err;
+  struct asn1_path path[] = { { '\x30', true }, { '\x30', true },
+			      { '\xa0', false }, { '\x02', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', true }, { '\x30', true },
+			      { '\x06', false }, { '\x06', false } };
+
+  /* The path to the params entry in the DER file.  This is
+     Sequence->Sequence->Version,Serial,AlgID,Issuer,Time,Subject,
+     Sequence->Sequence->Sequence->OID,OID  */
+
+  err = asn1_get_element (cert, cert_len, sub_start, sub_len,
+			  path, DIM (path));
+  if (err)
+    return err;
+
+  if (*sub_len < 1)
+    {
+      DEBUG (DBG_INFO, "params too short");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
+
+  return 0;
+}
+
 
 static gpg_error_t
 attr_one (CK_ATTRIBUTE_PTR attr, CK_ULONG *attr_count,
@@ -536,7 +567,6 @@ scute_attr_cert (struct cert *cert, const char *grip,
   if (!err)
     err = attr_one (attr, &attr_count, CKA_SUBJECT,
                     subject_start, subject_len);
-
   /* We construct the CKA_ID from the CERTREF and the KEYGRIP.  This
    * allows us to use both values as needed.  */
   if (!err)
@@ -550,6 +580,8 @@ scute_attr_cert (struct cert *cert, const char *grip,
                       cka_id_buffer, strlen (cka_id_buffer));
     }
 
+  if (!err)
+    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_ISSUER,
@@ -603,19 +635,20 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
   int modulus_len;
   unsigned char *public_exp_start;
   int public_exp_len;
+  unsigned char *ec_params_start;
+  int ec_params_len;
 
   CK_OBJECT_CLASS obj_class = CKO_PRIVATE_KEY;
   CK_BBOOL obj_token = CK_TRUE;
   CK_BBOOL obj_private = CK_FALSE;
   CK_BBOOL obj_modifiable = CK_FALSE;
-  CK_KEY_TYPE obj_key_type = CKK_RSA;
+  CK_KEY_TYPE obj_key_type;
   CK_DATE obj_start_date;
   CK_DATE obj_end_date;
   CK_BBOOL obj_derive = CK_FALSE;
   CK_BBOOL obj_local = CK_FALSE;	/* FIXME: Unknown.  */
-  CK_MECHANISM_TYPE obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
-  CK_MECHANISM_TYPE obj_mechanisms[] = { CKM_RSA_PKCS };
-
+  CK_MECHANISM_TYPE obj_key_gen;
+  CK_MECHANISM_TYPE obj_mechanisms[1];
   CK_BBOOL obj_sensitive = CK_TRUE;
   CK_BBOOL obj_decrypt = CK_FALSE;      /* Updated below.  */
   CK_BBOOL obj_sign = CK_FALSE;         /* Updated below.  */
@@ -626,6 +659,30 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
   CK_BBOOL obj_never_extractable = CK_TRUE;
   CK_BBOOL obj_wrap_with_trusted = CK_FALSE;
   CK_BBOOL obj_always_authenticate = CK_FALSE;
+
+  if (cert->pubkey_algo == 1)  /* GCRY_PK_RSA==1 from gpgsm */
+    {
+      obj_key_type = CKK_RSA;
+      obj_key_gen = CKM_RSA_PKCS_KEY_PAIR_GEN;
+      obj_mechanisms[0] = CKM_RSA_PKCS;
+    }
+  else if (cert->pubkey_algo == 18)  /* GCRY_PK_ECC==18 from gpgsm */
+    {
+      obj_key_type = CKK_EC;
+      obj_key_gen = CKM_EC_KEY_PAIR_GEN;
+      if (cert->length == 256)
+        obj_mechanisms[0] = CKM_ECDSA_SHA256;
+      else if (cert->length == 384)
+        obj_mechanisms[0] = CKM_ECDSA_SHA384;
+      else /* if (cert->length == 512) */
+        obj_mechanisms[0] = CKM_ECDSA_SHA512;
+    }
+  else
+    {
+      obj_key_type = CKK_EC_EDWARDS;
+      obj_key_gen = CKM_EC_EDWARDS_KEY_PAIR_GEN;
+      obj_mechanisms[0] = CKM_EDDSA;
+    }
 
   if (kinfo->usage.sign || kinfo->usage.cert || kinfo->usage.auth)
     obj_sign = CK_TRUE;
@@ -642,21 +699,35 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
 	     gpg_strerror (err));
       return err;
     }
-  err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
-			  &modulus_start, &modulus_len);
-  if (err)
+  if (cert->pubkey_algo == 1)
     {
-      DEBUG (DBG_INFO, "rejecting certificate: could not get modulus: %s",
-	     gpg_strerror (err));
-      return err;
+      err = asn1_get_modulus (cert->cert_der, cert->cert_der_len,
+                              &modulus_start, &modulus_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get modulus: %s",
+                 gpg_strerror (err));
+          return err;
+        }
+      err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
+                                 &public_exp_start, &public_exp_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
+                 gpg_strerror (err));
+          return err;
+        }
     }
-  err = asn1_get_public_exp (cert->cert_der, cert->cert_der_len,
-			     &public_exp_start, &public_exp_len);
-  if (err)
+  else if (cert->pubkey_algo == 18)
     {
-      DEBUG (DBG_INFO, "rejecting certificate: could not get public exp: %s",
-	     gpg_strerror (err));
-      return err;
+      err = asn1_get_ec_params (cert->cert_der, cert->cert_der_len,
+                                &ec_params_start, &ec_params_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get params: %s",
+                 gpg_strerror (err));
+          return err;
+        }
     }
 
 #define NR_ATTR_PRV 27
@@ -791,12 +862,21 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
     err = attr_one (attr, &attr_count, CKA_ALWAYS_AUTHENTICATE,
                     &obj_always_authenticate, sizeof obj_always_authenticate);
 
-  if (!err)
-    err = attr_one (attr, &attr_count, CKA_MODULUS,
-                    modulus_start, modulus_len);
-  if (!err)
-    err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
-                    public_exp_start, public_exp_len);
+  if (cert->pubkey_algo == 1)
+    {
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_MODULUS,
+                        modulus_start, modulus_len);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_PUBLIC_EXPONENT,
+                        public_exp_start, public_exp_len);
+    }
+  else if (cert->pubkey_algo == 18)
+    {
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_EC_PARAMS,
+                        ec_params_start, ec_params_len);
+    }
 
   if (err)
     {
@@ -806,8 +886,10 @@ scute_attr_prv (struct cert *cert, key_info_t kinfo,
       return err;
     }
 
+#if 0
   /* FIXME: Not completely safe.  */
   assert (NR_ATTR_PRV >= attr_count);
+#endif
 
   *attrp = attr;
   *attr_countp = attr_count;

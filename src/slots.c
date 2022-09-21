@@ -135,6 +135,9 @@ struct slot
 
   /* The info about the current token.  */
   struct agent_card_info_s info;
+
+  /* Private data.  */
+  CK_MECHANISM_TYPE key_type;
 };
 
 
@@ -156,17 +159,63 @@ static gpg_error_t
 mechanism_alloc (void **data_r, void *hook)
 {
   struct mechanism *mechanism;
-  CK_FLAGS *flags = hook;
+  struct slot *slot = hook;
+  int oid;
+  CK_MECHANISM_TYPE m = CKM_VENDOR_DEFINED;
+
+  /* Register the signing mechanism.  */
+
+  oid = scute_table_first (slot->objects);
+  while (!scute_table_last (slot->objects, oid))
+    {
+      struct object *object;
+      CK_ATTRIBUTE_PTR attr;
+      CK_ULONG attr_count;
+      CK_ULONG i;
+
+      object = scute_table_data (slot->objects, oid);
+      if (!object)
+        {
+          attr = NULL;
+          break;
+        }
+
+      attr = object->attributes;
+      attr_count = object->attributes_count;
+
+      for (i = 0; i < attr_count; i++)
+        if (attr[i].type == CKA_ALLOWED_MECHANISMS)
+          break;
+
+      if (i != attr_count)
+        {
+          if (attr[i].ulValueLen == sizeof (CK_MECHANISM_TYPE))
+            memcpy (&m, attr[i].pValue, attr[i].ulValueLen);
+          break;
+        }
+
+      oid = scute_table_next (slot->objects, oid);
+    }
+
+  if (m == CKM_VENDOR_DEFINED)
+    return gpg_error (GPG_ERR_BAD_DATA);
 
   mechanism = calloc (1, sizeof (*mechanism));
   if (mechanism == NULL)
     return gpg_error_from_syserror ();
 
-  /* Set some default values.  */
-  mechanism->type = CKM_RSA_PKCS;
-  mechanism->info.ulMinKeySize = 1024;
-  mechanism->info.ulMaxKeySize = 4096;
-  mechanism->info.flags = CKF_HW | (*flags);
+  slot->key_type = mechanism->type = m;
+  if (m == CKM_RSA_PKCS)
+    {
+      mechanism->info.ulMinKeySize = 1024;
+      mechanism->info.ulMaxKeySize = 4096;
+    }
+  else
+    {
+      mechanism->info.ulMinKeySize = 256;
+      mechanism->info.ulMaxKeySize = 512;
+    }
+  mechanism->info.flags = CKF_HW | CKF_SIGN;
 
   *data_r = mechanism;
 
@@ -254,8 +303,6 @@ slot_alloc (void **data_r, void *hook)
 {
   gpg_error_t err;
   struct slot *slot;
-  int idx;
-  CK_FLAGS flags;
 
   (void) hook;
 
@@ -265,12 +312,6 @@ slot_alloc (void **data_r, void *hook)
 
   err = scute_table_create (&slot->mechanisms, mechanism_alloc,
 			    mechanism_dealloc);
-  if (err)
-    goto slot_alloc_out;
-
-  /* Register the signing mechanism.  */
-  flags = CKF_SIGN;
-  err = scute_table_alloc (slot->mechanisms, &idx, NULL, &flags);
   if (err)
     goto slot_alloc_out;
 
@@ -383,6 +424,7 @@ slot_init (slot_iterator_t id)
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slot_table, id);
   key_info_t ki;
+  int idx;
 
   for (ki = slot->info.kinfo; ki; ki = ki->next)
     {
@@ -394,6 +436,8 @@ slot_init (slot_iterator_t id)
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
+
+  err = scute_table_alloc (slot->mechanisms, &idx, NULL, slot);
 
  leave:
   if (err)
@@ -1043,7 +1087,7 @@ session_set_signing_key (slot_iterator_t id, session_iterator_t sid,
       || memcmp (attr->pValue, &key_class, sizeof (key_class)))
     return CKR_KEY_HANDLE_INVALID;
 
-  /* It's the private RSA key object.  */
+  /* It's the private key object.  */
   session->signing_key = key;
   session->signing_mechanism_type = mechanism_type;
 
@@ -1109,6 +1153,27 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
     ;
   if (*keyref)
     keyref++;  /* Point to the grip.  */
+
+  /* It asks the length of signature.  */
+  if (pSignature == NULL)
+    {
+      switch (slot->key_type)
+        {
+        case CKM_ECDSA_SHA256:
+          *pulSignatureLen = 32 * 2;
+          break;
+        case CKM_ECDSA_SHA384:
+          *pulSignatureLen = 64 * 2;
+          break;
+        case CKM_ECDSA_SHA512:
+          *pulSignatureLen = 48 * 2;
+          break;
+        case CKM_RSA_PKCS:
+        default:
+          return CKR_GENERAL_ERROR;
+        }
+      return CKR_OK;
+    }
 
   sig_len = *pulSignatureLen;
   err = scute_agent_sign (keyref, session->signing_mechanism_type,
