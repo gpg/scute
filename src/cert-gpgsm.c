@@ -260,7 +260,7 @@ keylist_cb_line (struct keylist_ctx *ctx)
   if (ctx->pending_len > 0
       && ctx->pending[ctx->pending_len - 1] == '\r')
     ctx->pending_len--;
-  ctx->pending[ctx->pending_len - 1] = '\0';
+  ctx->pending[ctx->pending_len] = '\0';
   ctx->pending_len = 0;
 
   cert = &ctx->cert;
