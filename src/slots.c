@@ -37,6 +37,8 @@
 
 #include "debug.h"
 
+/* Maximum slots supported.  */
+#define MAX_SLOTS 4
 
 /* A session is just a slot identifier with a per-slot session
    identifier.  */
@@ -343,15 +345,19 @@ scute_slots_initialize (void)
 {
   gpg_error_t err;
   int slot_idx;
+  int i;
 
   err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
   if (err)
     return err;
 
-  /* Allocate a new slot for authentication.  */
-  err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
-  if (err)
-    scute_slots_finalize ();
+  /* Allocate new slots for authentication.  */
+  for (i = 0; i < MAX_SLOTS; i++)
+    {
+      err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
+      if (err)
+        scute_slots_finalize ();
+    }
 
   /* FIXME: Allocate a new slot for signing and decryption of
      email.  */
@@ -458,12 +464,25 @@ slots_update_slot (slot_iterator_t id)
     {
       err = scute_agent_check_status ();
       if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
-	slot_reset (id);
+        {
+          slot_reset (id);
+          return CKR_TOKEN_NOT_PRESENT;
+        }
       else if (err)
 	return scute_gpg_err_to_ck (err);
       else
 	return 0;
     }
+
+  return CKR_TOKEN_NOT_PRESENT;
+}
+
+/* Update the slot ID.  */
+static CK_RV
+slots_detect_slot (slot_iterator_t id)
+{
+  struct slot *slot = scute_table_data (slot_table, id);
+  gpg_error_t err;
 
   /* At this point, the card was or is removed, and we need to reopen
      the session, if possible.  */
@@ -520,8 +539,10 @@ slots_update_all (void)
       CK_RV err;
 
       err = slots_update_slot (id);
-      if (err)
-	return err;
+
+      /* FIXME: Only use the first slot for now.  */
+      if (id == 1 && err == CKR_TOKEN_NOT_PRESENT)
+        err = slots_detect_slot (id);
 
       id = scute_table_next (slot_table, id);
     }
