@@ -36,9 +36,6 @@
 #include "gpgsm.h"
 
 #include "debug.h"
-
-/* Maximum slots supported.  */
-#define MAX_SLOTS 4
 
 /* A session is just a slot identifier with a per-slot session
    identifier.  */
@@ -138,8 +135,8 @@ struct slot
   /* The keygrip to the key in hex string.  */
   char grip[41];
 
-  /* FIXME depricating. The info about the current token.  */
-  struct agent_card_info_s info;
+  /* The serial number.  */
+  char serialno[33];
 
   /* Private data.  */
   CK_MECHANISM_TYPE key_type;
@@ -342,6 +339,11 @@ slot_alloc (void **data_r, void *hook)
 }
 
 
+static gpg_error_t add_object (void *hook, CK_ATTRIBUTE_PTR attrp,
+			       CK_ULONG attr_countp);
+static gpg_error_t slot_init (slot_iterator_t id);
+
+
 /* Initialize the slot list.  */
 CK_RV
 scute_slots_initialize (void)
@@ -350,16 +352,20 @@ scute_slots_initialize (void)
   struct keyinfo *keyinfo = NULL;
   struct keyinfo *ki;
 
-  err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
+  err = scute_agent_serialno ();
   if (err)
-    return err;
+    {
+      if (gpg_err_code (err) != GPG_ERR_ENODEV)
+	return scute_gpg_err_to_ck (err);
+    }
 
   err = scute_agent_keyinfo_list (&keyinfo);
   if (err)
-    {
-      scute_slots_finalize ();
-      return scute_gpg_err_to_ck (err);
-    }
+    return scute_gpg_err_to_ck (err);
+
+  err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
+  if (err)
+    return err;
 
   for (ki = keyinfo; ki; ki = ki->next)
     {
@@ -368,12 +374,35 @@ scute_slots_initialize (void)
 
       err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
-        scute_slots_finalize ();
-      memcpy (slot->grip, ki->grip, 41);
-    }
+	{
+	  scute_slots_finalize ();
+	  break;
+	}
+      else
+        {
+          memset (slot->serialno, 0, sizeof (slot->serialno));
+          if (ki->serialno)
+            {
+              int len;
 
-  /* FIXME: Allocate a new slot for signing and decryption of
-     email.  */
+              len = strlen (ki->serialno);
+              if (len >= 32)
+                memcpy (slot->serialno, &ki->serialno[len-32], 32);
+              else
+                memcpy (slot->serialno, ki->serialno, len);
+            }
+          memcpy (slot->grip, ki->grip, 41);
+
+	  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
+          if (!err)
+            err = slot_init (slot_idx);
+	  if (err)
+	    {
+	      scute_table_dealloc (slot_table, &slot_idx);
+	      err = 0;
+	    }
+        }
+    }
 
   scute_agent_free_keyinfo (keyinfo);
   return scute_gpg_err_to_ck (err);
@@ -409,7 +438,6 @@ slot_reset (slot_iterator_t id)
     scute_table_dealloc (slot->objects, &oid);
   assert (scute_table_used (slot->objects) == 0);
 
-  scute_agent_release_card_info (&slot->info);
   slot->token_present = false;
 }
 
@@ -436,8 +464,7 @@ add_object (void *hook, CK_ATTRIBUTE_PTR attrp,
 }
 
 
-/* Initialize the slot after a token has been inserted.  SLOT->info
-   must already be valid.  */
+/* Initialize the slot after a token has been inserted.  */
 static gpg_error_t
 slot_init (slot_iterator_t id)
 {
@@ -445,125 +472,17 @@ slot_init (slot_iterator_t id)
   struct slot *slot = scute_table_data (slot_table, id);
   int idx;
 
-  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
-  if (err)
-    goto leave;
-
   /* FIXME: Perform the rest of the initialization of the
      token.  */
   slot->token_present = true;
 
   err = scute_table_alloc (slot->mechanisms, &idx, NULL, slot);
 
- leave:
   if (err)
     slot_reset (id);
 
   return err;
 }
-
-
-/* Update the slot ID.  */
-CK_RV
-slots_update_slot (slot_iterator_t id)
-{
-  struct slot *slot = scute_table_data (slot_table, id);
-  gpg_error_t err;
-
-  if (slot->token_present)
-    {
-      err = scute_agent_check_status (slot->grip);
-      if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
-        {
-          slot_reset (id);
-          return CKR_TOKEN_NOT_PRESENT;
-        }
-      else if (err)
-	return scute_gpg_err_to_ck (err);
-      else
-	return 0;
-    }
-
-  return CKR_TOKEN_NOT_PRESENT;
-}
-
-/* Update the slot ID.  */
-static CK_RV
-slots_detect_slot (slot_iterator_t id)
-{
-  struct slot *slot = scute_table_data (slot_table, id);
-  gpg_error_t err;
-
-  /* At this point, the card was or is removed, and we need to reopen
-     the session, if possible.  */
-  err = scute_agent_learn (slot->grip, &slot->info);
-
-  /* First check if this is really a PIV or an OpenPGP card.  FIXME:
-   * Should probably report the error in a better way and use a
-   * generic way to identify cards without resorting to special-casing
-   * PIV cards. */
-  if (!err && (slot->info.is_piv || slot->info.is_opgp))
-    ; /* Okay, this card has a usable application.  */
-  else if (!err && (slot->info.serialno
-                    && !strncmp (slot->info.serialno, "D27600012401", 12)
-                    && strlen (slot->info.serialno) == 32))
-    {
-      /* Kludge to allow for old GnuPG versions.  */
-      slot->info.is_opgp = 1;
-    }
-  else
-    {
-      DEBUG (DBG_INFO, "token not a PIV or OpenPGP card: %s",
-             slot->info.serialno);
-      err = gpg_error (GPG_ERR_CARD_NOT_PRESENT);
-      scute_agent_release_card_info (&slot->info);
-    }
-
-  /* We also ignore card errors, because unusable cards should not
-     affect slots, and firefox is quite unhappy about returning errors
-     here.  */
-  if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED
-      || gpg_err_code (err) == GPG_ERR_CARD_NOT_PRESENT
-      || gpg_err_code (err) == GPG_ERR_CARD
-      || gpg_err_code (err) == GPG_ERR_ENODEV)
-    /* Nothing to do.  */
-    err = 0;
-  else if (err == 0)
-    err = slot_init (id);
-
-  return scute_sys_to_ck (err);
-}
-
-
-/* Update the slot list by finding new devices.  Please note that
-   Mozilla NSS currently assumes that the slot list never shrinks (see
-   TODO file for a discussion).  This is the only function allowed to
-   manipulate the slot list.  */
-CK_RV
-slots_update_all (void)
-{
-  slot_iterator_t id = scute_table_first (slot_table);
-
-  while (!scute_table_last (slot_table, id))
-    {
-      CK_RV err;
-
-      err = slots_update_slot (id);
-
-      /* FIXME
-       * see if it's valid: KEYINFO <keygrip>
-       */
-
-      /* FIXME: Only use the first slot for now.  */
-      if (id == 1 && err == CKR_TOKEN_NOT_PRESENT)
-        err = slots_detect_slot (id);
-
-      id = scute_table_next (slot_table, id);
-    }
-
-  return CKR_OK;
-}
-
 
 /* Begin iterating over the list of slots.  */
 CK_RV
@@ -624,7 +543,8 @@ slot_token_present (slot_iterator_t id)
 const char *
 slot_token_label (slot_iterator_t id)
 {
-  return slot_token_serial (id);
+  struct slot *slot = scute_table_data (slot_table, id);
+  return slot->serialno;
 }
 
 
@@ -632,53 +552,9 @@ slot_token_label (slot_iterator_t id)
 const char *
 slot_token_manufacturer (slot_iterator_t id)
 {
-  struct slot *slot = scute_table_data (slot_table, id);
-  unsigned int uval;
-
-  if (slot->info.is_piv)
-    {
-      if (slot->info.cardtype && !strcmp (slot->info.cardtype, "yubikey"))
-        return "Yubikey";
-      return "Unknown";
-    }
-
-  /* slots_update() makes sure this is valid.  */
-  uval = xtoi_2 (slot->info.serialno + 16) * 256
-    + xtoi_2 (slot->info.serialno + 18);
-
-  /* Note:  Make sure that there is no colon or linefeed in the string. */
-  switch (uval)
-    {
-    case 0x0001: return "PPC Card Systems";
-    case 0x0002: return "Prism";
-    case 0x0003: return "OpenFortress";
-    case 0x0004: return "Wewid";
-    case 0x0005: return "ZeitControl";
-    case 0x0006: return "Yubico";
-    case 0x0007: return "OpenKMS";
-    case 0x0008: return "LogoEmail";
-    case 0x0009: return "Fidesmo";
-    case 0x000A: return "Dangerous Things";
-    case 0x000B: return "Feitian Technologies";
-
-    case 0x002A: return "Magrathea";
-    case 0x0042: return "GnuPG e.V.";
-
-    case 0x1337: return "Warsaw Hackerspace";
-    case 0x2342: return "warpzone"; /* hackerspace Muenster.  */
-    case 0x4354: return "Confidential Technologies";   /* cotech.de */
-    case 0x63AF: return "Trustica";
-    case 0xBD0E: return "Paranoidlabs";
-    case 0xF517: return "FSIJ";
-
-    case 0x0000:
-    case 0xffff:
-      return "test card";
-
-    default: return (uval & 0xff00) == 0xff00? "unmanaged S/N range":"unknown";
-    }
-
-  /* Not reached.  */
+  /* FIXME */
+  (void)id;
+  return "scdaemon";
 }
 
 
@@ -693,23 +569,17 @@ slot_token_application (slot_iterator_t id)
 
   /* slots_update() makes sure this is correct.  */
 
-  if (slot->info.is_piv && slot->info.is_opgp)
-    return "PIV+OpenPGP";
-  else if (slot->info.is_piv)
-    return "PIV";
-  else
-    return "OpenPGP";
+  /* FIXME */
+  return "gpg-agent";
 }
 
 
-/* Get the serial number of the token.  */
+/* Get the LSB of serial number of the token.  */
 const char *
 slot_token_serial (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
-
-  /* slots_update() makes sure this is valid.  */
-  return slot->info.serialno;
+  return &slot->serialno[16];
 }
 
 
@@ -718,25 +588,12 @@ void
 slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 		    CK_BYTE *fw_major, CK_BYTE *fw_minor)
 {
-  struct slot *slot = scute_table_data (slot_table, id);
-
-  /* slots_update() makes sure serialno is valid.  */
-  /* Fixme: If we have PIV+OpenPGP we do not have the OpenPGP
-   * serialnumber thus we can't take its version number.  */
-  if (slot->info.is_piv)
-    {
-      *hw_major = 0;
-      *hw_minor = 0;
-      *fw_major = 0;
-      *fw_minor = 0;
-    }
-  else
-    {
-      *hw_major = xtoi_2 (slot->info.serialno + 12);
-      *hw_minor = xtoi_2 (slot->info.serialno + 14);
-      *fw_major = 0;
-      *fw_minor = 0;
-    }
+  /* FIXME */
+  (void)id;
+  *hw_major = 0;
+  *hw_minor = 0;
+  *fw_major = 0;
+  *fw_minor = 0;
 }
 
 
@@ -744,11 +601,10 @@ slot_token_version (slot_iterator_t id, CK_BYTE *hw_major, CK_BYTE *hw_minor,
 void
 slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 {
-  struct slot *slot = scute_table_data (slot_table, id);
+  /* FIXME */
+  (void)id;
 
-  /* In version 2 of the OpenPGP card, the second counter is for the
-     reset operation, so we only take the first counter.  */
-  *max = slot->info.chvmaxlen[0];
+  *max = 31;
 
   /* FIXME: This is true at least for the user pin (CHV1 and CHV2).  */
   *min = 6;
@@ -759,12 +615,11 @@ slot_token_maxpinlen (slot_iterator_t id, CK_ULONG *max, CK_ULONG *min)
 void
 slot_token_pincount (slot_iterator_t id, int *max, int *len)
 {
-  struct slot *slot = scute_table_data (slot_table, id);
+  (void)id;
 
   *max = 3;
-  /* In version 2 of the OpenPGP card, the second counter is for the
-     reset operation, so we only take the first counter.  */
-  *len = slot->info.chvretry[0];
+  /* FIXME */
+  *len = 1;
 }
 
 
@@ -781,7 +636,10 @@ slot_token_has_rng (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
 
-  return slot->info.rng_available;
+  (void)slot;
+
+  /* FIXME */
+  return 1;
 }
 
 
@@ -980,7 +838,7 @@ session_get_rw (slot_iterator_t id, session_iterator_t sid)
 
 /* Get the login state from the slot ID.  */
 slot_login_t
-slot_get_status (slot_iterator_t id)
+slot_get_login_status (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
 

@@ -512,14 +512,7 @@ scute_attr_cert (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    {
-      if (*cert->certref)
-        err = attr_one (attr, &attr_count, CKA_LABEL,
-                        cert->certref, strlen (cert->certref));
-      else
-        err = attr_one (attr, &attr_count, CKA_LABEL,
-                        "DummyLabel", 10);
-    }
+    err = attr_one (attr, &attr_count, CKA_LABEL, "Scute", 5);
   if (!err)
     err = attr_one (attr, &attr_count, CKA_CERTIFICATE_TYPE,
                     &obj_cert_type, sizeof obj_cert_type);
@@ -567,22 +560,9 @@ scute_attr_cert (struct cert *cert, const char *grip,
   if (!err)
     err = attr_one (attr, &attr_count, CKA_SUBJECT,
                     subject_start, subject_len);
-  /* We construct the CKA_ID from the CERTREF and the KEYGRIP.  This
-   * allows us to use both values as needed.  */
-  if (!err)
-    {
-      char cka_id_buffer[200];
-
-      snprintf (cka_id_buffer, sizeof cka_id_buffer, "%s %s",
-                *cert->certref ? cert->certref:"-",
-                grip && *grip? grip : "?" );
-      err = attr_one (attr, &attr_count, CKA_ID,
-                      cka_id_buffer, strlen (cka_id_buffer));
-    }
 
   if (!err)
     err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
-
   if (!err)
     err = attr_one (attr, &attr_count, CKA_ISSUER,
                     issuer_start, issuer_len);
@@ -745,31 +725,12 @@ scute_attr_prv (struct cert *cert, const char *grip,
     err = attr_one (attr, &attr_count, CKA_MODIFIABLE,
                     &obj_modifiable, sizeof obj_modifiable);
   if (!err)
-    {
-      if (*cert->certref)
-        err = attr_one (attr, &attr_count, CKA_LABEL,
-                        cert->certref, strlen (cert->certref));
-      else
-        err = attr_one (attr, &attr_count, CKA_LABEL,
-                        "DummyLabel", 10);
-    }
-
+    err = attr_one (attr, &attr_count, CKA_LABEL, "Scute", 5);
   if (!err)
     err = attr_one (attr, &attr_count, CKA_KEY_TYPE,
                     &obj_key_type, sizeof obj_key_type);
-
-  /* We construct the CKA_ID from the CERTREF and the KEYGRIP.  This
-   * allows us to use both values as needed.  */
   if (!err)
-    {
-      char cka_id_buffer[200];
-
-      snprintf (cka_id_buffer, sizeof cka_id_buffer, "%s %s",
-                *cert->certref ? cert->certref:"-",
-                grip && *grip? grip : "?" );
-      err = attr_one (attr, &attr_count, CKA_ID,
-                      cka_id_buffer, strlen (cka_id_buffer));
-    }
+    err = attr_one (attr, &attr_count, CKA_ID, (void *)grip, strlen (grip));
 
 #if 0
   /* For now, we disable these fields.  We can parse them from the

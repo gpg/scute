@@ -366,8 +366,24 @@ scute_agent_initialize (void)
   return err;
 }
 
+/* Call the agent to get the list of devices.  */
+gpg_error_t
+scute_agent_serialno (void)
+{
+  gpg_error_t err = 0;
+
+  err = ensure_agent_connection ();
+  if (err)
+    return err;
+
+  err = assuan_transact (agent_ctx, "SCD SERIALNO --all",
+                         NULL, NULL, NULL, NULL,
+                         NULL, NULL);
+  return err;
+}
+
 struct keyinfo_parm {
-  int is_scd;
+  int require_card;
   gpg_error_t error;
   struct keyinfo *list;
 };
@@ -420,7 +436,7 @@ keyinfo_list_cb (void *opaque, const char *line)
 
       if (*line++ != 'T')
         {
-          if (!parm->is_scd)
+          if (!parm->require_card)
             {
               /* It's not on card, skip the status line.  */
               free (keyinfo);
@@ -472,7 +488,7 @@ keyinfo_list_cb (void *opaque, const char *line)
       while (spacep (s))
         s++;
 
-      if (!*s || !parm->is_scd)
+      if (!*s || !parm->require_card)
         goto skip;
 
       keyinfo->usage = strdup (s);
@@ -526,7 +542,7 @@ scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
     {
       struct keyinfo_parm parm;
 
-      parm.is_scd = 0;
+      parm.require_card = 1;
       parm.error = 0;
       parm.list = NULL;
 
@@ -582,424 +598,6 @@ unescape_status_string (const unsigned char *src)
 
   return buffer;
 }
-
-
-/* Take a 20 byte hexencoded string and put it into the provided
-   20 byte buffer FPR in binary format.  Returns true if successful,
-   and false otherwise.  */
-static int
-unhexify_fpr (const char *hexstr, unsigned char *fpr)
-{
-  const char *src;
-  int cnt;
-
-  /* Check for invalid or wrong length.  */
-  for (src = hexstr, cnt = 0; hexdigitp (src); src++, cnt++)
-    ;
-  if ((*src && !spacep (src)) || (cnt != 40))
-    return 0;
-
-  for (src = hexstr, cnt = 0; *src && !spacep (src); src += 2, cnt++)
-    fpr[cnt] = xtoi_2 (src);
-
-  return 1;
-}
-
-/* Return true if HEXSTR is a valid keygrip.  */
-static unsigned int
-hexgrip_valid_p (const char *hexstr)
-{
-  const char *s;
-  int n;
-
-  for (s=hexstr, n=0; hexdigitp (s); s++, n++)
-    ;
-  if ((*s && *s != ' ') || n != 40)
-    return 0; /* Bad keygrip */
-  else
-    return 1; /* Valid.  */
-}
-
-
-/* Take the serial number from LINE and return it verbatim in a newly
-   allocated string.  We make sure that only hex characters are
-   returned.  */
-static char *
-store_serialno (const char *line)
-{
-  const char *src;
-  char *ptr;
-
-  for (src = line; hexdigitp (src); src++)
-    ;
-  ptr = malloc (src + 1 - line);
-
-  if (ptr)
-    {
-      memcpy (ptr, line, src - line);
-      ptr[src - line] = 0;
-    }
-
-  return ptr;
-}
-
-
-/* Release the card info structure INFO.  */
-void
-scute_agent_release_card_info (struct agent_card_info_s *info)
-{
-  if (!info)
-    return;
-
-  free (info->serialno);
-  free (info->cardtype);
-  free (info->disp_name);
-  free (info->disp_lang);
-  free (info->pubkey_url);
-  free (info->login_data);
-
-  memset (info, 0, sizeof (*info));
-}
-
-
-/* FIXME: We are not returning out of memory errors.  */
-static gpg_error_t
-learn_status_cb (void *opaque, const char *line)
-{
-  agent_card_info_t parm = opaque;
-  const char *keyword = line;
-  int keywordlen;
-  const char *keyref;
-  int i;
-
-  for (keywordlen = 0; *line && !spacep (line); line++, keywordlen++)
-    ;
-  while (spacep (line))
-    line++;
-
-  if (keywordlen == 8 && !memcmp (keyword, "SERIALNO", keywordlen))
-    {
-      free (parm->serialno);
-      parm->serialno = store_serialno (line);
-    }
-  else if (keywordlen == 7 && !memcmp (keyword, "APPTYPE", keywordlen))
-    {
-      parm->is_piv = !strcmp (line, "piv");
-      parm->is_opgp = !strcmp (line, "openpgp");
-    }
-  else if (keywordlen == 8 && !memcmp (keyword, "CARDTYPE", keywordlen))
-    {
-      free (parm->cardtype);
-      parm->cardtype = unescape_status_string (line);
-    }
-  else if (keywordlen == 9 && !memcmp (keyword, "DISP-NAME", keywordlen))
-    {
-      if (parm->disp_name)
-	free (parm->disp_name);
-      parm->disp_name = unescape_status_string (line);
-    }
-  else if (keywordlen == 9 && !memcmp (keyword, "DISP-LANG", keywordlen))
-    {
-      if (parm->disp_lang)
-	free (parm->disp_lang);
-      parm->disp_lang = unescape_status_string (line);
-    }
-  else if (keywordlen == 8 && !memcmp (keyword, "DISP-SEX", keywordlen))
-    {
-      parm->disp_sex = *line == '1'? 1 : *line == '2' ? 2: 0;
-    }
-  else if (keywordlen == 10 && !memcmp (keyword, "PUBKEY-URL", keywordlen))
-    {
-      if (parm->pubkey_url)
-	free (parm->pubkey_url);
-      parm->pubkey_url = unescape_status_string (line);
-    }
-  else if (keywordlen == 10 && !memcmp (keyword, "LOGIN-DATA", keywordlen))
-    {
-      if (parm->login_data)
-	free (parm->login_data);
-      parm->login_data = unescape_status_string (line);
-    }
-  else if (keywordlen == 11 && !memcmp (keyword, "SIG-COUNTER", keywordlen))
-    {
-      parm->sig_counter = strtoul (line, NULL, 0);
-    }
-  else if (keywordlen == 10 && !memcmp (keyword, "CHV-STATUS", keywordlen))
-    {
-      char *p, *buf;
-
-      buf = p = unescape_status_string (line);
-      if (buf)
-        {
-          while (spacep (p))
-            p++;
-          parm->chv1_cached = atoi (p);
-          while (*p && !spacep (p))
-            p++;
-          while (spacep (p))
-            p++;
-          for (i = 0; *p && i < 3; i++)
-            {
-              parm->chvmaxlen[i] = atoi (p);
-              while (*p && !spacep (p))
-                p++;
-              while (spacep (p))
-                p++;
-            }
-          for (i=0; *p && i < 3; i++)
-            {
-              parm->chvretry[i] = atoi (p);
-              while (*p && !spacep (p))
-                p++;
-              while (spacep (p))
-                p++;
-            }
-          free (buf);
-        }
-    }
-  else if (keywordlen == 7 && !memcmp (keyword, "KEY-FPR", keywordlen))
-    {
-      int no = atoi (line);
-      while (*line && !spacep (line))
-        line++;
-      while (spacep (line))
-        line++;
-      if (no == 1)
-        parm->fpr1valid = unhexify_fpr (line, parm->fpr1);
-      else if (no == 2)
-        parm->fpr2valid = unhexify_fpr (line, parm->fpr2);
-      else if (no == 3)
-        parm->fpr3valid = unhexify_fpr (line, parm->fpr3);
-    }
-  else if (keywordlen == 6 && !memcmp (keyword, "CA-FPR", keywordlen))
-    {
-      int no = atoi (line);
-      while (*line && !spacep (line))
-        line++;
-      while (spacep (line))
-        line++;
-      if (no == 1)
-        parm->cafpr1valid = unhexify_fpr (line, parm->cafpr1);
-      else if (no == 2)
-        parm->cafpr2valid = unhexify_fpr (line, parm->cafpr2);
-      else if (no == 3)
-        parm->cafpr3valid = unhexify_fpr (line, parm->cafpr3);
-    }
-  else if (keywordlen == 11 && !memcmp (keyword, "KEYPAIRINFO", keywordlen))
-    {
-      /* The format of such a line is:
-       *   KEYPAIRINFO <hexgrip> <keyref> [<usage>]
-       */
-      const char *hexgrip = line;
-      char *line_buffer, *p;
-      const char *usage;
-
-      while (*line && !spacep (line))
-        line++;
-      while (spacep (line))
-        line++;
-
-      p = line_buffer = strdup (line);
-      if (!line_buffer)
-        goto no_core;
-      keyref = line_buffer;
-      while (*p && !spacep (p))
-        p++;
-      if (*p)
-        {
-          *p++ = 0;
-          while (spacep (p))
-            p++;
-          usage = p;
-          while (*p && !spacep (p))
-            p++;
-          *p = 0;
-        }
-      else
-        usage = "";
-
-      free (line_buffer);
-    }
-  else if (keywordlen == 6 && !memcmp (keyword, "EXTCAP", keywordlen))
-    {
-      char *p, *p2, *buf;
-      int abool;
-
-      buf = p = unescape_status_string (line);
-      if (buf)
-        {
-          for (p = strtok (buf, " "); p; p = strtok (NULL, " "))
-            {
-              p2 = strchr (p, '=');
-              if (p2)
-                {
-                  *p2++ = 0;
-                  abool = (*p2 == '1');
-                  if (!strcmp (p, "gc"))
-                    parm->rng_available = abool;
-                  /* We're currently not interested in the
-                   * other capabilities. */
-                }
-            }
-          free (buf);
-        }
-    }
-  return 0;
-
- no_core:
-  return gpg_error_from_syserror ();
-}
-
-
-/* Call the agent to learn about a smartcard.  */
-gpg_error_t
-scute_agent_learn (const char *grip, struct agent_card_info_s *info)
-{
-  gpg_error_t err;
-  int has_opt_all = 0;
-
-  memset (info, 0, sizeof (*info));
-  err = ensure_agent_connection ();
-  if (!err && !agent_simple_cmd (agent_ctx,
-                                 "SCD GETINFO cmd_has_option SERIALNO all"))
-    has_opt_all = 1; /* SERIALNO --all and LEARN --multi is okay.  */
-
-  if (!err)
-    {
-      /* First do a serialno to reset the card-removed-flag and also
-       * to make sure that additional applications are enabled.  We do
-       * not check the error here as we catch that after the LEARN.  */
-      agent_simple_cmd (agent_ctx, (has_opt_all? "SCD SERIALNO --all"
-                                    /*       */: "SCD SERIALNO"      ));
-      err = assuan_transact (agent_ctx,
-                             (has_opt_all? "SCD LEARN --force --multi"
-                              /*       */: "SCD LEARN --force"),
-                             NULL, NULL,
-                             default_inq_cb, NULL,
-                             learn_status_cb, info);
-    }
-
-  if (gpg_err_source(err) == GPG_ERR_SOURCE_SCD
-      && gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
-    {
-      /* SCD session is in card removed state.  clear that state.
-       * That should have been cleared by the initial SERIALNO but
-       * other processes may race with that.  */
-      err = assuan_transact (agent_ctx, (has_opt_all? "SCD SERIALNO --all"
-                                         /*       */: "SCD SERIALNO"),
-                             NULL, NULL, NULL, NULL, NULL, NULL);
-      if (!err)
-        {
-          memset (info, 0, sizeof (*info));
-          err = assuan_transact (agent_ctx,
-                                 (has_opt_all? "SCD LEARN --force --multi"
-                                  /*       */: "SCD LEARN --force"),
-                                 NULL, NULL,
-                                 default_inq_cb, NULL,
-                                 learn_status_cb, info);
-        }
-    }
-
-  return check_broken_pipe (err);
-}
-
-
-
-static gpg_error_t
-geteventcounter_status_cb (void *opaque, const char *line)
-{
-  int *result = opaque;
-  const char *keyword = line;
-  int keywordlen;
-
-  for (keywordlen=0; *line && !spacep (line); line++, keywordlen++)
-    ;
-  while (spacep (line))
-    line++;
-
-  if (keywordlen == 12 && !memcmp (keyword, "EVENTCOUNTER", keywordlen))
-    {
-      static int any_count;
-      static unsigned int last_count;
-      unsigned int count;
-
-      if (sscanf (line, "%*u %*u %u ", &count) == 1)
-        {
-          if (any_count && last_count != count)
-            *result = 1;
-          any_count = 1;
-          last_count = count;
-        }
-    }
-
-  return 0;
-}
-
-
-static gpg_error_t
-read_status_cb (void *opaque, const void *buffer, size_t length)
-{
-  char *flag = opaque;
-
-  if (length == 0)
-    *flag = 'r';
-  else
-    *flag = *((char *) buffer);
-
-  return 0;
-}
-
-
-/* Check the agent status.  This returns 0 if a token is present,
-   GPG_ERR_CARD_REMOVED if no token is present, and an error code
-   otherwise.  */
-gpg_error_t
-scute_agent_check_status (const char *grip)
-{
-  static char last_flag;
-  gpg_error_t err;
-  int any = 0;
-  char flag = '-';
-
-  err = ensure_agent_connection ();
-  if (err)
-    return err;
-
-  /* FIXME:  use "SCD KEYINFO <GRIP>" to see it's available.  */
-
-  /* First we look at the eventcounter to see if anything happened at
-     all.  This is a low overhead function which won't even clutter a
-     gpg-agent log file.  There is no need for error checking here. */
-  if (last_flag)
-    {
-      err = assuan_transact (agent_ctx, "GETEVENTCOUNTER",
-                             NULL, NULL,
-                             NULL, NULL,
-                             geteventcounter_status_cb, &any);
-      check_broken_pipe (err);
-    }
-
-  if (any || !last_flag)
-    {
-      err = assuan_transact (agent_ctx, "SCD GETINFO status",
-                             read_status_cb, &flag,
-                             default_inq_cb, NULL,
-                             NULL, NULL);
-      err = check_broken_pipe (err);
-      if (err)
-        return err;
-      last_flag = flag;
-    }
-  else
-    flag = last_flag;
-
-
-  if (flag == 'r')
-    return gpg_error (GPG_ERR_CARD_REMOVED);
-
-  return 0;
-}
-
 
 /* We only support RSA signatures up to 4096 bits.  */
 #define MAX_SIGNATURE_BITS 4096
@@ -1631,9 +1229,9 @@ get_cert_data_cb (void *opaque, const void *data, size_t data_len)
 }
 
 
-/* Try to get certificate for CERTREF.  */
+/* Try to get certificate for GRIP.  */
 gpg_error_t
-scute_agent_get_cert (const char *certref, struct cert *cert)
+scute_agent_get_cert (const char *grip, struct cert *cert)
 {
   gpg_error_t err;
   char cmd[150];
@@ -1647,7 +1245,7 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
   if (err)
     return err;
 
-  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", certref);
+  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", grip);
   err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
 			 NULL, NULL, NULL, NULL);
   err = check_broken_pipe (err);
@@ -1669,9 +1267,6 @@ scute_agent_get_cert (const char *certref, struct cert *cert)
 
   cert->cert_der = cert_s.cert_der;
   cert->cert_der_len = cert_s.cert_der_len;
-  strncpy (cert->certref, certref, sizeof cert->certref -1);
-  cert->certref[sizeof cert->certref - 1] = 0;
-
   return 0;
 }
 
@@ -1714,7 +1309,6 @@ scute_agent_get_random (unsigned char *data, size_t len)
     err = check_broken_pipe (err);
     return err;
 }
-
 
 void
 scute_agent_finalize (void)

@@ -49,10 +49,6 @@ C_GetSessionInfo (CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
   if (err)
     goto out;
 
-  err = slots_update_slot (slot);
-  if (err)
-    goto out;
-
   /* We have to re-lookup the session handle, as it might just have
      become invalid.  */
   err = slots_lookup_session (hSession, &slot, &session);
@@ -60,7 +56,7 @@ C_GetSessionInfo (CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
     goto out;
 
   rw = session_get_rw (slot, session);
-  switch (slot_get_status (slot))
+  switch (slot_get_login_status (slot))
     {
     case SLOT_LOGIN_PUBLIC:
       pInfo->state = rw ? CKS_RW_PUBLIC_SESSION : CKS_RO_PUBLIC_SESSION;
