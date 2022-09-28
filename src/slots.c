@@ -984,7 +984,7 @@ slot_get_status (slot_iterator_t id)
 {
   struct slot *slot = scute_table_data (slot_table, id);
 
-  return slot->status;
+  return slot->login;
 }
 
 
