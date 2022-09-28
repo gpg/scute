@@ -388,7 +388,7 @@ struct keyinfo_parm {
   struct keyinfo *list;
 };
 
-/* Callback function for agent_card_keylist.  */
+/* Callback function for agent_keyinfo_list.  */
 static gpg_error_t
 keyinfo_list_cb (void *opaque, const char *line)
 {
@@ -467,34 +467,6 @@ keyinfo_list_cb (void *opaque, const char *line)
 
       line = s;
 
-      if (!*line)
-        goto skip;
-
-      while (spacep (line))
-        line++;
-
-      if (!*line)
-        goto skip;
-
-      for (s = line; *s && !spacep (s); s++)
-        ;
-
-      keyinfo->keyref = malloc (s - line + 1);
-      if (!keyinfo->keyref)
-        goto alloc_error;
-      memcpy (keyinfo->keyref, line, s - line);
-      keyinfo->keyref[s - line] = 0;
-
-      while (spacep (s))
-        s++;
-
-      if (!*s || !parm->require_card)
-        goto skip;
-
-      keyinfo->usage = strdup (s);
-      if (!keyinfo->usage)
-        goto alloc_error;
-
     skip:
       *l_p = keyinfo;
     }
@@ -503,7 +475,6 @@ keyinfo_list_cb (void *opaque, const char *line)
 
  alloc_error:
   free (keyinfo->serialno);
-  free (keyinfo->keyref);
   free (keyinfo);
   if (!parm->error)
     parm->error = gpg_error_from_syserror ();
@@ -526,8 +497,6 @@ scute_agent_free_keyinfo (struct keyinfo *l)
     {
       l_next = l->next;
       free (l->serialno);
-      free (l->keyref);
-      free (l->usage);
       free (l);
     }
 }
@@ -1192,83 +1161,6 @@ struct get_cert_s
   int cert_der_size;
 };
 
-
-gpg_error_t
-get_cert_data_cb (void *opaque, const void *data, size_t data_len)
-{
-  struct get_cert_s *cert_s = opaque;
-  int needed_size;
-
-  needed_size = cert_s->cert_der_len + data_len;
-  if (needed_size > cert_s->cert_der_size)
-    {
-      unsigned char *new_cert_der;
-      int new_cert_der_size = cert_s->cert_der_size;
-
-      if (new_cert_der_size == 0)
-	new_cert_der_size = GET_CERT_INIT_SIZE;
-      while (new_cert_der_size < needed_size)
-	new_cert_der_size *= 2;
-
-      if (cert_s->cert_der == NULL)
-	new_cert_der = malloc (new_cert_der_size);
-      else
-	new_cert_der = realloc (cert_s->cert_der, new_cert_der_size);
-
-      if (new_cert_der == NULL)
-	return gpg_error_from_syserror ();
-
-      cert_s->cert_der = new_cert_der;
-      cert_s->cert_der_size = new_cert_der_size;
-    }
-
-  memcpy (cert_s->cert_der + cert_s->cert_der_len, data, data_len);
-  cert_s->cert_der_len += data_len;
-
-  return 0;
-}
-
-
-/* Try to get certificate for GRIP.  */
-gpg_error_t
-scute_agent_get_cert (const char *grip, struct cert *cert)
-{
-  gpg_error_t err;
-  char cmd[150];
-  struct get_cert_s cert_s;
-
-  cert_s.cert_der = NULL;
-  cert_s.cert_der_len = 0;
-  cert_s.cert_der_size = 0;
-
-  err = ensure_agent_connection ();
-  if (err)
-    return err;
-
-  snprintf (cmd, sizeof (cmd), "SCD READCERT %s", grip);
-  err = assuan_transact (agent_ctx, cmd, get_cert_data_cb, &cert_s,
-			 NULL, NULL, NULL, NULL);
-  err = check_broken_pipe (err);
-  /* Just to be safe... */
-  if (!err && (cert_s.cert_der_len <= 16 || cert_s.cert_der[0] != 0x30))
-    {
-      DEBUG (DBG_INFO, "bad card certificate rejected");
-      err = gpg_error (GPG_ERR_BAD_CERT);
-    }
-  if (err)
-    {
-      if (cert_s.cert_der)
-	free (cert_s.cert_der);
-      return err;
-    }
-
-  DEBUG (DBG_INFO, "got certificate from card with length %i",
-	 cert_s.cert_der_len);
-
-  cert->cert_der = cert_s.cert_der;
-  cert->cert_der_len = cert_s.cert_der_len;
-  return 0;
-}
 
 struct random_request
 {

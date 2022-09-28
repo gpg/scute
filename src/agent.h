@@ -40,8 +40,6 @@ struct keyinfo
   struct keyinfo *next;
   char grip[41];
   char *serialno;
-  char *keyref;
-  char *usage; /* only available from "SCD KEYINFO" not "KEYINFO" */
 };
 
 /* Try to connect to the agent via socket.  Handle the server's
@@ -69,9 +67,6 @@ gpg_error_t scute_agent_decrypt (const char *hexgrip,
 
 /* Determine if FPR is trusted.  */
 gpg_error_t scute_agent_is_trusted (const char *fpr, bool *is_trusted);
-
-/* Try to get certificate for key numer NO.  */
-gpg_error_t scute_agent_get_cert (const char *grip, struct cert *cert);
 
 /* Get random bytes from the card. */
 gpg_error_t scute_agent_get_random (unsigned char *data, size_t len);
