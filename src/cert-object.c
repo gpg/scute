@@ -490,7 +490,7 @@ scute_attr_cert (struct cert *cert, const char *grip,
     }
 
 
-#define NR_ATTR_CERT 20
+#define NR_ATTR_CERT 21
   attr = malloc (sizeof (CK_ATTRIBUTE) * NR_ATTR_CERT);
   attr_count = 0;
   if (!attr)
