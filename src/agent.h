@@ -40,7 +40,6 @@
 struct agent_card_info_s
 {
   char *serialno;	/* Malloced hex string.  */
-  char *dispserialno;   /* NULL or malloced human readable S/N.  */
   char *cardtype;       /* Null or malloced string with the card type.  */
   char *disp_name;	/* Malloced.  */
   char *disp_lang;	/* Malloced.  */
