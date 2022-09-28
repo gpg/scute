@@ -50,10 +50,6 @@ C_GetSlotInfo (CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
   if (err)
     goto out;
 
-  err = slots_update_slot (slot);
-  if (err)
-    goto out;
-
   /* FIXME: Query some of this from SCD.  */
   scute_copy_string (pInfo->slotDescription, SLOT_DESCRIPTION, 64);
   scute_copy_string (pInfo->manufacturerID, SLOT_MANUFACTURER_ID, 32);
