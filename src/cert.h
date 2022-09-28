@@ -119,9 +119,6 @@ struct cert
   /* The fingerprint.  */
   unsigned char fpr[41];
 
-  /* The key grip.  */
-  unsigned char grip[41];
-
   /* The chain ID as return by a gpgsm key listing.  */
   unsigned char chain_id[41];
 
@@ -163,7 +160,7 @@ gpg_error_t scute_gpgsm_search_certs (enum keylist_modes mode,
 gpg_error_t scute_attr_cert (struct cert *cert, const char *grip,
 			     CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp);
 
-gpg_error_t scute_attr_prv (struct cert *cert, key_info_t kinfo,
+gpg_error_t scute_attr_prv (struct cert *cert, const char *grip,
                             CK_ATTRIBUTE_PTR *attrp, CK_ULONG *attr_countp);
 
 void scute_attr_free (CK_ATTRIBUTE_PTR attr, CK_ULONG attr_count);

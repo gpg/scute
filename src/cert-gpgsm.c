@@ -403,8 +403,6 @@ keylist_cb_line (struct keylist_ctx *ctx)
       if (cert->valid)
 	{
 	  /* Field 10 has the key grip.  */
-	  if (fields >= 10 && strlen (field[9]) <= sizeof (cert->grip) - 1)
-	    strcpy (cert->grip, field[9]);
 	}
       break;
 

@@ -135,7 +135,10 @@ struct slot
   /* The objects on the token.  */
   scute_table_t objects;
 
-  /* The info about the current token.  */
+  /* The keygrip to the key in hex string.  */
+  char grip[41];
+
+  /* FIXME depricating. The info about the current token.  */
   struct agent_card_info_s info;
 
   /* Private data.  */
@@ -344,24 +347,35 @@ CK_RV
 scute_slots_initialize (void)
 {
   gpg_error_t err;
-  int slot_idx;
-  int i;
+  struct keyinfo *keyinfo = NULL;
+  struct keyinfo *ki;
 
   err = scute_table_create (&slot_table, slot_alloc, slot_dealloc);
   if (err)
     return err;
 
-  /* Allocate new slots for authentication.  */
-  for (i = 0; i < MAX_SLOTS; i++)
+  err = scute_agent_keyinfo_list (&keyinfo);
+  if (err)
     {
-      err = scute_table_alloc (slot_table, &slot_idx, NULL, NULL);
+      scute_slots_finalize ();
+      return scute_gpg_err_to_ck (err);
+    }
+
+  for (ki = keyinfo; ki; ki = ki->next)
+    {
+      struct slot *slot;
+      int slot_idx;
+
+      err = scute_table_alloc (slot_table, &slot_idx, (void **)&slot, NULL);
       if (err)
         scute_slots_finalize ();
+      memcpy (slot->grip, ki->grip, 41);
     }
 
   /* FIXME: Allocate a new slot for signing and decryption of
      email.  */
 
+  scute_agent_free_keyinfo (keyinfo);
   return scute_gpg_err_to_ck (err);
 }
 
@@ -429,15 +443,11 @@ slot_init (slot_iterator_t id)
 {
   gpg_error_t err = 0;
   struct slot *slot = scute_table_data (slot_table, id);
-  key_info_t ki;
   int idx;
 
-  for (ki = slot->info.kinfo; ki; ki = ki->next)
-    {
-      err = scute_gpgsm_get_cert (ki, add_object, slot);
-      if (err)
-        goto leave;
-    }
+  err = scute_gpgsm_get_cert (slot->grip, add_object, slot);
+  if (err)
+    goto leave;
 
   /* FIXME: Perform the rest of the initialization of the
      token.  */
@@ -462,7 +472,7 @@ slots_update_slot (slot_iterator_t id)
 
   if (slot->token_present)
     {
-      err = scute_agent_check_status ();
+      err = scute_agent_check_status (slot->grip);
       if (gpg_err_code (err) == GPG_ERR_CARD_REMOVED)
         {
           slot_reset (id);
@@ -486,7 +496,7 @@ slots_detect_slot (slot_iterator_t id)
 
   /* At this point, the card was or is removed, and we need to reopen
      the session, if possible.  */
-  err = scute_agent_learn (&slot->info);
+  err = scute_agent_learn (slot->grip, &slot->info);
 
   /* First check if this is really a PIV or an OpenPGP card.  FIXME:
    * Should probably report the error in a better way and use a
@@ -539,6 +549,10 @@ slots_update_all (void)
       CK_RV err;
 
       err = slots_update_slot (id);
+
+      /* FIXME
+       * see if it's valid: KEYINFO <keygrip>
+       */
 
       /* FIXME: Only use the first slot for now.  */
       if (id == 1 && err == CKR_TOKEN_NOT_PRESENT)
