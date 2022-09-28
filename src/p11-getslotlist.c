@@ -55,8 +55,8 @@ C_GetSlotList (CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList,
 
   if (pSlotList == NULL_PTR)
     {
-      scute_slots_finalize ();
-      err = scute_slots_initialize ();
+      /* Firefox call GetSlotList even if there is active sessions.  */
+      err = scute_slots_rescan_if_no_sessions ();
       if (err)
 	goto out;
     }

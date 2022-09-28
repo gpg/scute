@@ -210,4 +210,6 @@ CK_RV session_decrypt (slot_iterator_t slotid, session_iterator_t sid,
                        CK_BYTE *r_plaindata, CK_ULONG *r_plaindatalen);
 
 
+CK_RV scute_slots_rescan_if_no_sessions (void);
+
 #endif	/* !SLOTS_H */
