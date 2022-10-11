@@ -234,6 +234,18 @@ agent_configure (assuan_context_t ctx)
   if (err)
     return err;
 
+  /* Check whether the agent is in restricted mode.  */
+  if (!assuan_transact (ctx, "GETINFO restricted",
+                        NULL, NULL, NULL, NULL, NULL, NULL))
+    {
+      DEBUG (DBG_INFO, "Assuming a connection to a remote agent\n");
+      /* All further option will anyway return FORBIDDEN, thus we don't
+       * try them.  They are also not needed because it is expected
+       * that the pinentry pops up at the remote site.  */
+      err = 0;
+      goto leave;
+    }
+
   /* Set up display, terminal and locale options.  */
   dft_display = getenv ("DISPLAY");
   if (dft_display)
@@ -314,6 +326,7 @@ agent_configure (assuan_context_t ctx)
   if (err && gpg_err_code (err) != GPG_ERR_UNKNOWN_OPTION)
     return err;
 
+ leave:
   return err;
 }
 
