@@ -378,7 +378,7 @@ asn1_get_ec_params (unsigned char *cert, int cert_len,
 
   /* The path to the params entry in the DER file.  This is
      Sequence->Sequence->Version,Serial,AlgID,Issuer,Time,Subject,
-     Sequence->Sequence->Sequence->OID,OID  */
+     Sequence->Sequence->OID,OID  */
 
   err = asn1_get_element (cert, cert_len, sub_start, sub_len,
 			  path, DIM (path));
@@ -388,6 +388,37 @@ asn1_get_ec_params (unsigned char *cert, int cert_len,
   if (*sub_len < 1)
     {
       DEBUG (DBG_INFO, "params too short");
+      return gpg_error (GPG_ERR_GENERAL);
+    }
+
+  return 0;
+}
+
+/* Get the point Q on the curve.  */
+static gpg_error_t
+asn1_get_ec_point (unsigned char *cert, int cert_len,
+                   unsigned char **sub_start, int *sub_len)
+{
+  gpg_error_t err;
+  struct asn1_path path[] = { { '\x30', true }, { '\x30', true },
+			      { '\xa0', false }, { '\x02', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', false }, { '\x30', false },
+			      { '\x30', true }, { '\x30', false },
+			      { '\x03', false }  };
+
+  /* The path to the params entry in the DER file.  This is
+     Sequence->Sequence->Version,Serial,AlgID,Issuer,Time,Subject,
+     Sequence->Sequence,Bitstring  */
+
+  err = asn1_get_element (cert, cert_len, sub_start, sub_len,
+			  path, DIM (path));
+  if (err)
+    return err;
+
+  if (*sub_len < 1)
+    {
+      DEBUG (DBG_INFO, "point too short");
       return gpg_error (GPG_ERR_GENERAL);
     }
 
@@ -617,6 +648,8 @@ scute_attr_prv (struct cert *cert, const char *grip,
   int public_exp_len;
   unsigned char *ec_params_start;
   int ec_params_len;
+  unsigned char *ec_point_start;
+  int ec_point_len;
 
   CK_OBJECT_CLASS obj_class = CKO_PRIVATE_KEY;
   CK_BBOOL obj_token = CK_TRUE;
@@ -698,6 +731,15 @@ scute_attr_prv (struct cert *cert, const char *grip,
       if (err)
         {
           DEBUG (DBG_INFO, "rejecting certificate: could not get params: %s",
+                 gpg_strerror (err));
+          return err;
+        }
+
+      err = asn1_get_ec_point (cert->cert_der, cert->cert_der_len,
+                               &ec_point_start, &ec_point_len);
+      if (err)
+        {
+          DEBUG (DBG_INFO, "rejecting certificate: could not get ec point: %s",
                  gpg_strerror (err));
           return err;
         }
@@ -830,6 +872,9 @@ scute_attr_prv (struct cert *cert, const char *grip,
       if (!err)
         err = attr_one (attr, &attr_count, CKA_EC_PARAMS,
                         ec_params_start, ec_params_len);
+      if (!err)
+        err = attr_one (attr, &attr_count, CKA_EC_POINT,
+                        ec_point_start + 2, ec_point_len - 2);
     }
 
   if (err)
