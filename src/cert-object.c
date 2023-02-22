@@ -874,7 +874,7 @@ scute_attr_prv (struct cert *cert, const char *grip,
                         ec_params_start, ec_params_len);
       if (!err)
         err = attr_one (attr, &attr_count, CKA_EC_POINT,
-                        ec_point_start + 2, ec_point_len - 2);
+                        ec_point_start + 3, ec_point_len - 3);
     }
 
   if (err)
