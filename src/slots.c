@@ -1054,10 +1054,10 @@ session_sign (slot_iterator_t id, session_iterator_t sid,
           *pulSignatureLen = 32 * 2;
           break;
         case CKM_ECDSA_SHA384:
-          *pulSignatureLen = 64 * 2;
+          *pulSignatureLen = 48 * 2;
           break;
         case CKM_ECDSA_SHA512:
-          *pulSignatureLen = 48 * 2;
+          *pulSignatureLen = 64 * 2;
           break;
         case CKM_RSA_PKCS:
         default:
