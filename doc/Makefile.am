@@ -19,15 +19,20 @@
 
 ## Process this file with automake to produce Makefile.in
 
-images = firefox-cm.png firefox-cm-view-detail.png firefox-cm-view.png \
-	firefox-dm-load-after.png firefox-dm-load-before.png \
-	firefox-dm-load.png firefox-dm-token-present.png firefox-pref.png \
-	firefox-pref-view.png firefox-bad-pin.png \
-	thunderbird-account-settings.png thunderbird-smime-button.png \
-	libreoffice-certificate-selection.png \
-	libreoffice-digital-signatures.png libreoffice-pdf-signature.png
+infoimagedir = $(infodir)/images
 
-EXTRA_DIST = $(images)
+images = images/firefox-cm.png images/firefox-cm-view-detail.png \
+	images/firefox-cm-view.png images/firefox-dm-load-after.png \
+	images/firefox-dm-load-before.png images/firefox-dm-load.png \
+	images/firefox-dm-token-present.png images/firefox-pref.png \
+	images/firefox-pref-view.png images/firefox-bad-pin.png \
+	images/thunderbird-account-settings.png \
+	images/thunderbird-smime-button.png \
+	images/libreoffice-certificate-selection.png \
+	images/libreoffice-digital-signatures.png \
+	images/libreoffice-pdf-signature.png
+
+dist_infoimage_DATA = $(images)
 
 DISTCLEANFILES = scute.tmp yat2m-stamp.tmp yat2m-stamp $(myman_pages)
 

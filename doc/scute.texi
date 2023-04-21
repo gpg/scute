@@ -673,12 +673,12 @@ the preferences configuration dialog, you should select the
 @code{Advanced} configuration section, then the @code{Security} tab, and
 then select @code{Security Devices} in the category @code{Certificates}.
 
-@center @image{firefox-pref,13cm}
+@center @image{images/firefox-pref,13cm}
 
 In the devices manager dialog, you can select @code{Load} to load a new
 PKCS #11 device.
 
-@center @image{firefox-dm-load-before,13cm}
+@center @image{images/firefox-dm-load-before,13cm}
 
 In the pop-up dialog that follows, you can give a module name
 (e.g. ``@code{Scute}'') and a module filename.  The latter should
@@ -689,14 +689,14 @@ file name @file{/usr/local/lib/scute.so}.  If you or your system
 administrator installed Scute in a different location, you have to
 adjust the file name correspondingly.
 
-@center @image{firefox-dm-load,8cm}
+@center @image{images/firefox-dm-load,8cm}
 
 After confirming installation of the security device, a pop-up window
 should confirm that the module was successfully loaded, and an entry for
 the security device should appear in the device manager list of
 @code{Security Modules and Devices}.
 
-@center @image{firefox-dm-load-after,15cm}
+@center @image{images/firefox-dm-load-after,15cm}
 
 When you insert the OpenPGP card for which you generated and imported a
 certificate earlier (see @ref{Certificate Preparation}), the device
@@ -704,12 +704,12 @@ manager should detect this security token and display some information
 about it in the @code{Details} list when you select it from the module
 list.
 
-@center @image{firefox-dm-token-present,15cm}
+@center @image{images/firefox-dm-token-present,15cm}
 
 The client certificate will show up in the @code{Certificate Manager}
 under @code{Your Certificates}:
 
-@center @image{firefox-cm,13cm}
+@center @image{images/firefox-cm,13cm}
 
 @node Authentication With Service
 @section Authentication With Service
@@ -740,7 +740,7 @@ influence it.  Unfortunately, in Firefox (at least up to version
 entering a bad PIN results in the following generic error message, and
 the @code{Try Again} button does not work as expected:
 
-@center @image{firefox-bad-pin,11cm}
+@center @image{images/firefox-bad-pin,11cm}
 
 @comment FIXME: Document possible error codes.
 
@@ -762,13 +762,13 @@ Settings}), and in the @code{Security} tab, under the section
 @code{Digital Signing}, use the @code{Select...} button to associate
 your card-based certificate with your account.
 
-@center @image{thunderbird-account-settings,13cm}
+@center @image{images/thunderbird-account-settings,13cm}
 
 When writing a new message, you may then use the @code{S/MIME} button
 and select @code{Digitally sign this message} in the popup menu.  You
 will be prompted for your User PIN before the message is sent.
 
-@center @image{thunderbird-smime-button,13cm}
+@center @image{images/thunderbird-smime-button,13cm}
 
 
 @node Document Signing
@@ -785,13 +785,13 @@ Then, to sign the document you are editing, select the
 @code{File->Digital Signatures...} menu option to open the
 @code{Digital Signatures} dialog.
 
-@center @image{libreoffice-digital-signatures,13cm}
+@center @image{images/libreoffice-digital-signatures,13cm}
 
 Click the @code{Sign Document} button to open the certificate selection
 dialog.  Select your card-based certificate, then validate.  Enter your
 User PIN when prompted by GPG Agent.
 
-@center @image{libreoffice-certificate-selection,13cm}
+@center @image{images/libreoffice-certificate-selection,13cm}
 
 You may also sign a PDF export of your document.  Select the
 @code{File->Export as PDF...} menu option to open the @code{PDF Options}
@@ -799,7 +799,7 @@ dialog.  In the @code{Digital Signatures} tab, use the @code{Select}
 button to open the certificate selection dialog as above.  You will be
 prompted for your User PIN when you will click the @code{Export} button.
 
-@center @image{libreoffice-pdf-signature,13cm}
+@center @image{images/libreoffice-pdf-signature,13cm}
 
 
 @node Troubleshooting
