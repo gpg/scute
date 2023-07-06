@@ -861,7 +861,7 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
                   unsigned char *data, int len,
 		  unsigned char *sig_result, unsigned int *sig_len)
 {
-  char cmd[150];
+  char cmd[151];
   gpg_error_t err;
   const char *hash;
   const unsigned char *raw_data;
@@ -949,6 +949,9 @@ scute_agent_sign (const char *hexgrip, CK_MECHANISM_TYPE mechtype,
   else
     {
     with_hash:
+      if (strlen ("SETHASH --hash=sha512 ") + 2 * raw_len + 1 > sizeof (cmd))
+        return gpg_error (GPG_ERR_BUFFER_TOO_SHORT);
+
       for (i = 0; i < raw_len; i++)
         snprintf (&pretty_data[2 * i], 3, "%02X", raw_data[i]);
       pretty_data[2 * raw_len] = '\0';
