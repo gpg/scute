@@ -24,7 +24,7 @@ AM_DISTCHECK_DVI_TARGET = pdf
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = autogen.sh README.GIT VERSION
+EXTRA_DIST = autogen.sh README.GIT VERSION build-aux/libtool-patch.sed
 
 if RUN_TESTS
 tests = tests
