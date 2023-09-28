@@ -202,6 +202,14 @@ AC_ARG_ENABLE([doc], AS_HELP_STRING([--disable-doc],
                      build_doc=$enableval, build_doc=yes)
 AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno && test "x$have_doc_tools" = xyes])
 
+#
+# Option to build/run tests
+#
+build_tests=yes
+AC_ARG_ENABLE([tests], AS_HELP_STRING([--disable-tests],
+                                    [do not build the tests]),
+                     build_tests=$enableval, build_tests=yes)
+AM_CONDITIONAL([BUILD_TESTS], [test "x$build_tests" != xno])
 
 
 AC_SUBST(LIBSCUTE_LT_CURRENT)
@@ -335,11 +343,6 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_CHECK_FUNCS([ttyname localtime_r timegm stpcpy])
-
-# Test if tests can be run
-ok=yes
-AM_CONDITIONAL(RUN_TESTS, test "$ok" = "yes")
-
 
 AH_BOTTOM([
 /* Prefix all estream functions.  */

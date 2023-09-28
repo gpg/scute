@@ -26,7 +26,7 @@ AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
 EXTRA_DIST = autogen.sh README.GIT VERSION build-aux/libtool-patch.sed
 
-if RUN_TESTS
+if BUILD_TESTS
 tests = tests
 else
 tests =
