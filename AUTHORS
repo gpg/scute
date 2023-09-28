@@ -5,6 +5,9 @@ Security related bug reports: security@gnupg.org
 License: LGPL-2.1-or-later
 
 
+List of Copyright holders
+=========================
+
 g10 Code GmbH <code@g10code.com>
  - Design and implementation
 
@@ -16,6 +19,13 @@ Alon Bar-Lev <alon.barlev@gmail.com>
 
 Damien Goutte-Gattat <dgouttegattat@incenp.org>
  - Various changes.
+
+
+Authors with a DCO
+==================
+
+Jernej Jakob <jernej.jakob@gmail.com>
+2023-06-28:<20230628155639.14869c41@gentoo.home>:
 
 
  Copyright 2006, 2008 g10 Code GmbH
