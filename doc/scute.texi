@@ -750,8 +750,8 @@ the @code{Try Again} button does not work as expected:
 
 Scute also allows you to use your card-based X.509 certificate to sign
 your emails with the S/MIME signature format.  This has been tested
-with Mozilla Thunderbird only, but should work with any mail client
-with support for PKCS #11 (notably GNOME Evolution).
+with Mozilla Thunderbird and GNOME Evolution only, but should work with
+other mail clients with support for PKCS #11.
 
 You must first load the Scute module into your mail client.  With
 Mozilla Thunderbird, the procedure is the same as the one described
@@ -770,6 +770,22 @@ will be prompted for your User PIN before the message is sent.
 
 @center @image{images/thunderbird-smime-button,13cm}
 
+The procedure with GNOME's Evolution email client is similar, except that
+no graphical interface for adding PKCS #11 modules is available at the
+time of this writing. Fortunately Evolution uses Mozilla's NSS library,
+so the @code{modutil} command-line tool can be used to tell Evolution
+to use Scute like so:
+
+@example
+modutil -add Scute -libfile @file{/usr/local/lib/scute.so} -dbdir @file{~/.pki/nssdb/}
+@end example
+
+Evolution typically keeps its security information in the location
+@file{~/.pki/nssdb/}, so this path should generally be left as-is.
+After a restart of all components Evolution should become aware of the
+module, so one just needs to edit the appropriate mail account and, under
+the security menu, elect to choose the S/MIME certificate it should have
+already discovered.
 
 @node Document Signing
 @chapter Document Signing
