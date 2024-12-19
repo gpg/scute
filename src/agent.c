@@ -565,6 +565,7 @@ scute_agent_keyinfo_list (struct keyinfo **keyinfo_p)
    is percent escaping and '+'/space mapping.  A binary nul will
    silently be replaced by a 0xFF.  Function returns NULL to indicate
    an out of memory status.  */
+#if 0
 static char *
 unescape_status_string (const unsigned char *src)
 {
@@ -599,6 +600,7 @@ unescape_status_string (const unsigned char *src)
 
   return buffer;
 }
+#endif /*0*/
 
 /* We only support RSA signatures up to 4096 bits.  */
 #define MAX_SIGNATURE_BITS 4096
