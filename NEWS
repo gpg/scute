@@ -1,6 +1,11 @@
 Noteworthy changes in version 1.7.1 (unreleased)
 ------------------------------------------------
 
+ * Support ECC signatures.
+
+ * Support multiple cards.
+
+
 
 Noteworthy changes in version 1.7.0 (2021-01-07)
 ------------------------------------------------

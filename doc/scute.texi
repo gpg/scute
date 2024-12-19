@@ -189,8 +189,8 @@ Here is the short list of supported keywords:
 
 @item only-marked
 @opindex only-marked
-Scute consideres only keys having the @code{Use-for-p11} as part of
-their meta data.
+Scute considers only keys having the attribute @code{Use-for-p11} as
+part of their meta data.
 
 
 @item user @var{name}
