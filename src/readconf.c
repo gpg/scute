@@ -48,6 +48,42 @@ my_strusage (int level)
 }
 
 
+#ifdef HAVE_W32_SYSTEM
+#include <windows.h>
+#ifndef CSIDL_COMMON_APPDATA
+#define CSIDL_COMMON_APPDATA 0x0023
+#endif
+
+static void
+get_sysconfdir (char *buf)
+{
+  HRESULT (WINAPI *func)(HWND,int,HANDLE,DWORD,LPSTR);
+  void *handle;
+  int done = 0;
+
+  handle = LoadLibraryEx ("shell32.dll", NULL, 0);
+  if (handle)
+    {
+      func = (void *)GetProcAddress (handle, "SHGetFolderPathA");
+      if (func && func (NULL, CSIDL_COMMON_APPDATA, NULL, 0, buf) >= 0)
+        {
+          strcat (buf, "/GNU/etc/gnupg/");
+          done = 1;
+        }
+      CloseHandle (handle);
+    }
+
+  if (!done)
+    strcpy (buf, "c:/ProgramData/GNU/etc/gnupg/");
+}
+#else
+static void
+get_sysconfdir (char *buf)
+{
+  strcpy (buf, "/etc/gnupg");
+}
+#endif
+
 /* Read the global configuration file.  This functon needs to be
  * called early.  */
 void
@@ -73,9 +109,12 @@ _scute_read_conf (void)
   int dummy_argc = 0;
   char **dummy_argv = NULL;
   gpgrt_argparse_t pargs = { &dummy_argc, &dummy_argv, ARGPARSE_FLAG_SYS };
+  /* Space for "/GNU/etc/gnupg/" on Windows. */
+  char sysconfdir_buf[MAX_PATH+15+1];
 
   gpgrt_set_strusage (my_strusage);
-  gpgrt_set_confdir (GPGRT_CONFDIR_SYS, "/etc/gnupg");
+  get_sysconfdir (sysconfdir_buf);
+  gpgrt_set_confdir (GPGRT_CONFDIR_SYS, sysconfdir_buf);
 
   while (gpgrt_argparser  (&pargs, opts, "scute.conf"))
     {
